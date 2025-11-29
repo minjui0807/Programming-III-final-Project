@@ -1,0 +1,19 @@
+#Python暫存檔
+__pycache__/
+*.py[cod]
+
+#虛擬環境
+venv/
+.venv/
+env/
+
+#環境變數
+.env
+
+#資料庫檔案
+*.db
+*.sqlite3
+
+# IDE設定檔
+.vscode/
+.idea/

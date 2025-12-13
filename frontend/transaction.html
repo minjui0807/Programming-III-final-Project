@@ -62,7 +62,7 @@
         }
 
         .container {
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 20px;
             background-color: var(--bg-primary);
@@ -736,7 +736,7 @@
         .fab.open {
             /* 展開時顏色變為粉色，圖標旋轉 45 度 */
             background-color: var(--neon-pink);
-            transform: rotate(90deg); 
+            transform: rotate(180deg); 
         }
 
         .fab-options {
@@ -844,7 +844,7 @@
             --fab-color-rgb: var(--neon-pink-rgb); /* 展開時變為霓虹粉 RGB */
             border-color: rgba(var(--neon-pink-rgb), 0.4);
             background: rgba(var(--neon-pink-rgb), 0.1);
-            transform: rotate(135deg) translateZ(5px); 
+            transform: rotate(180deg) translateZ(5px); 
             box-shadow: 
                 0 0 20px var(--neon-pink), 
                 0 4px 20px rgba(0, 0, 0, 0.8); 
@@ -852,7 +852,6 @@
 
         .fab-container.open .fab i {
             color: var(--neon-pink);
-            /* 展開時圖標旋轉，讓閃電像一個 X */
             transform: rotate(90deg); 
         }
 

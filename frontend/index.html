@@ -1,1028 +1,265 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>⚡️ 數據核心：量子記帳系統</title>
-      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-      <style>
-            
-            :root{
-                  /* 採用柔和的色系 */
-                  --bg-primary: #121212;
-                  --bg-secondary: #1e1e1e;
-                  --neon-blue: #a7d7ff;      /* 柔和藍 (主色/收入) */
-                  --neon-pink: #ffb3cf;      /* 柔和粉 (副色/支出) */
-                  --neon-green: #a8f0c6;     /* 柔和綠 (餘額/剩餘預算) */
-                  --neon-yellow: #fff1a6;    /* 柔和黃 (強調/日期/預算狀態) */
-                  --text-light: #e6e6e6;     /* 亮文字 */
-                  --text-dark: #b8b8b8;      /* 柔和灰文字 */
-                  --gray-default: #d8d8d8;   /* 預設邊框/無數據色 */
-            }
-            body{
-                  background-color: var(--bg-primary);
-                  color: var(--text-light);
-                  font-family: 'Space Mono', monospace;
-                  margin: 0;
-                  padding: 0;
-            }
-            .app-container{
-                  display: flex;
-                  min-height: 100vh;
-            }
-            .sidebar{
-                  width: 250px;
-                  background-color: var(--bg-secondary);
-                  padding: 20px 0;
-                  border-right: 1px solid rgba(255, 255, 255, 0.1);
-            }
-            .sidebar h1{
-                  color: var(--neon-blue);
-                  text-align: center;
-                  text-shadow: 0 0 5px rgba(167, 215, 255, 0.5); 
-                  padding-bottom: 20px;
-                  border-bottom: 1px dashed var(--text-dark);
-                  margin: 0 20px 20px;
-            }
-            .sidebar ul{
-                  list-style: none;
-                  padding: 0;
-            }
-            .sidebar li{
-                  padding: 15px 30px;
-                  cursor: pointer;
-                  transition: 0.3s;
-            }
-            .sidebar li:hover, .sidebar li.active{
-                  background-color: rgba(167, 215, 255, 0.1); 
-                  color: var(--neon-blue);
-                  text-shadow: 0 0 8px rgba(167, 215, 255, 0.7);
-            }
-            main{
-                  flex: 1;
-                  padding: 30px;
-            }
-            .page{
-                  display: none;
-                  opacity: 0;
-                  transform: translateY(20px);
-                  transition: opacity 0.5s, transform 0.5s;
-            }
-            .page.active{
-                  display: block;
-                  opacity: 1;
-                  transform: translateY(0);
-            }
-            .neon-title {
-                  text-align: center;
-                  font-size: 45px;
-                  color: var(--neon-blue); 
-                  margin: 20px 0 30px;
-                  letter-spacing: 3px;
-                  font-weight: 700;
-                  animation: glowPulse 2.5s infinite ease-in-out;
-            }
-            @keyframes glowPulse {
-                  0%{
-                        text-shadow: 0 0 10px var(--neon-blue);
-                  }
-                  50%{
-                        text-shadow: 0 0 25px var(--neon-blue);
-                  }
-                  100%{
-                        text-shadow: 0 0 10px var(--neon-blue);
-                  }
-            }
-            
-            #current-date-display {
-                  color: var(--neon-yellow);
-                  text-shadow: 0 0 5px rgba(255, 241, 166, 0.5);
-                  font-size: 1.2em;
-                  text-align: right;
-                  margin-bottom: 10px;
-            }
-            .metrics-bars-grid{
-                  display: flex; 
-                  flex-direction: row; 
-                  gap: 20px; 
-                  margin-bottom: 40px;
-                  background-color: var(--bg-secondary); 
-                  padding: 25px;
-                  border-radius: 12px;
-                  border: 1px solid rgba(255, 255, 255, 0.1);
-                  flex-wrap: wrap; 
-            }
-            .metric-bar{
-                  flex: 1 1 200px; 
-                  background-color: var(--bg-primary); 
-                  padding: 15px 20px;
-                  border-radius: 8px;
-                  border: 1px solid rgba(255, 255, 255, 0.05);
-                  position: relative;
-                  overflow: hidden; 
-            }
-            .metric-bar .bar-label{
-                  color: var(--text-dark);
-                  font-size: 0.85em;
-                  text-transform: uppercase;
-                  margin-bottom: 5px;
-            }
-            .metric-bar .bar-value{
-                  font-size: 1.8em; 
-                  font-weight: bold;
-                  margin-bottom: 15px; 
-                  text-shadow: 0 0 5px rgba(255, 255, 255, 0.5); 
-            }
-            /* 進度條樣式 */
-            .progress-line{
-                  width: 100%;
-                  height: 8px; 
-                  background-color: rgba(255, 255, 255, 0.1); 
-                  border-radius: 4px;
-                  overflow: hidden;
-                  position: relative;
-            }
-            .progress-fill{
-                  height: 100%;
-                  width: 0%; 
-                  border-radius: 4px;
-                  transition: width 0.8s ease-out; 
-                  position: absolute;
-                  left: 0;
-                  top: 0;
-                  box-shadow: 0 0 10px; 
-            }
-            /* 各條的顏色和發光 */
-            .metric-bar.income .bar-value{
-                  color: var(--neon-blue);
-            }
-            .metric-bar.income .progress-fill{
-                  background-color: var(--neon-blue);
-                  box-shadow: 0 0 10px var(--neon-blue);
-            }
-            .metric-bar.expense .bar-value{
-                  color: var(--neon-pink);
-            }
-            .metric-bar.expense .progress-fill{
-                  background-color: var(--neon-pink);
-                  box-shadow: 0 0 10px var(--neon-pink);
-            }
-            .metric-bar.balance .bar-value{
-                  color: var(--neon-green);
-            }
-            
-            .metric-bar.budget-status .bar-value{
-                  color: var(--neon-yellow);
-            }
-            .metric-bar.budget-status .progress-fill{
-                  background-color: var(--neon-yellow);
-                  box-shadow: 0 0 10px var(--neon-yellow);
-            }
-            /* --- 交易卡片樣式 --- */
-            .transaction-date-card {
-                  background-color: var(--bg-secondary); 
-                  margin-bottom: 25px;
-                  border-radius: 12px;
-                  border: 1px solid rgba(255, 255, 255, 0.1);
-                  overflow: hidden;
-                  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            }
-            .date-header {
-                  background-color: #2a2a2a; 
-                  color: var(--neon-yellow); 
-                  padding: 12px 25px;
-                  font-size: 1.1em;
-                  font-weight: bold;
-                  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            }
-            .transaction-row {
-                  display: flex;
-                  justify-content: space-between;
-                  align-items: center;
-                  padding: 15px 25px;
-                  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-            }
-            .transaction-row:last-child {
-                  border-bottom: none;
-            }
-            .transaction-left {
-                  display: flex;
-                  align-items: center;
-                  gap: 15px;
-                  flex: 1;
-            }
-            .transaction-left > div {
-                  display: flex;
-                  flex-direction: column;
-            }
-            .icon {
-                  width: 35px;
-                  height: 35px;
-                  border-radius: 50%;
-                  display: flex;
-                  justify-content: center;
-                  align-items: center;
-                  font-weight: bold;
-                  color: var(--bg-primary); 
-                  font-size: 1.2em;
-                  flex-shrink: 0;
-            }
-            .category {
-                  font-weight: bold;
-                  color: var(--text-light); 
-                  font-size: 1em;
-            }
-            .name {
-                  color: var(--text-dark); 
-                  font-size: 0.85em; 
-                  margin-top: 2px;
-            }
-            .transaction-right {
-                  text-align: right;
-                  font-weight: bold;
-                  min-width: 150px;
-                  display: flex;
-                  align-items: center;
-                  gap: 15px;
-                  justify-content: flex-end;
-            }
-            .transaction-right.income {
-                  color: var(--neon-blue); 
-            }
-            .transaction-right.expense {
-                  color: var(--neon-pink); 
-            }
-            .delete-btn {
-                  background: none;
-                  color: var(--text-dark);
-                  border: 1px solid var(--text-dark);
-                  padding: 4px 8px;
-                  font-size: 0.8em;
-                  cursor: pointer;
-                  border-radius: 4px;
-                  transition: 0.3s;
-            }
-            .delete-btn:hover {
-                  background-color: rgba(255, 255, 255, 0.1);
-                  color: var(--text-light);
-            }
-            
-            /* 圖表樣式 */
-            .chart-container{
-                  background-color: var(--bg-secondary);
-                  padding: 25px;
-                  padding-top: 0;
-                  border-radius: 12px;
-                  border: 1px solid var(--neon-blue);
-                  margin-bottom: 40px;
-                  height: 500px; 
-                  position: relative; 
-            }
-            /* 圓餅圖切換按鈕群組 */
-            .chart-controls {
-                  display: flex;
-                  gap: 10px;
-                  margin-bottom: 20px;
-                  padding: 10px 0;
-                  border-bottom: 1px dashed var(--text-dark);
-                  flex-wrap: wrap; 
-            }
-            
-            .chart-controls button {
-                  background: rgba(167, 215, 255, 0.1);
-                  color: var(--neon-blue);
-                  border: 1px solid var(--neon-blue);
-                  padding: 8px 15px;
-                  border-radius: 5px;
-                  cursor: pointer;
-                  transition: 0.3s;
-                  white-space: nowrap; 
-            }
-            .chart-controls button.active,
-            .chart-controls button:hover {
-                  background: var(--neon-blue);
-                  color: var(--bg-primary);
-                  box-shadow: 0 0 10px rgba(167, 215, 255, 0.7);
-            }
-            /* 輸入與設定區塊 */
-            .input-group{
-                  background-color: var(--bg-secondary); 
-                  padding: 25px;
-                  border-radius: 12px;
-                  border: 1px solid var(--neon-blue);
-                  display:flex;
-                  flex-direction: column;
-                  gap:15px;
-                  margin-bottom:20px;
-            }
-            .add-transaction, 
-            .balance-setting{
-                  display: flex;
-                  gap: 10px;
-                  flex-wrap: wrap;
-            }
-            .add-transaction input, 
-            .add-transaction select, 
-            .add-transaction button,
-            .balance-setting input, 
-            .balance-setting button{
-                  padding: 10px;
-                  border: 1px solid rgba(167, 215, 255, 0.3); 
-                  border-radius: 5px;
-                  font-size: 14px;
-                  background: rgba(255,255,255,0.05); 
-                  color: var(--text-light);
-            }
-            
-            .add-transaction input, 
-            .add-transaction select {
-                  flex: 1;
-                  min-width: 120px;
-            }
-            
-            .add-transaction button {
-                  min-width: 120px;
-            }
-            
-            /* 確保下拉選單選項的背景和文字顏色協調 */
-            .add-transaction select option {
-                  background: var(--bg-secondary);
-                  color: var(--text-light); 
-            }
-            
-            .balance-setting input{
-                  flex: 1;
-            }
-            .add-transaction input::placeholder{
-                  color: var(--text-dark);
-            }
-            .action-btn{
-                  background: linear-gradient(90deg, var(--neon-blue), #9be4ff); 
-                  color: var(--bg-primary); 
-                  cursor: pointer; 
-                  transition: 0.3s;
-                  font-weight: bold;
-            }
-            .action-btn:hover{
-                  opacity: 0.9;
-            }
-            @media (max-width: 768px){
-                  .metrics-bars-grid{
-                        flex-direction: column;
-                  }
-                  .sidebar{
-                        width: 100%;
-                        border-right: none;
-                        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-                  }
-                  .app-container{
-                        flex-direction: column;
-                  }
-                  .sidebar ul{
-                        display: flex;
-                        flex-wrap: wrap;
-                        justify-content: center;
-                  }
-                  .sidebar li{
-                        padding: 10px 15px;
-                  }
-                  .add-transaction input, 
-                  .add-transaction select,
-                  .add-transaction button {
-                        flex-grow: 1; 
-                        min-width: unset;
-                  }
-            }
-      </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡️ 數據核心：LumiTrack系統</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        
+        /* --------------------------- 全域變數 --------------------------- */
+        :root{
+            --bg-dark: #0f1115;
+            --bg-secondary: #1e1e1e;
+            --neon-blue: #a7d7ff;
+            --neon-pink: #ffb3cf;
+            --neon-green: #a8f0c6;
+            --neon-yellow: #fff1a6;
+            --text-light: #e6e6e6;
+            --text-dark: #b8b8b8;
+            --gray-default: #d8d8d8;
+            --sidebar-width: 250px;
+            --sidebar-collapsed-width: 72px;
+        }
+
+        /* --------------------------- 基礎版面 --------------------------- */
+        body{
+            margin:0;
+            padding:0;
+            background: var(--bg-dark);
+            color: var(--text-light);
+            font-family: 'Noto Sans TC', 'Poppins', '微軟正黑體', sans-serif;
+            display:flex; /* 啟用 Flexbox */
+            min-height: 100vh;
+            overflow: hidden; /* 防止主頁面出現滾動條 */
+        }
+        
+        /* --------------------------- 側邊欄 --------------------------- */
+        .app-sidebar{
+            width: var(--sidebar-width);
+            min-width: var(--sidebar-width);
+            background: rgba(10,12,18,0.7);
+            backdrop-filter: blur(8px);
+            padding: 16px 12px;
+            display:flex;
+            flex-direction: column;
+            gap: 12px;
+            border-right: 1px solid rgba(255,255,255,0.04);
+            transition: width .28s ease;
+            height: 100vh;
+            position: sticky;
+            top:0;
+        }
+
+        /* 收合狀態 */
+        .app-sidebar.collapsed{
+            width: var(--sidebar-collapsed-width);
+            min-width: var(--sidebar-collapsed-width);
+        }
+
+        /* 收合按鈕 */
+        .sidebar-toggle{
+            background: transparent;
+            border: none;
+            color: var(--text-light);
+            padding: 8px;
+            cursor: pointer;
+            align-self: flex-end;
+        }
+
+        /* LOGO */
+        .sidebar-brand{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            padding: 6px 8px;
+        }
+
+        .brand-mark{
+            width:36px; height:36px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background: linear-gradient(90deg,var(--neon-blue), #7ee0ff20);
+            border-radius:8px;
+        }
+
+        .brand-text{
+            font-size: 1rem;
+            color: var(--neon-blue);
+            font-weight:700;
+            text-shadow: 0 0 20px #8fd3ff;
+        }
+
+        /* 選單 */
+        .sidebar-menu{
+            list-style:none;
+            padding:8px 4px;
+            margin:0;
+            display:flex;
+            flex-direction:column;
+            gap:6px;
+        }
+
+        .nav-item{
+            display:flex;
+            align-items:center;
+            gap:12px;
+            padding:10px 12px;
+            border-radius:10px;
+            cursor:pointer;
+            border:none;
+            background:transparent;
+            color:var(--text-light);
+            font-size:0.95rem;
+            transition:.2s;
+        }
+
+        .nav-item:hover{
+            background: rgba(155,228,255,0.05);
+            transform: translateX(4px);
+        }
+
+        .nav-item.active{
+            color: var(--neon-blue);
+            background: rgba(155,228,255,0.15);
+            box-shadow: 0 0 10px rgba(155,228,255,0.3);
+        }
+
+        .nav-icon{
+            width:25px;
+            text-align:center;
+        }
+
+        /* 收合時隱藏文字 */
+        .app-sidebar.collapsed .nav-label,
+        .app-sidebar.collapsed .brand-text{
+            display:none;
+        }
+        
+        /* --------------------------- 內容區塊 (使用 iframe) --------------------------- */
+        /* ⭐️ NEW: 替換原本的 .main-content，使用 iframe 載入內容 */
+        #content-frame {
+            flex-grow: 1; /* 佔據剩餘空間 */
+            border: none;
+            width: 100%;
+            height: 100vh; /* 確保 iframe 佔滿高度 */
+            background-color: var(--bg-dark); 
+            transition: all .3s ease-in-out; /* 保持與 sidebar 寬度切換同步 */
+        }
+
+    </style>
+
 </head>
+
 <body>
-      <div class="app-container">
-            <nav class="sidebar">
-                  <h1>記帳系統</h1>
-                  <ul>
-                        <li class="active" data-page="dashboard">交易紀錄</li>
-                        <li data-page="add">數據錄入</li>
-                        <li data-page="report">報告分析</li>
-                        <li data-page="settings">系統設定</li>
-                  </ul>
-            </nav>
-            <main>
-                  <div class="page active" id="dashboard">
-                        <h2 class="neon-title">智慧記帳 - 管理平台</h2>
-                        
-                        <div class="metrics-bars-grid">
-                              <div class="metric-bar income">
-                                    <div class="bar-label">總收入</div>
-                                    <div class="bar-value" id="total-income-bar">$0</div>
-                                    <div class="progress-line">
-                                          <div class="progress-fill" id="income-fill"></div>
-                                    </div>
-                              </div>
-                              <div class="metric-bar expense">
-                                    <div class="bar-label">總支出</div>
-                                    <div class="bar-value" id="total-expense-bar">$0</div>
-                                    <div class="progress-line">
-                                          <div class="progress-fill" id="expense-fill"></div>
-                                    </div>
-                              </div>
-                              <div class="metric-bar balance">
-                                    <div class="bar-label">總餘額</div>
-                                    <div class="bar-value" id="balance-bar">$0</div>
-                                    <div class="progress-line">
-                                          <div class="progress-fill" id="balance-fill"></div>
-                                    </div>
-                              </div>
-                                <div class="metric-bar budget-status">
-                                    <div class="bar-label">預算狀態</div>
-                                    <div class="bar-value" id="budget-status-bar">0%</div>
-                                    <div class="progress-line">
-                                          <div class="progress-fill" id="budget-fill"></div>
-                                    </div>
-                              </div>
-                        </div>
-                        <h2 class="neon-title" style="font-size: 35px; margin-top: 50px;">最新交易日誌</h2>
-                        
-                        <div id="transaction-cards">
-                              </div>
-                  </div>
 
-                  <div class="page" id="add">
-                        <h2 class="neon-title">新增交易 - 數據錄入</h2>
+    <nav class="app-sidebar">
+        <button id="sidebarToggle" class="sidebar-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
 
-                        <div id="add-income-group" class="input-flow-group input-group" style="border: 1px solid var(--neon-blue); margin-bottom: 20px;">
-                              <p style="color: var(--neon-blue); width: 100%; margin: 0 0 5px; font-weight: bold; font-size: 1.1em;">🚀 收入數據流錄入</p>
-                              <div class="add-transaction">
-                                    <input type="text" id="item_name_income" placeholder="收入來源名稱">
-                                    <input type="number" id="amount_income" placeholder="金額 ( 請輸入正數 )">
-                                    <select id="category_income">
-                                          </select>
-                                    <button onclick="addTransaction('income')" class="action-btn" style="background: linear-gradient(90deg, var(--neon-blue), #9be4ff);">確認新增收入</button>
-                              </div>
-                        </div>
+        <div class="sidebar-brand">
+            <span class="brand-mark">⚡</span>
+            <span class="brand-text">LumiTrack</span>
+        </div>
 
-                        <div id="add-expense-group" class="input-flow-group input-group" style="border: 1px solid var(--neon-pink);">
-                              <p style="color: var(--neon-pink); width: 100%; margin: 0 0 5px; font-weight: bold; font-size: 1.1em;">⚠️ 支出數據流錄入</p>
-                              <div class="add-transaction">
-                                    <input type="text" id="item_name_expense" placeholder="支出項目名稱">
-                                    <input type="number" id="amount_expense" placeholder="金額 ( 請輸入正數 )">
-                                    <select id="category_expense">
-                                          </select>
-                                    <button onclick="addTransaction('expense')" class="action-btn" style="background: linear-gradient(90deg, var(--neon-pink), #ff70a6);">確認新增支出</button>
-                              </div>
-                        </div>
-                  </div>
-                  
-                  <div class="page" id="report">
-                        <h2 class="neon-title">報告分析 - 數據檢視</h2>
-                        <div class="chart-controls">
-                              <button id="show-category-expense-btn" class="active" onclick="renderChart('category', this, 'expense')">支出分類分佈</button>
-                              <button id="show-category-income-btn" onclick="renderChart('category', this, 'income')">收入分類分佈</button>
-                              <button id="show-flow-btn" onclick="renderChart('flow', this)">總流動比較</button>
-                              <button id="show-budget-btn" onclick="renderChart('budget', this)">預算/支出比較</button>
-                        </div>
-                        <div class="chart-container">
-                              <h3>圓餅圖分析</h3>
-                              <canvas id="flowChart" height="400"></canvas>
-                        </div>
-                  </div>
-                  
-                  <div class="page" id="settings">
-                        <h2 class="neon-title">系統設定 - 參數調整</h2>
-                              <div class="input-group">
-                                    <p style="color: var(--neon-blue); width: 100%; margin: 0 0 5px;">設定初始餘額</p>
-                                    <div class="balance-setting">
-                                          <input type="number" id="initial_balance_input" placeholder="請輸入起始餘額 ( 例如 10000 )">
-                                          <button onclick="setInitialBalance()" class="action-btn">儲存餘額</button>
-                                    </div>
-                                    <p style="color: var(--text-dark); font-size: 0.8em; margin: 0;">* 當前初始餘額：$<span id="current-initial-balance">0</span></p>
-                              </div>
-                              
-                              <div class="input-group" style="border: 1px solid var(--neon-pink);">
-                                    <p style="color: var(--neon-pink); width: 100%; margin: 0 0 5px;">設定月度支出預算</p>
-                                    <div class="balance-setting">
-                                          <input type="number" id="monthly_budget_input" placeholder="請輸入本月預算 ( 例如 30000 )">
-                                          <button onclick="setBudget()" class="action-btn">儲存預算</button>
-                                    </div>
-                                    <p style="color: var(--text-dark); font-size: 0.8em; margin: 0;">* 當前月度預算：$<span id="current-monthly-budget">0</span></p>
-                              </div>
-                  </div>
-            </main>
-      </div>
-      <script>
-            // 從 LocalStorage 載入數據
-            let initialBalance = parseInt( localStorage.getItem( 'initialBalance' ) ) || 0;
-            let monthlyBudget = parseInt( localStorage.getItem( 'monthlyBudget' ) ) || 0; 
-            let transactions = JSON.parse( localStorage.getItem( 'transactions' ) ) || [];
+        <ul id="sidebarMenu" class="sidebar-menu">
+
+            <li>
+                <button class="nav-item" data-page="list" onclick="switchPage( this, 'transaction.html' )">
+                    <span class="nav-icon"><i class="fas fa-list"></i></span>
+                    <span class="nav-label">交易記錄</span>
+                </button>
+            </li>
+
+            <li>
+                <button class="nav-item" data-page="record" onclick="switchPage( this, 'recordpage.html' )">
+                    <span class="nav-icon"><i class="fas fa-edit"></i></span>
+                    <span class="nav-label">記帳頁面</span>
+                </button>
+            </li>
+
+            <li>
+                <button class="nav-item" onclick="switchPage( this, 'report.html' )">
+                    <span class="nav-icon"><i class="fas fa-chart-pie"></i></span>
+                    <span class="nav-label">報告分析</span>
+                </button>
+            </li>
+
+            <li>
+                <button class="nav-item" onclick="switchPage( this, 'budget.html' )">
+                    <span class="nav-icon"><i class="fas fa-wallet"></i></span>
+                    <span class="nav-label">管理預算</span>
+                </button>
+            </li>
+
+            <li>
+                <button class="nav-item" onclick="switchPage( this, 'settings.html' )">
+                    <span class="nav-icon"><i class="fas fa-cog"></i></span>
+                    <span class="nav-label">系統設定</span>
+                </button>
+            </li>
+
+        </ul>
+
+    </nav>
+
+    <iframe id="content-frame" name="content-frame" src="transaction.html"></iframe>
+
+</body>
+
+    <script>
+        // 側邊欄收合 (保留不變)
+        document.getElementById("sidebarToggle").addEventListener("click", () => {
+            document.querySelector(".app-sidebar").classList.toggle("collapsed");
+        });
+
+        /**
+         * ⭐️ 核心切換函數：可處理導覽列點擊 (element 存在) 和 Iframe 內部呼叫 (element 為 null) ⭐️
+         * @param {HTMLElement|null} element - 點擊的 nav item 元素 (從導覽列點擊時傳入)
+         * @param {string} url - 要載入的內容頁面 URL ('transaction.html' 或 'recordpage.html')
+         */
+        function switchPage(element, url) {
+            // 1. 切換 iframe 的 src (強制重新載入子頁面)
+            document.getElementById('content-frame').src = url;
+
+            // 2. 切換導覽列的 active 狀態
+            document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
             
-            const ctx = document.getElementById( 'flowChart' ).getContext( '2d' );
-            const currentInitialBalanceEl = document.getElementById( 'current-initial-balance' );
-            const currentMonthlyBudgetEl = document.getElementById( 'current-monthly-budget' );
-            const transactionCardsContainer = document.getElementById('transaction-cards'); 
-            
-            // 引用條狀顯示元素的 ID
-            const totalIncomeBarEl = document.getElementById( 'total-income-bar' );
-            const totalExpenseBarEl = document.getElementById( 'total-expense-bar' );
-            const balanceBarEl = document.getElementById( 'balance-bar' );
-            const budgetStatusBarEl = document.getElementById( 'budget-status-bar' );
-            
-            const incomeFillEl = document.getElementById( 'income-fill' );
-            const expenseFillEl = document.getElementById( 'expense-fill' );
-            const balanceFillEl = document.getElementById( 'balance-fill' );
-            const budgetFillEl = document.getElementById( 'budget-fill' );
-
-            // Chart.js 實例（使用新的柔和色調設定）
-            let flowChart = new Chart(ctx, {
-                  type: 'doughnut',
-                  data: {
-                        labels: ['目前無支出資料'],
-                        datasets: [
-                              {
-                                    data: [1],
-                                    backgroundColor: ['rgba(167, 215, 255, 0.6)'], 
-                                    borderColor: 'var(--neon-blue)',
-                                    borderWidth: 2,
-                                    hoverOffset: 8
-                              }
-                        ]
-                  },
-                  options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '60%',
-                        plugins: {
-                              legend: {
-                                    labels: {
-                                          color: 'var(--text-light)' 
-                                    }
-                              },
-                              tooltip: {
-                                    backgroundColor: 'rgba(30, 30, 30, 0.9)', 
-                                    titleColor: 'var(--neon-blue)', 
-                                    bodyColor: 'var(--text-light)',
-                                    borderColor: 'var(--neon-blue)',
-                                    borderWidth: 1
-                              }
-                        }
-                  }
-            });
-            
-            // ***分類選項列表 (根據分流需求重新整理)***
-            const expenseCategories = ['餐飲', '娛樂', '交通', '購物', '醫療', '學習', '生活雜項', '房租/貸款', '教育', '其他'];
-            const incomeCategories = ['薪資', '投資', '獎金', '禮金', '兼職', '其他'];
-
-            // 柔和配色方案 - 收入
-            const incomeColors = {
-                  '薪資': '#92caff', 
-                  '投資': '#a2e7c9', 
-                  '獎金': '#c9aaff', 
-                  '禮金': '#7CFC00',
-                  '兼職': '#17A2B8',
-                  '其他': '#ffe4a0', 
-                  '未分類': '#d0d0d0',
-                  '總收入': 'var(--neon-blue)'
-            };
-            // 柔和配色方案 - 支出
-            const expenseColors = {
-                  '餐飲': '#ffa3a3', 
-                  '娛樂': '#ffc88a', 
-                  '交通': '#9ecaff', 
-                  '購物': '#a8ffb3', 
-                  '醫療': '#f4b3ff', 
-                  '學習': '#fff1a6', 
-                  '生活雜項': '#ADB5BD',
-                  '房租/貸款': '#CC66FF',
-                  '教育': '#A0522D',
-                  '其他': '#dcdcdc', 
-                  '未分類': '#d0d0d0',
-                  '總支出': 'var(--neon-pink)'
-            };
-            // 柔和配色方案 - 預算流向
-            const budgetFlowColors = {
-                  '實際支出': '#ffa3a3', 
-                  '剩餘預算': '#a8f0c6' 
-            };
-            
-            // =========================================================================
-            // 新增：獲取日期在 YYYY/MM/DD 格式的輔助函數 (確保日期格式一致性)
-            // =========================================================================
-            function getFormattedDate(date) {
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                return `${year}/${month}/${day}`;
-            }
-
-            // 獲取當前日期時間的格式化字串
-            function getFormattedDateTime() {
-                const now = new Date();
+            if (element) {
+                // (A) 導覽列按鈕點擊時 (element 存在)
+                element.classList.add("active");
+            } else {
+                // (B) ⭐️ Iframe 內部呼叫時 (element 為 null)
+                let targetPageName;
                 
-                const dateStr = getFormattedDate(now); 
+                // 根據 URL 判斷要點亮哪一個導覽列項目 (data-page)
+                if (url.includes('recordpage')) {
+                    targetPageName = 'record'; // 目標是 recordpage.html
+                } else if (url.includes('transaction')) {
+                    targetPageName = 'list';   // 目標是 transaction.html
+                }
                 
-                // 星期X (Weekday)
-                const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
-                const weekdayStr = `星期${weekdays[now.getDay()]}`;
-                
-                return `${dateStr} ${weekdayStr}`;
-            }
-
-            // 顯示當前日期時間到指定元素
-            function displayCurrentDateTime() {
-                const dateEl = document.getElementById('current-date-display');
-                if (dateEl) {
-                    dateEl.textContent = getFormattedDateTime();
+                const navItem = document.querySelector(`.nav-item[data-page="${targetPageName}"]`);
+                if (navItem) {
+                    navItem.classList.add('active');
                 }
             }
-
-            // ***新增: 填充分類下拉選單的函數***
-            function populateCategoryDropdowns() {
-                  const incomeSelect = document.getElementById('category_income');
-                  const expenseSelect = document.getElementById('category_expense');
-                  
-                  // 收入分類
-                  const incomeCats = ['未分類', ...incomeCategories];
-                  incomeSelect.innerHTML = incomeCats.map(cat => 
-                        `<option value="${cat}">${cat}</option>`
-                  ).join('');
-
-                  // 支出分類
-                  const expenseCats = ['未分類', ...expenseCategories];
-                  expenseSelect.innerHTML = expenseCats.map(cat => 
-                        `<option value="${cat}">${cat}</option>`
-                  ).join('');
+        }
+        
+        // ⭐️ 必須暴露給 window，以便 iframe 內部 (transaction.html / recordpage.html) 可以呼叫 ⭐️
+        window.switchPage = switchPage;
+        
+        // 初始載入時，確保第一個按鈕是亮的
+        document.addEventListener('DOMContentLoaded', () => {
+            const initialItem = document.querySelector('.nav-item[data-page="list"]');
+            if(initialItem) {
+                initialItem.classList.add('active');
             }
+        });
+    </script>
 
-            // 預算設定函數
-            function setBudget() {
-                  const inputEl = document.getElementById('monthly_budget_input');
-                  const newBudget = parseInt(inputEl.value);
-
-                  if (isNaN(newBudget) || newBudget < 0) {
-                        alert('請輸入有效的非負數作為月度預算！');
-                        return;
-                  }
-                  
-                  monthlyBudget = newBudget;
-                  localStorage.setItem('monthlyBudget', monthlyBudget);
-                  inputEl.value = '';
-
-                  alert(`月度預算已設定為 $${monthlyBudget.toLocaleString()}！`);
-                  updateUI(); 
-            }
-            
-            // 設定初始餘額
-            function setInitialBalance(){
-                  const inputEl = document.getElementById( 'initial_balance_input' );
-                  const newBalance = parseInt( inputEl.value );
-                  
-                  if ( isNaN( newBalance ) ){
-                        alert( '請輸入有效的數字作為初始餘額！' );
-                        return;
-                  }
-                  
-                  initialBalance = newBalance;
-                  localStorage.setItem( 'initialBalance', initialBalance ); 
-                  inputEl.value = ''; 
-                  
-                  alert( `初始餘額已設定為 $${initialBalance.toLocaleString()}！` );
-                  updateUI();
-            }
-            
-            // 圓餅圖繪製核心邏輯
-            function renderChart( mode, activeBtn = null, type = 'expense' ) {
-                  
-                  if (activeBtn) {
-                        document.querySelectorAll('.chart-controls button').forEach(btn => btn.classList.remove('active'));
-                        activeBtn.classList.add('active');
-                  }
-
-                  let chartData = {};
-
-                  const allTimeExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-                  const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-
-
-                  if (mode === 'category') {
-                        // 模式 1: 按分類分佈
-                        const filteredTransactions = transactions.filter(t => t.type === type);
-                        const colorsMap = type === 'income' ? incomeColors : expenseColors;
-
-                        if (filteredTransactions.length === 0) {
-                              chartData = {
-                                    labels: [`無${type === 'income' ? '收入' : '支出'}交易數據`],
-                                    data: [1],
-                                    colors: ['var(--gray-default)']
-                              };
-                        } else {
-                              // 根據分類進行分組和求和
-                              const categorySums = filteredTransactions.reduce((acc, t) => {
-                                    acc[t.category] = (acc[t.category] || 0) + t.amount;
-                                    return acc;
-                              }, {});
-
-                              chartData = {
-                                    labels: Object.keys(categorySums),
-                                    data: Object.values(categorySums),
-                                    // 確保使用正確的顏色映射
-                                    colors: Object.keys(categorySums).map(cat => colorsMap[cat] || colorsMap['未分類'])
-                              };
-                        }
-
-                  } else if (mode === 'flow') {
-                        // 模式 2: 總收入/總支出流動比較
-                          if (transactions.length === 0 || (totalIncome === 0 && allTimeExpense === 0)) {
-                              chartData = {
-                                    labels: ['無流動數據'],
-                                    data: [1],
-                                    colors: ['var(--gray-default)']
-                              };
-                        } else {
-                              chartData = {
-                                    labels: ['總收入', '總支出'],
-                                    data: [totalIncome, allTimeExpense],
-                                    colors: [incomeColors['總收入'], expenseColors['總支出']]
-                              };
-                        }
-
-                  } else if (mode === 'budget') {
-                        // 模式 3: 預算/支出分佈
-                        if (monthlyBudget === 0 && allTimeExpense === 0) {
-                              chartData = {
-                                    labels: ['無預算或支出數據'],
-                                    data: [1],
-                                    colors: ['var(--gray-default)']
-                              };
-                        } else if (monthlyBudget === 0 && allTimeExpense > 0) {
-                              // 只有支出，沒有預算
-                              chartData = {
-                                    labels: ['實際支出', '未設預算'],
-                                    data: [allTimeExpense, 0.01], 
-                                    colors: [budgetFlowColors['實際支出'], 'var(--gray-default)']
-                              };
-                        } else {
-                              const remainingBudget = Math.max(0, monthlyBudget - allTimeExpense);
-                              chartData = {
-                                    labels: ['實際支出', '剩餘預算'],
-                                    data: [allTimeExpense, remainingBudget],
-                                    colors: [budgetFlowColors['實際支出'], budgetFlowColors['剩餘預算']]
-                              };
-                        }
-                  }
-                  
-                  // 更新 Chart.js 圖表
-                  flowChart.data.labels = chartData.labels;
-                  flowChart.data.datasets[0].data = chartData.data;
-                  flowChart.data.datasets[0].backgroundColor = chartData.colors;
-                  
-                  flowChart.update();
-            }
-
-            // 更新畫面核心函數
-            function updateUI(){
-                  
-                  displayCurrentDateTime();
-
-                  let totalIncome=0,totalExpense=0;
-
-                  // 1. 確保數據載入
-                  if (localStorage.getItem('transactions')) {
-                        transactions = JSON.parse(localStorage.getItem('transactions'));
-                  }
-                  
-                  // 2. 計算總數
-                  transactions.forEach( ( tx ) => {
-                        if( tx.type === 'income' ) totalIncome += tx.amount;
-                        else totalExpense += tx.amount;
-                  } );
-                  
-                  // 3. 計算總餘額 ( 納入初始餘額 )
-                  const netFlow = totalIncome - totalExpense;
-                  const currentBalance = initialBalance + netFlow;
-
-                  // 4. 更新條狀數據顯示
-                  totalIncomeBarEl.textContent=`$${totalIncome.toLocaleString()}`;
-                  totalExpenseBarEl.textContent=`$${totalExpense.toLocaleString()}`;
-                  balanceBarEl.textContent=`$${currentBalance.toLocaleString()}`;
-                  currentInitialBalanceEl.textContent=`${initialBalance.toLocaleString()}`;
-                  currentMonthlyBudgetEl.textContent=`${monthlyBudget.toLocaleString()}`;
-
-                  // 5. 更新進度條百分比
-                  const maxAllValue = Math.max( totalIncome, totalExpense, Math.abs( currentBalance ), monthlyBudget, 1 ); 
-                  
-                  incomeFillEl.style.width = `${( totalIncome / maxAllValue * 100 ).toFixed( 2 )}%`;
-                  expenseFillEl.style.width = `${( totalExpense / maxAllValue * 100 ).toFixed( 2 )}%`;
-                  
-                  let balancePercentage = Math.abs( currentBalance / maxAllValue * 100 );
-                  balanceFillEl.style.width = `${balancePercentage.toFixed( 2 )}%`;
-
-                  // 餘額顏色處理
-                  if (currentBalance >= 0) {
-                      balanceBarEl.style.color = 'var(--neon-green)';
-                      balanceFillEl.style.backgroundColor = 'var(--neon-green)';
-                      balanceFillEl.style.boxShadow = '0 0 10px var(--neon-green)';
-                  } else {
-                      balanceBarEl.style.color = 'var(--neon-pink)';
-                      balanceFillEl.style.backgroundColor = 'var(--neon-pink)';
-                      balanceFillEl.style.boxShadow = '0 0 10px var(--neon-pink)';
-                  }
-                  
-                  // 預算狀態更新
-                  const remainingBudget = monthlyBudget - totalExpense;
-                  let budgetPercentage = 0;
-
-                  if (monthlyBudget > 0) {
-                        budgetPercentage = (totalExpense / monthlyBudget) * 100;
-                  }
-
-                  const displayBudgetPercentage = Math.min(100, budgetPercentage); 
-
-                  if (remainingBudget < 0) {
-                        const overAmount = Math.abs(remainingBudget).toLocaleString();
-                        budgetStatusBarEl.textContent = `超支 $${overAmount}`;
-                        budgetFillEl.style.width = `100%`; 
-                        budgetStatusBarEl.style.color = 'var(--neon-pink)'; 
-                        budgetFillEl.style.backgroundColor = 'var(--neon-pink)'; 
-                        budgetFillEl.style.boxShadow = '0 0 10px var(--neon-pink)';
-                  } else if (monthlyBudget === 0) {
-                        budgetStatusBarEl.textContent = totalExpense > 0 ? '未設預算' : '$0';
-                        budgetFillEl.style.width = '0%';
-                        budgetStatusBarEl.style.color = 'var(--gray-default)';
-                        budgetFillEl.style.backgroundColor = 'var(--gray-default)';
-                        budgetFillEl.style.boxShadow = 'none';
-                  } else {
-                        budgetStatusBarEl.textContent = `$${remainingBudget.toLocaleString()}`;
-                        budgetFillEl.style.width = `${displayBudgetPercentage}%`;
-                        budgetStatusBarEl.style.color = 'var(--neon-yellow)';
-                        budgetFillEl.style.backgroundColor = 'var(--neon-yellow)';
-                        budgetFillEl.style.boxShadow = '0 0 10px var(--neon-yellow)';
-                  }
-
-                  // 6. 渲染交易卡片 (新功能)
-                  transactionCardsContainer.innerHTML = '';
-                  
-                  // 按日期分組
-                  const transactionsByDate = transactions.reduce((acc, tx) => {
-                        const datePart = tx.time.split(' ')[0]; // 只取日期部分 (現在格式已固定，故可靠)
-                        if (!acc[datePart]) {
-                              acc[datePart] = [];
-                        }
-                        // 將原始索引附加到交易對象，用於刪除
-                        // 注意：這裡使用 findIndex 確保在排序前獲取正確的原始索引
-                        const originalIndex = transactions.findIndex(t => t.time === tx.time && t.amount === tx.amount && t.name === tx.name);
-                        tx.originalIndex = originalIndex;
-                        acc[datePart].push(tx);
-                        return acc;
-                  }, {});
-
-                  // 按照日期從新到舊排序
-                  const sortedDates = Object.keys(transactionsByDate).sort((a, b) => new Date(b) - new Date(a));
-
-                  sortedDates.forEach(date => {
-                        const dateCard = document.createElement('div');
-                        dateCard.className = 'transaction-date-card';
-                        
-                        const dateHeader = `<div class="date-header">${date}</div>`; // 標頭只顯示日期
-                        let transactionRows = '';
-                        
-                        // 根據交易時間倒序，讓最新的交易在卡片頂部
-                        // 由於 time 現在是 YYYY/MM/DD HH:MM:SS 格式，new Date(b.time) 依然能夠正確排序
-                        transactionsByDate[date].sort((a, b) => new Date(b.time) - new Date(a.time)).forEach((tx) => {
-
-                              const iconChar = tx.type === 'income' ? '↑' : '↓';
-                              const iconColor = tx.type === 'income' ? 'var(--neon-blue)' : 'var(--neon-pink)';
-                              const iconBg = tx.type === 'income' ? 'rgba(167, 215, 255, 0.2)' : 'rgba(255, 179, 207, 0.2)';
-                              const amountSign = tx.type === 'income' ? '+' : '-';
-                              const amountClass = tx.type === 'income' ? 'income' : 'expense';
-                              
-                              transactionRows += `
-                                    <div class="transaction-row">
-                                          <div class="transaction-left">
-                                                <div class="icon" style="color: ${iconColor}; background-color: ${iconBg};">${iconChar}</div>
-                                                <div>
-                                                      <div class="category">${tx.category || '未分類'}</div>
-                                                      <div class="name">${tx.name}</div>
-                                                </div>
-                                          </div>
-                                          <div class="transaction-right ${amountClass}">
-                                                <span>${amountSign}$${Math.abs(tx.amount).toLocaleString()}</span>
-                                                <button class="delete-btn" onclick="deleteTransaction(${tx.originalIndex})">刪除</button>
-                                          </div>
-                                    </div>
-                              `;
-                        });
-
-                        dateCard.innerHTML = dateHeader + transactionRows;
-                        transactionCardsContainer.appendChild(dateCard);
-                  });
-
-                  // 7. 更新 Chart.js 圖表
-                  const activeCategoryBtn = document.querySelector('#report .chart-controls button.active');
-                  let activeMode = 'category';
-                  let activeType = 'expense'; 
-
-                  if (activeCategoryBtn) {
-                          activeMode = activeCategoryBtn.id === 'show-budget-btn' ? 'budget' : 
-                                             (activeCategoryBtn.id === 'show-flow-btn' ? 'flow' : 'category');
-                        
-                        if (activeMode === 'category') {
-                              activeType = activeCategoryBtn.id === 'show-category-income-btn' ? 'income' : 'expense';
-                        }
-                  }
-                    renderChart(activeMode, activeCategoryBtn, activeType);
-            }
-
-            // ***修改: 新增交易函數，根據 type 讀取對應欄位***
-            function addTransaction( type ){
-
-                  const nameInputId = type === 'income' ? 'item_name_income' : 'item_name_expense';
-                  const amountInputId = type === 'income' ? 'amount_income' : 'amount_expense';
-                  const categoryInputId = type === 'income' ? 'category_income' : 'category_expense';
-
-                  const name = document.getElementById( nameInputId ).value.trim();
-                  const amountStr = document.getElementById( amountInputId ).value;
-                  const category = document.getElementById( categoryInputId ).value;
-                  const amount = parseInt( amountStr );
-                  
-                  if( !name || !amountStr || isNaN( amount ) || amount <= 0 ){ 
-                        alert( '請輸入有效的交易名稱和正數金額！' ); 
-                        return;
-                  }
-                  
-                  const now = new Date();
-                  const datePart = getFormattedDate(now); // YYYY/MM/DD
-                  // 使用 toLocaleTimeString 確保時間格式 (HH:MM:SS)，並與日期用空格分隔
-                  const timePart = now.toLocaleTimeString('zh-TW', { hour12: false }); 
-
-                  // 交易時間以 YYYY/MM/DD HH:MM:SS 格式儲存，便於排序和分割日期
-                  transactions.push( { 
-                        name, 
-                        amount, 
-                        type, 
-                        category, 
-                        time: `${datePart} ${timePart}` 
-                  } ); 
-                  localStorage.setItem('transactions', JSON.stringify(transactions)); 
-
-                  // 清空欄位
-                  document.getElementById( nameInputId ).value = '';
-                  document.getElementById( amountInputId ).value = '';
-                  document.getElementById( categoryInputId ).value = '未分類'; // 預設回未分類
-                  
-                  updateUI();
-            }
-
-            // 刪除交易
-            function deleteTransaction( idx ){
-                  if( confirm( '確認刪除這筆交易紀錄嗎？' ) ){
-                        transactions.splice( idx,1 );
-                        localStorage.setItem('transactions', JSON.stringify(transactions)); 
-                        updateUI();
-                  }
-            }
-
-            // 導覽列切換 (事件監聽器)
-            document.querySelectorAll( '.sidebar li' ).forEach( li => {
-                  li.addEventListener( 'click',() => {
-                        const pageId = li.getAttribute( 'data-page' );
-                        showPage( pageId );
-                        setActiveNav( pageId );
-                        // 特殊處理：切換到報告頁時，強制重新繪製圖表
-                        if (pageId === 'report') {
-                              const defaultBtn = document.getElementById('show-category-expense-btn');
-                              renderChart('category', defaultBtn, 'expense');
-                        }
-                  } );
-            } );
-
-            // 顯示指定頁面
-            function showPage( pageId ){
-                  document.querySelectorAll( '.page' ).forEach( p => {
-                        p.classList.remove( 'active' );
-                  } );
-
-                  const page=document.getElementById( pageId );
-
-                  if( page ){
-                        page.classList.add( 'active' );
-                  }
-            }
-
-            // 設定導覽列 Active 狀態
-            function setActiveNav( pageId ){
-                  document.querySelectorAll( '.sidebar li' ).forEach( li => {
-                        li.classList.remove( 'active' );
-
-                        if( li.getAttribute( 'data-page' ) === pageId ){
-                              li.classList.add( 'active' )
-                        };
-                  } );
-            }
-
-            // 初始加載時，確保報告頁的按鈕預設為 Active，並填充分類選項
-            window.onload = () => {
-                  populateCategoryDropdowns(); 
-                  updateUI(); 
-                  document.getElementById('show-category-expense-btn').classList.add('active');
-            };
-      </script>
-</body>
 </html>

@@ -1,0 +1,2006 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡️ 新增交易紀錄與分類管理 | 量子記帳系統</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<style>
+    /* --------------------------- 全域與霓虹變數 --------------------------- */
+    :root {
+        --bg-dark: #0f1115;                      /* 主要背景色 (最深) */
+        --bg-secondary: #1e1e1e;                 /* 次要背景色 (用於卡片/表單) */
+        --neon-blue: #9be4ff;                    /* 霓虹藍 (收入/主色) */
+        --neon-pink: #ff9ccf;                    /* 霓虹粉 (支出/副色) */
+        --neon-green: #7df2a8;                   /* 儲存按鈕 */
+        --neon-yellow: #fff1a6;                  /* 強調色 */
+        --text-light: #e9f7ff;                   /* 文字淺色 */
+        --text-dark: #c4d9ee;                    /* 文字深色 */
+
+        /* ⭐️ 分類顏色變數 */
+        --cat-red: #ff7f7f;
+        --cat-blue: #7fbfff;
+        --cat-green: #7fff7f;
+        --cat-yellow: #ffff7f;
+        --cat-purple: #bf7fff;
+        --cat-orange: #ffbf7f;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        background: var(--bg-dark);
+        color: var(--text-light);
+        font-family: 'Noto Sans TC', 'Poppins', '微軟正黑體', sans-serif;
+        margin: 0;
+        padding: 20px;
+        line-height: 1.6;
+    }
+
+    .record-container {
+        max-width: 600px;
+        margin: 20px auto;
+        background: var(--bg-secondary);
+        padding: 30px;
+        border-radius: 18px;
+        box-shadow: 0 0 20px rgba(155,228,255,0.05);
+    }
+
+    h2 {
+        color: var(--neon-blue);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 30px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        padding-bottom: 15px;
+    }
+
+    /* --------------------------- 表單樣式 --------------------------- */
+    .form-group {
+        margin-bottom: 25px; /* 統一間距 */
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 12px;
+        font-size: 1rem;
+        color: var(--text-dark);
+        font-weight: 500;
+    }
+
+    /* 基礎 input 樣式 */
+    input:not([type="radio"]):not([type="checkbox"]):not([type="file"]):not([type="color"]),
+    select, textarea {
+        width: 100%;
+        padding: 14px 16px;
+        border-radius: 10px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: var(--bg-secondary);
+        color: var(--text-light);
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    input:focus, select:focus, textarea:focus {
+        border-color: var(--neon-blue);
+        box-shadow: 0 0 8px rgba(155, 228, 255, 0.4);
+        outline: none;
+        background: #252525;
+    }
+
+    input[type="date"] {
+        padding-right: 45px;
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+        cursor: pointer;
+    }
+
+    input[type="date"]::-moz-calendar-picker-indicator {
+        color: #ffffff;
+        cursor: pointer;
+    }
+
+    /* --------------------------- 貨幣輸入組 --------------------------- */
+    .input-group {
+        display: flex;
+        align-items: center;
+        border-radius: 10px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: var(--bg-secondary);
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+
+    .input-group:focus-within {
+        border-color: var(--neon-blue);
+        box-shadow: 0 0 8px rgba(155, 228, 255, 0.4);
+    }
+
+    .input-group input {
+        border: none !important;
+        background: transparent !important;
+        padding: 14px 16px !important;
+        flex-grow: 1;
+        box-shadow: none !important;
+    }
+
+    .input-currency {
+        padding: 14px 0 14px 18px;
+        color: var(--neon-yellow);
+        font-weight: bold;
+        font-size: 0.95rem;
+        border-right: 1px solid rgba(255,255,255,0.08);
+        user-select: none;
+        min-width: 60px;
+        text-align: center;
+    }
+
+    /* --------------------------- 圖片上傳優化 (非新增分類用) --------------------------- */
+    .file-upload-input {
+        width: 0.1px;
+        height: 0.1px;
+        opacity: 0;
+        overflow: hidden;
+        position: absolute;
+        z-index: -1;
+    }
+
+    .file-control-area {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-top: 8px;
+    }
+
+    .file-upload-label {
+        display: inline-block;
+        padding: 12px 20px;
+        cursor: pointer;
+        background: var(--neon-blue);
+        color: var(--neon-yellow) !important;
+        border-radius: 10px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        user-select: none;
+        white-space: nowrap;
+        border: 2px solid transparent;
+    }
+
+    .file-upload-label:hover {
+        background: #c7eeff;
+        box-shadow: 0 0 15px rgba(155, 228, 255, 0.5);
+        transform: translateY(-1px);
+    }
+
+    .file-name-display-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-grow: 1;
+    }
+
+    .file-name-display {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--text-dark);
+        min-height: 1.2em;
+        flex-grow: 1;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+
+    .clear-image-btn {
+        border: none;
+        background: transparent;
+        color: var(--neon-pink);
+        cursor: pointer;
+        font-size: 1.1rem;
+        padding: 5px;
+        margin: 0;
+        transition: all 0.2s ease;
+        border-radius: 5px;
+    }
+
+    .clear-image-btn:hover {
+        color: var(--cat-red);
+        background: rgba(255, 127, 127, 0.1);
+        transform: scale(1.1);
+    }
+
+    #imagePreviewContainer {
+        margin-top: 20px;
+        padding: 0;
+        background: var(--bg-dark);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    #imagePreview {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        border-radius: 8px;
+    }
+
+    /* --------------------------- 分類按鈕 --------------------------- */
+    .category-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .cat-btn {
+        padding: 12px 18px;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 2px solid transparent;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-light);
+        font-weight: 500;
+    }
+
+    .cat-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .cat-btn.active {
+        border-color: var(--cat-color);
+        background: rgba(var(--cat-color-rgb), 0.15);
+        box-shadow: 0 0 15px rgba(var(--cat-color-rgb), 0.5);
+        color: var(--cat-color);
+        transform: translateY(-2px);
+    }
+
+    .cat-btn .cat-icon {
+        color: var(--cat-color);
+        font-size: 1.1em;
+    }
+
+    .cat-btn.add-cat-btn {
+        color: var(--neon-blue);
+        border: 2px dashed var(--neon-blue);
+        background: transparent;
+        font-weight: bold;
+    }
+
+    .cat-btn.add-cat-btn:hover {
+        background: rgba(155, 228, 255, 0.1);
+        border-style: solid;
+    }
+
+    /* 子分類按鈕區 */
+    .sub-category-group {
+        /* ⭐️ 核心修正：讓子分類群組有行高過渡效果 */
+        display: grid;
+        /* 讓子分類按鈕能像主分類一樣自動排列 */
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); 
+        gap: 8px; 
+        
+        overflow: hidden;
+        max-height: var(--sub-category-height); 
+        opacity: var(--sub-category-opacity);
+        pointer-events: var(--sub-category-pointer-events);
+        transition: 
+            max-height 0.4s cubic-bezier(0.25, 0.1, 0.25, 1), 
+            opacity 0.3s ease;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px dashed rgba(255, 255, 255, 0.05);
+    }
+    
+    /* ⭐️ 核心修正：子分類的 Label 樣式 */
+    .sub-category-label {
+        grid-column: 1 / -1; /* 佔滿整行 */
+        color: var(--text-dark);
+        font-size: 0.9em;
+        margin: 0 0 5px 0;
+        padding-top: 5px;
+    }
+
+    /* --------------------------- 分類排版強制修正 --------------------------- */
+    /* 確保分類群組 (Primary/Sub) 內的元素是垂直堆疊的 */
+    .category-group {
+        /* 如果你的主分類沒有用 flex，請不要加 display: flex; */
+        /* 如果主分類用了 flex，請確保 flex-direction 是 column */
+        display: flex;
+        flex-direction: column; 
+        /* 讓裡面的元素 (Label 和 Buttons) 垂直排列 */
+        
+        /* 確保有足夠的間距和背景 */
+        padding: 10px;
+        margin-bottom: 20px;
+        background-color: var(--bg-secondary);
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1); /* 保持霓虹卡片樣式 */
+    }
+
+    /* 確保 Label 擁有自己的空間，並跟下方按鈕有間隔 */
+    .category-label {
+        display: flex;
+        align-items: center;
+        color: var(--text-light);
+        font-size: 1.1em;
+        font-weight: bold;
+        margin-bottom: 10px; /* 關鍵：標籤與按鈕之間的間距 */
+        padding-left: 5px;
+    }
+
+    /* --------------------------- 類型選擇器 (非新增分類用) --------------------------- */
+    .type-selector {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 35px;
+    }
+
+    .type-btn {
+        flex: 1;
+        padding: 16px 20px;
+        border-radius: 12px;
+        font-weight: bold;
+        font-size: 1.1rem;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.3s ease;
+        border: 3px solid transparent;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .type-btn[data-type="expense"] {
+        background: rgba(255, 156, 207, 0.1);
+        color: var(--neon-pink);
+    }
+
+    .type-btn[data-type="income"] {
+        background: rgba(155, 228, 255, 0.1);
+        color: var(--neon-blue);
+    }
+
+    .type-btn.active[data-type="expense"] {
+        border-color: var(--neon-pink);
+        box-shadow: 0 0 20px rgba(255, 156, 207, 0.5);
+        background: rgba(255, 156, 207, 0.2);
+    }
+
+    .type-btn.active[data-type="income"] {
+        border-color: var(--neon-blue);
+        box-shadow: 0 0 20px rgba(155, 228, 255, 0.5);
+        background: rgba(155, 228, 255, 0.2);
+    }
+
+    .type-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+        transition: left 0.5s;
+    }
+
+    .type-btn:hover::before {
+        left: 100%;
+    }
+
+    /* --------------------------- 提交按鈕 --------------------------- */
+    .submit-btn {
+        width: 100%;
+        padding: 16px 20px;
+        border: none;
+        border-radius: 12px;
+        background: linear-gradient(135deg, var(--neon-blue), #7fbfff);
+        color: var(--bg-dark);
+        font-size: 1.1rem;
+        font-weight: bold;
+        cursor: pointer;
+        margin-top: 35px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .full-width-btn {
+        margin-top: auto; /* 確保提交按鈕在左側底部 */
+    }
+
+    .submit-btn:hover {
+        background: linear-gradient(135deg, #c7eeff, var(--neon-blue));
+        box-shadow: 0 0 25px var(--neon-blue);
+        transform: translateY(-2px);
+    }
+
+    .submit-btn:active {
+        transform: translateY(0);
+    }
+
+    .submit-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
+    }
+
+    .submit-btn:hover::before {
+        left: 100%;
+    }
+
+    /* --------------------------- 結果顯示 --------------------------- */
+    #resultDisplay {
+        margin-top: 30px;
+        padding: 18px 20px;
+        border-left: 5px solid var(--neon-green);
+        background: rgba(125, 242, 168, 0.05);
+        border-radius: 8px;
+        white-space: pre-wrap;
+        color: var(--text-light);
+        font-weight: 500;
+    }
+
+    /* --------------------------- Modal 樣式 --------------------------- */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden; /* 移除滾動，讓modal-content處理滾動 */
+        background-color: rgba(0,0,0,0.85);
+        backdrop-filter: blur(8px);
+    }
+
+    .modal-content {
+        background-color: var(--bg-secondary);
+        margin: 5% auto;
+        padding: 0;
+        border: 2px solid var(--neon-blue);
+        width: 90%;
+        max-width: 950px;
+        border-radius: 16px;
+        box-shadow: 0 0 30px var(--neon-blue);
+        animation: fadeIn 0.4s ease-out;
+        overflow: auto; /* 讓滑動條出現在modal內容內部 */
+        scrollbar-width: thin;
+        scrollbar-color: rgba(155, 228, 255, 0.3) transparent;
+        max-height: 90vh; /* 確保modal不會超過視窗高度 */
+    }
+
+    .modal-content::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .modal-content::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 3px;
+    }
+
+    .modal-content::-webkit-scrollbar-thumb {
+        background: rgba(155, 228, 255, 0.3);
+        border-radius: 3px;
+    }
+
+    .modal-content::-webkit-scrollbar-thumb:hover {
+        background: rgba(155, 228, 255, 0.5);
+    }
+    
+    /* 移除舊版 .modal-body, .modal-left, .modal-right 的設定，改用新版 */
+    
+    .modal-header {
+        text-align: center;
+        padding: 25px 30px;
+        background-color: var(--bg-secondary); /* 統一背景色 */
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        position: relative;
+    }
+
+    .modal-header-center {
+        text-align: center;
+        justify-content: center;
+        padding: 25px 30px;
+        background-color: var(--bg-secondary); /* 統一背景色 */
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        position: relative;
+    }
+
+    .modal-header-center h2 {
+        margin: 0;
+        color: var(--neon-blue);
+        font-size: 1.6rem;
+        font-weight: bold;
+        text-shadow: 0 0 10px rgba(155,228,255,0.3);
+        text-align: center; /* 確保標題文字置中 */
+        width: 100%; /* 確保佔滿寬度 */
+    }
+
+    .close-btn {
+        position: absolute;
+        top: 20px;
+        right: 25px;
+        color: var(--text-dark);
+        font-size: 32px;
+        font-weight: bold;
+        cursor: pointer;
+        background: none;
+        border: none;
+        transition: all 0.2s ease;
+        z-index: 1;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .close-btn:hover,
+    .close-btn:focus {
+        color: var(--neon-pink);
+        background: rgba(255, 156, 207, 0.1);
+        transform: scale(1.1);
+    }
+
+
+    /* --------------------------- Modal 新佈局設定 (左右分欄與置中標題) --------------------------- */
+    .modal-body-split {
+        display: flex;
+        gap: 30px;
+        padding: 30px;
+        align-items: stretch;
+        background-color: var(--bg-secondary); /* 統一modal內部背景色 */
+    }
+
+    .modal-left-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        /* 確保內容不會被切斷 */
+        min-height: 500px; 
+    }
+    
+    .modal-right-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* --------------------------- 左側：名稱/顏色/預覽 垂直堆疊 --------------------------- */
+
+    /* 顏色選擇區塊整理 */
+    .color-selection-area {
+        background: rgba(0,0,0,0.2);
+        padding: 15px;
+        border-radius: 10px;
+        overflow-x: visible; /* 允許內容溢出 */
+    }
+
+    /* 預覽卡片樣式 - ⭐ 確保垂直堆疊時佔滿左欄 (Name -> Color -> Preview) */
+    .preview-card {
+        background-color: var(--bg-dark); 
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 0;
+        
+        border-left: 6px solid var(--cat-red); 
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        
+        min-height: 140px;
+        transition: all 0.3s ease;
+        border-right: 1px solid rgba(255,255,255,0.05); 
+        border-top: 1px solid rgba(255,255,255,0.05); 
+        border-bottom: 1px solid rgba(255,255,255,0.05); 
+        
+        /* 關鍵：讓預覽卡片佔滿左欄寬度 */
+        width: 100%;
+        max-width: none;
+    }
+
+    .preview-header {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: var(--text-light);
+        margin-bottom: 15px;
+        width: 100%;
+        text-align: center;
+        padding-bottom: 10px;
+        border-bottom: 1px dashed rgba(255,255,255,0.1); 
+    }
+
+    .preview-content {
+        font-size: 3.5rem; 
+        color: var(--text-light); 
+        transition: transform 0.2s;
+    }
+    
+    /* 推薦色票 (一行顯示，可滑動) */
+    .color-grid {
+        display: flex;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+        gap: 3px; /* 更小的間隔 */
+        margin-bottom: 15px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding-bottom: 8px;
+        scrollbar-width: none; /* 隱藏滾動條 */
+        -ms-overflow-style: none; /* IE 和 Edge */
+        width: 100%;
+        justify-content: center; /* 居中對齊 */
+    }
+
+    .color-grid::-webkit-scrollbar {
+        display: none; /* 隱藏滾動條 */
+    }
+
+    .color-grid::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 3px;
+    }
+
+    .color-grid::-webkit-scrollbar-thumb {
+        background: rgba(155, 228, 255, 0.3);
+        border-radius: 3px;
+    }
+
+    .centered-label {
+        text-align: center;
+        margin-bottom: 15px;
+    }
+
+    .color-swatch {
+        width: 32px;         /* 增加寬度讓它們更好地填滿空間 */
+        height: 32px;        /* 增加高度 */
+        border-radius: 8px;  /* 稍微增加圓角 */
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        border: 2px solid transparent;
+        position: relative;
+        flex-shrink: 0; /* 確保不會被壓縮 */
+    }
+    
+    .color-swatch:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    
+    /* 修正 active 樣式，移除文字內容 */
+    .color-swatch.active {
+        border: 2px solid var(--text-light); 
+        box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+        transform: scale(1.05); 
+    }
+
+    .custom-color-row {
+        display: flex; 
+        align-items: center; 
+        gap: 10px;
+    }
+
+    .custom-color-row input[type="color"] {
+        width: 55px; /* 統一尺寸 */
+        height: 35px;
+        border: none;
+        cursor: pointer;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    
+    /* --------------------------- 右側：Icon 選擇器 (移除滑動) --------------------------- */
+    
+    .icon-selector-container {
+        /* ⭐ 關鍵：移除高度限制與滑動設定，讓內容完全展開 (符合不要滑動的需求) */
+        max-height: none; 
+        overflow-y: visible;
+        
+        padding: 5px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(0,0,0,0.2);
+        border-radius: 8px;
+        
+        flex-grow: 1; /* 讓它佔滿右側高度 */
+    }
+
+    .icon-category {
+        margin-bottom: 5px;
+        border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+        transition: background-color 0.2s;
+    }
+
+    .icon-category-header {
+        font-size: 1rem;
+        font-weight: bold;
+        color: var(--neon-yellow); 
+        padding: 10px 5px; 
+        cursor: pointer;
+        display: flex; 
+        justify-content: space-between;
+        align-items: center;
+        user-select: none;
+        white-space: normal; 
+        word-break: break-word;
+        transition: all 0.3s ease;
+    }
+
+    .icon-category-header:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .toggle-icon {
+        transition: transform 0.3s ease;
+        font-size: 0.8rem;
+        color: var(--text-dark);
+        flex-shrink: 0; 
+        margin-left: 10px;
+    }
+
+    .icon-category-content {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 10px 5px 15px;
+        overflow: hidden; 
+        max-height: 500px; 
+        transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+    }
+
+    .icon-category.collapsed .icon-category-content {
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+
+    .icon-category.collapsed .toggle-icon {
+        transform: rotate(180deg);
+    }
+
+    .icon-option {
+        text-align: center;
+        padding: 12px;
+        cursor: pointer;
+        border: 2px solid transparent;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        font-size: 20px;
+        background: rgba(255,255,255,0.05);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        aspect-ratio: 1;
+        flex-basis: calc(20% - 8px); /* 讓它在一行顯示 5 個 */
+        min-width: 45px;
+    }
+    
+    @media (max-width: 500px) {
+        .icon-option {
+            flex-basis: calc(25% - 7.5px); /* 手機版顯示 4 個 */
+        }
+    }
+
+
+    .icon-option:hover {
+        border-color: var(--neon-blue);
+        background: rgba(155, 228, 255, 0.1);
+        transform: scale(1.08);
+        box-shadow: 0 4px 12px rgba(155, 228, 255, 0.2);
+    }
+
+    .icon-option input[type="radio"] {
+        display: none;
+    }
+
+    .icon-option:has(input[type="radio"]:checked) {
+        border-color: var(--neon-pink);
+        background: rgba(255, 156, 207, 0.15);
+        box-shadow: 0 0 12px rgba(255, 156, 207, 0.4);
+    }
+
+    .icon-option:has(input[type="radio"]:checked) i {
+        color: var(--neon-yellow);
+        text-shadow: 0 0 12px var(--neon-yellow);
+        transform: scale(1.1);
+    }
+    
+    /* --------------------------- 動畫 --------------------------- */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-30px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    /* --------------------------- 響應式設計 --------------------------- */
+    @media (max-width: 768px) {
+        body {
+            padding: 15px;
+        }
+
+        .record-container {
+            padding: 20px;
+            margin: 10px auto;
+        }
+
+        .modal-body-split {
+            flex-direction: column; /* 改為上下堆疊 */
+            padding: 20px;
+            gap: 20px;
+        }
+        
+        /* 手機版：移除左側面板的最小高度限制 */
+        .modal-left-panel {
+            min-height: auto;
+        }
+
+        .type-selector {
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* 手機版圖示區，仍保持不捲動，讓類別收合功能發揮作用 */
+        .icon-selector-container {
+            max-height: none; 
+            overflow-y: visible;
+        }
+    }
+</style>
+</head>
+<body>
+    <div class="record-container">
+        <h2><i class="fas fa-edit"></i> 新增交易記錄</h2>
+        <form id="recordForm">
+
+            <div class="type-selector">
+                <div class="type-btn active" data-type="expense">
+                    <i class="fas fa-minus-circle"></i> 支出
+                </div>
+                <div class="type-btn" data-type="income">
+                    <i class="fas fa-plus-circle"></i> 收入
+                </div>
+                <input type="hidden" name="transactionType" value="expense">
+            </div>
+
+            <div class="form-group">
+                <label for="date"><i class="fas fa-calendar-alt"></i> 交易日期</label>
+                <input type="date" id="date" name="date" class="white-date-input" required>
+            </div>
+
+            <div class="form-group">
+                <label for="amount"><i class="fas fa-dollar-sign"></i> 交易金額 ( TWD )</label>
+                <div class="input-group">
+                    <span class="input-currency">TWD</span>
+                    <input type="number" id="amount" name="amount" placeholder="0.00" step="0.01" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label><i class="fas fa-list-alt"></i> 主分類</label>
+                <div id="primaryCategoryButtons" class="category-buttons">
+                </div>
+            </div>
+
+            <div id="subCategoryGroup" class="category-group" style="display: none;">
+                <div class="category-label">
+                    <i class="fas fa-sitemap"></i> 
+                    <span>選擇子分類：</span>
+                </div>
+                <div id="subCategoryButtons" class="category-buttons">
+                    </div>
+            </div>
+
+            <div class="form-group">
+                <label for="receiptImage"><i class="fas fa-camera"></i> 上傳憑證圖片 (選填)</label>
+                <input type="file" id="receiptImage" name="receiptImage" accept="image/*" class="file-upload-input">
+
+                <div class="file-control-area">
+                    <label for="receiptImage" class="file-upload-label">
+                        <i class="fas fa-upload"></i> 選擇圖片
+                    </label>
+
+                    <div class="file-name-display-group">
+                        <span id="fileNameDisplay" class="file-name-display">未選擇檔案</span>
+
+                        <button type="button" id="clearImageBtn" class="clear-image-btn" style="display:none;" title="清除圖片">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="imagePreviewContainer" style="display: none;">
+                    <img id="imagePreview" src="#" alt="圖片預覽">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="description"><i class="fas fa-pencil-alt"></i> 備註 (選填)</label>
+                <textarea id="description" name="description" placeholder="輸入備註或說明..." rows="3"></textarea>
+            </div>
+
+            <button type="submit" id="submitBtn" class="submit-btn">
+                <i class="fas fa-save"></i> 儲存交易
+            </button>
+
+            <div id="resultDisplay" style="display: none;"></div>
+
+        </form>
+    </div>
+
+    <!-- Modal -->
+    <div id="addCategoryModal" class="modal">
+        <div class="modal-content custom-modal-layout">
+            
+            <div class="modal-header-center">
+                <h2>✨ 新增自訂分類</h2>
+                <span class="close-btn" id="modalCloseBtn">&times;</span>
+            </div>
+
+            <form id="addCategoryForm" class="modal-body-split">
+                
+                <div class="modal-left-panel">
+                    
+                    <div class="form-group">
+                        <label for="newCategoryName"><i class="fas fa-tag"></i> 分類名稱</label>
+                        <input type="text" id="newCategoryName" name="categoryName" placeholder="例如：早餐、遊戲..." required autocomplete="off">
+                    </div>
+
+                    <div class="form-group" id="categoryColorGroup" style="margin-top: 20px;">
+                        <label class="centered-label"><i class="fas fa-palette"></i> 分類顏色</label>
+                        
+                        <div class="color-selection-area">
+                            <div class="color-grid">
+                                <div class="color-swatch active" data-color="#ff7f7f" style="background: #ff7f7f;"></div>
+                                <div class="color-swatch" data-color="#ffbf7f" style="background: #ffbf7f;"></div>
+                                <div class="color-swatch" data-color="#ffff7f" style="background: #ffff7f;"></div>
+                                <div class="color-swatch" data-color="#7fff7f" style="background: #7fff7f;"></div>
+                                <div class="color-swatch" data-color="#7fbfff" style="background: #7fbfff;"></div>
+                                <div class="color-swatch" data-color="#bf7fff" style="background: #bf7fff;"></div>
+                                <div class="color-swatch" data-color="#ff85ee" style="background: #ff85ee;"></div>
+                                <div class="color-swatch" data-color="#b6ffb6" style="background: #b6ffb6;"></div>
+                                <div class="color-swatch" data-color="#ffcc66" style="background: #ffcc66;"></div>
+                                <div class="color-swatch" data-color="#99e6e6" style="background: #99e6e6;"></div>
+                                <div class="color-swatch" data-color="#ffb3ba" style="background: #ffb3ba;"></div>
+                                <div class="color-swatch" data-color="#bae1ff" style="background: #bae1ff;"></div>
+                                <div class="color-swatch" data-color="#ffffba" style="background: #ffffba;"></div>
+                            </div>
+                            
+                            <div class="custom-color-row">
+                                <label>自訂：</label>
+                                <input type="color" id="customColorPicker" value="#ff7f7f">
+                            </div>
+                            <input type="hidden" id="selectedColorValue" name="color" value="#ff7f7f">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label><i class="fas fa-eye"></i> 效果預覽</label>
+                        <div id="categoryPreviewCard" class="preview-card full-width-preview">
+                            <div class="preview-header" id="previewNameText">分類名稱</div>
+                            <div class="preview-content">
+                                <i id="previewIcon" class="fas fa-utensils"></i>
+                            </div>
+                        </div>
+
+                        <br>
+                        <button type="submit" class="submit-btn full-width-btn" style="margin-top: auto;">
+                            <i class="fas fa-check"></i> 確認新增
+                        </button>
+                    </div>
+                    
+                </div>
+
+                <div class="modal-right-panel">
+                    <label><i class="fas fa-icons"></i> 選擇圖示 (可收合)</label>
+                    
+                    <div id="iconSelector" class="icon-selector-container">
+                        
+            <div class="icon-category" id="cat-food-drink">
+                            <div class="icon-category-header" onclick="toggleIconCategory('cat-food-drink')">飲食 / 飲品 <i class="fas fa-chevron-up toggle-icon"></i></div>
+                            <div class="icon-category-content">
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-utensils" checked><i class="fas fa-utensils"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-hamburger"><i class="fas fa-hamburger"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-pizza-slice"><i class="fas fa-pizza-slice"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-bread-slice"><i class="fas fa-bread-slice"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-drumstick-bite"><i class="fas fa-drumstick-bite"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-fish"><i class="fas fa-fish"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-carrot"><i class="fas fa-carrot"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-apple-alt"><i class="fas fa-apple-alt"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-egg"><i class="fas fa-egg"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-cookie-bite"><i class="fas fa-cookie-bite"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-ice-cream"><i class="fas fa-ice-cream"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-birthday-cake"><i class="fas fa-birthday-cake"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-coffee"><i class="fas fa-coffee"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-beer"><i class="fas fa-beer"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-wine-glass"><i class="fas fa-wine-glass"></i></label>
+                            </div>
+                        </div>
+                        
+                        <div class="icon-category" id="cat-traffic-trip">
+                            <div class="icon-category-header" onclick="toggleIconCategory('cat-traffic-trip')">交通 / 旅行 <i class="fas fa-chevron-up toggle-icon"></i></div>
+                            <div class="icon-category-content">
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-bus"><i class="fas fa-bus"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-car"><i class="fas fa-car"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-plane"><i class="fas fa-plane"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-train"><i class="fas fa-train"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-bicycle"><i class="fas fa-bicycle"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-gas-pump"><i class="fas fa-gas-pump"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-motorcycle"><i class="fas fa-motorcycle"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-taxi"><i class="fas fa-taxi"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-subway"><i class="fas fa-subway"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-truck"><i class="fas fa-truck"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-shuttle-van"><i class="fas fa-shuttle-van"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-rocket"><i class="fas fa-rocket"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-helicopter"><i class="fas fa-helicopter"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-parking"><i class="fas fa-parking"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-route"><i class="fas fa-route"></i></label>
+                            </div>
+                        </div>
+
+                        <div class="icon-category" id="cat-shopping">
+                            <div class="icon-category-header" onclick="toggleIconCategory('cat-shopping')">購物 / 消費 <i class="fas fa-chevron-up toggle-icon"></i></div>
+                            <div class="icon-category-content">
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-shopping-bag"><i class="fas fa-shopping-bag"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-cart-shopping"><i class="fas fa-cart-shopping"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-tshirt"><i class="fas fa-tshirt"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-mobile-alt"><i class="fas fa-mobile-alt"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-laptop"><i class="fas fa-laptop"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-tools"><i class="fas fa-tools"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-couch"><i class="fas fa-couch"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-home"><i class="fas fa-home"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-book"><i class="fas fa-book"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-shoe-prints"><i class="fas fa-shoe-prints"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-gift"><i class="fas fa-gift"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-tag"><i class="fas fa-tag"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-store"><i class="fas fa-store"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-gem"><i class="fas fa-gem"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-credit-card"><i class="fas fa-credit-card"></i></label>
+                            </div>
+                        </div>
+
+                        <div class="icon-category" id="cat-fun-sport">
+                            <div class="icon-category-header" onclick="toggleIconCategory('cat-fun-sport')">娛樂 / 運動 <i class="fas fa-chevron-up toggle-icon"></i></div>
+                            <div class="icon-category-content">
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-gamepad"><i class="fas fa-gamepad"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-film"><i class="fas fa-film"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-music"><i class="fas fa-music"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-ticket-alt"><i class="fas fa-ticket-alt"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-theater-masks"><i class="fas fa-theater-masks"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-camera"><i class="fas fa-camera"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-palette"><i class="fas fa-palette"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-headphones"><i class="fas fa-headphones"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-video"><i class="fas fa-video"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-dumbbell"><i class="fas fa-dumbbell"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-futbol"><i class="fas fa-futbol"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-basketball-ball"><i class="fas fa-basketball-ball"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-swimmer"><i class="fas fa-swimmer"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-dice"><i class="fas fa-dice"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-puzzle-piece"><i class="fas fa-puzzle-piece"></i></label>
+                            </div>
+                        </div>
+
+                        <div class="icon-category" id="cat-finance-invest">
+                            <div class="icon-category-header" onclick="toggleIconCategory('cat-finance-invest')">財務 / 投資 <i class="fas fa-chevron-up toggle-icon"></i></div>
+                            <div class="icon-category-content">
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-money-bill-wave"><i class="fas fa-money-bill-wave"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-piggy-bank"><i class="fas fa-piggy-bank"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-hand-holding-dollar"><i class="fas fa-hand-holding-dollar"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-sack-dollar"><i class="fas fa-sack-dollar"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-wallet"><i class="fas fa-wallet"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-chart-line"><i class="fas fa-chart-line"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-chart-pie"><i class="fas fa-chart-pie"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-coins"><i class="fas fa-coins"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-dollar-sign"><i class="fas fa-dollar-sign"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-euro-sign"><i class="fas fa-euro-sign"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-yen-sign"><i class="fas fa-yen-sign"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-pound-sign"><i class="fas fa-pound-sign"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-bank"><i class="fas fa-bank"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-landmark"><i class="fas fa-landmark"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-file-invoice-dollar"><i class="fas fa-file-invoice-dollar"></i></label>
+                            </div>
+                        </div>
+
+                        <div class="icon-category" id="cat-medical-edu">
+                            <div class="icon-category-header" onclick="toggleIconCategory('cat-medical-edu')">醫療 / 教育 <i class="fas fa-chevron-up toggle-icon"></i></div>
+                            <div class="icon-category-content">
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-clinic-medical"><i class="fas fa-clinic-medical"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-user-md"><i class="fas fa-user-md"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-pills"><i class="fas fa-pills"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-thermometer-half"><i class="fas fa-thermometer-half"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-heartbeat"><i class="fas fa-heartbeat"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-brain"><i class="fas fa-brain"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-graduation-cap"><i class="fas fa-graduation-cap"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-book"><i class="fas fa-book"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-child"><i class="fas fa-child"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-baby"><i class="fas fa-baby"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-users"><i class="fas fa-users"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-user-friends"><i class="fas fa-user-friends"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-handshake"><i class="fas fa-handshake"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-building"><i class="fas fa-building"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-briefcase"><i class="fas fa-briefcase"></i></label>
+                            </div>
+                        </div>
+
+                        <div class="icon-category" id="cat-life-home">
+                            <div class="icon-category-header" onclick="toggleIconCategory('cat-life-home')">日常 / 居家 <i class="fas fa-chevron-up toggle-icon"></i></div>
+                            <div class="icon-category-content">
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-home"><i class="fas fa-home"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-mobile-alt"><i class="fas fa-mobile-alt"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-paw"><i class="fas fa-paw"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-plug"><i class="fas fa-plug"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-wifi"><i class="fas fa-wifi"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-lightbulb"><i class="fas fa-lightbulb"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-shower"><i class="fas fa-shower"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-toilet"><i class="fas fa-toilet"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-broom"><i class="fas fa-broom"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-soap"><i class="fas fa-soap"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-recycle"><i class="fas fa-recycle"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-leaf"><i class="fas fa-leaf"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-seedling"><i class="fas fa-seedling"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-gift"><i class="fas fa-gift"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-birthday-cake"><i class="fas fa-birthday-cake"></i></label>
+                            </div>
+                        </div>
+
+                        <div class="icon-category" id="cat-work-office">
+                            <div class="icon-category-header" onclick="toggleIconCategory('cat-work-office')">工作 / 辦公 <i class="fas fa-chevron-up toggle-icon"></i></div>
+                            <div class="icon-category-content">
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-laptop"><i class="fas fa-laptop"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-desktop"><i class="fas fa-desktop"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-keyboard"><i class="fas fa-keyboard"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-mouse"><i class="fas fa-mouse"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-print"><i class="fas fa-print"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-file-alt"><i class="fas fa-file-alt"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-folder"><i class="fas fa-folder"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-clipboard"><i class="fas fa-clipboard"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-calendar-alt"><i class="fas fa-calendar-alt"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-clock"><i class="fas fa-clock"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-tasks"><i class="fas fa-tasks"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-users-cog"><i class="fas fa-users-cog"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-chart-bar"><i class="fas fa-chart-bar"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-project-diagram"><i class="fas fa-project-diagram"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-cogs"><i class="fas fa-cogs"></i></label>
+                            </div>
+                        </div>
+
+                        <div class="icon-category" id="cat-tech-tools">
+                            <div class="icon-category-header" onclick="toggleIconCategory('cat-tech-tools')">科技 / 工具 <i class="fas fa-chevron-up toggle-icon"></i></div>
+                            <div class="icon-category-content">
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-tools"><i class="fas fa-tools"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-wrench"><i class="fas fa-wrench"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-hammer"><i class="fas fa-hammer"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-screwdriver"><i class="fas fa-screwdriver"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-code"><i class="fas fa-code"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-terminal"><i class="fas fa-terminal"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-server"><i class="fas fa-server"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-database"><i class="fas fa-database"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-cloud"><i class="fas fa-cloud"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-globe"><i class="fas fa-globe"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-envelope"><i class="fas fa-envelope"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-phone"><i class="fas fa-phone"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-headset"><i class="fas fa-headset"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-video"><i class="fas fa-video"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-microphone"><i class="fas fa-microphone"></i></label>
+                            </div>
+                        </div>
+
+                        <div class="icon-category" id="cat-misc">
+                            <div class="icon-category-header" onclick="toggleIconCategory('cat-misc')">其他 / 符號 <i class="fas fa-chevron-up toggle-icon"></i></div>
+                            <div class="icon-category-content">
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-star"><i class="fas fa-star"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-heart"><i class="fas fa-heart"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-smile"><i class="fas fa-smile"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-thumbs-up"><i class="fas fa-thumbs-up"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-bolt"><i class="fas fa-bolt"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-fire"><i class="fas fa-fire"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-sun"><i class="fas fa-sun"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-moon"><i class="fas fa-moon"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-umbrella"><i class="fas fa-umbrella"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-snowflake"><i class="fas fa-snowflake"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-tree"><i class="fas fa-tree"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-key"><i class="fas fa-key"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-lock"><i class="fas fa-lock"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-shield-alt"><i class="fas fa-shield-alt"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-trophy"><i class="fas fa-trophy"></i></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+
+    <script>
+        (function() {
+            // ---------- Keys ----------
+            const TRANSACTIONS_KEY = 'transactions';
+            const CATEGORY_KEY = 'categoryData';
+
+            // ---------- Default categories (initial seed) ----------
+            const DEFAULT_CATEGORY_DATA = {
+                expense: [
+                    { id: 1, name: '餐飲', icon: 'fas fa-utensils', color: 'var(--cat-red)', colorRgb: '255,127,127', subs: [{ id: 101, name: '早餐' }, { id: 102, name: '午餐' }, { id: 103, name: '晚餐' }] },
+                    { id: 2, name: '交通', icon: 'fas fa-bus', color: 'var(--cat-blue)', colorRgb: '127,191,255', subs: [{ id: 201, name: '大眾運輸' }, { id: 202, name: '計程車' }] },
+                    { id: 3, name: '購物', icon: 'fas fa-shopping-bag', color: 'var(--cat-purple)', colorRgb: '191,127,255', subs: [] },
+                    { id: 4, name: '娛樂', icon: 'fas fa-film', color: 'var(--cat-yellow)', colorRgb: '255,255,127', subs: [] }
+                ],
+                income: [
+                    { id: 11, name: '薪資', icon: 'fas fa-money-check-alt', color: 'var(--cat-green)', colorRgb: '127,255,127', subs: [] },
+                    { id: 12, name: '兼職', icon: 'fas fa-briefcase', color: 'var(--cat-orange)', colorRgb: '255,191,127', subs: [] }
+                ]
+            };
+
+            // [修改] 讀取並修復分類格式 (防呆核心)
+            function loadCategories() {
+                let cats = JSON.parse(localStorage.getItem('app_categories'));
+                
+                // 如果沒資料，建立預設值
+                if (!cats) {
+                    cats = { expense: {}, income: {} };
+                    DEFAULT_CATEGORIES.expense.forEach(c => cats.expense[c] = []);
+                    DEFAULT_CATEGORIES.income.forEach(c => cats.income[c] = []);
+                    localStorage.setItem('app_categories', JSON.stringify(cats));
+                    return cats;
+                }
+
+                // 格式修復 (如果舊資料是陣列)
+                if (Array.isArray(cats.expense)) {
+                    const newExpense = {};
+                    cats.expense.forEach(c => newExpense[c] = []);
+                    cats.expense = newExpense;
+                }
+                if (Array.isArray(cats.income)) {
+                    const newIncome = {};
+                    cats.income.forEach(c => newIncome[c] = []);
+                    cats.income = newIncome;
+                }
+                return cats;
+            }
+
+            // ---------- Simple DOM helpers ----------
+            const $ = sel => document.querySelector(sel);
+            const $$ = sel => Array.from(document.querySelectorAll(sel));
+
+            // ---------- Exposed storage helpers ----------
+            function loadTransactions() {
+                try {
+                    const raw = localStorage.getItem(TRANSACTIONS_KEY);
+                    return raw ? JSON.parse(raw) : [];
+                } catch (e) {
+                    console.error('loadTransactions error', e);
+                    return [];
+                }
+            }
+            function saveTransactions(list) {
+                try {
+                    localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(list));
+                } catch (e) {
+                    console.error('saveTransactions error', e);
+                }
+            }
+            function loadCategoryData() {
+                try {
+                    const raw = localStorage.getItem(CATEGORY_KEY);
+                    return raw ? JSON.parse(raw) : DEFAULT_CATEGORY_DATA;
+                } catch (e) {
+                    console.error('loadCategoryData error', e);
+                    return DEFAULT_CATEGORY_DATA;
+                }
+            }
+            function saveCategoryData(obj) {
+                try {
+                    localStorage.setItem(CATEGORY_KEY, JSON.stringify(obj));
+                } catch (e) {
+                    console.error('saveCategoryData error', e);
+                }
+            }
+            function getNextId(list) {
+                return list && list.length ? Math.max(...list.map(i => i.id || 0)) + 1 : 1;
+            }
+
+            // expose for transaction page
+            window.loadTransactions = loadTransactions;
+            window.saveTransactions = saveTransactions;
+            window.getNextId = getNextId;
+            window.loadCategoryData = loadCategoryData;
+            window.saveCategoryData = saveCategoryData;
+
+            // ---------- State ----------
+            let categoryData = loadCategoryData(); // persisted categories
+            let selectedType = 'expense'; // 'expense' | 'income'
+            let selectedPrimary = null; // full object from categoryData[selectedType]
+            let selectedSub = null;     // sub object or null
+            const today = new Date().toISOString().split('T')[0];
+
+            // ---------- Elements (resolved on DOMContentLoaded) ----------
+            let recordForm, dateInput, amountInput, descriptionInput;
+            let receiptImageInput, fileNameDisplay, imagePreviewContainer, imagePreview, clearImageBtn;
+            let primaryCategoryButtons, subCategoryButtons, subCategoryGroup, resultDisplay;
+            let typeButtons;
+            let addCategoryModal, addCategoryForm, addCategoryNameInput, addCategoryIconInputs, modalCloseBtn;
+
+            // ---------- Init ----------
+            document.addEventListener('DOMContentLoaded', () => {
+                // Resolve elements
+                recordForm = $('#recordForm');
+                dateInput = $('#date');
+                amountInput = $('#amount');
+                descriptionInput = $('#description');
+                receiptImageInput = $('#receiptImage');
+                fileNameDisplay = $('#fileNameDisplay');
+                imagePreviewContainer = $('#imagePreviewContainer');
+                imagePreview = $('#imagePreview');
+                clearImageBtn = $('#clearImageBtn');
+                primaryCategoryButtons = $('#primaryCategoryButtons');
+                subCategoryButtons = $('#subCategoryButtons');
+                subCategoryGroup = $('#subCategoryGroup');
+                resultDisplay = $('#resultDisplay');
+                typeButtons = $$('.type-btn');
+                addCategoryModal = $('#addCategoryModal'); // modal container exists in HTML
+                addCategoryForm = $('#addCategoryForm');   // optional (exists in your HTML)
+                addCategoryNameInput = $('#newCategoryName');
+                addCategoryIconInputs = $$('input[name="icon-selector"]');
+                modalCloseBtn = $('#modalCloseBtn');
+
+                // default date
+                if (dateInput) dateInput.value = today;
+
+                // bind type buttons (single listener each)
+                if (typeButtons.length) {
+                    typeButtons.forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            typeButtons.forEach(b => b.classList.remove('active'));
+                            btn.classList.add('active');
+                            selectedType = btn.dataset.type || btn.getAttribute('data-type') || selectedType;
+                            // update hidden input
+                            const hidden = document.querySelector('input[name="transactionType"]');
+                            if (hidden) hidden.value = selectedType;
+                            // render primary categories for this type
+                            renderPrimaryCategories();
+                            // reset sub area
+                            selectedPrimary = null;
+                            selectedSub = null;
+                            if (subCategoryGroup) subCategoryGroup.style.display = 'none';
+                        });
+                    });
+                }
+
+                // image upload
+                bindImageUpload();
+
+                // render categories
+                renderPrimaryCategories();
+
+                // bind form submit once
+                if (recordForm) {
+                    // remove previous listeners defensively (if script re-run)
+                    recordForm.addEventListener('submit', onRecordFormSubmit);
+                }
+
+                // modal form handler (if HTML form present)
+                if (addCategoryForm) {
+                    addCategoryForm.addEventListener('submit', handleAddCategorySubmit);
+                }
+                if (modalCloseBtn) modalCloseBtn.addEventListener('click', () => closeAddCategoryModal());
+
+                // init UI states
+                resetImageInputUI();
+            });
+
+            // ---------- Rendering categories ----------
+            function renderPrimaryCategories() {
+                if (!primaryCategoryButtons) return;
+                primaryCategoryButtons.innerHTML = '';
+                const list = (categoryData[selectedType] || []);
+                list.forEach(cat => {
+                    const el = document.createElement('div');
+                    el.className = 'cat-btn';
+                    el.dataset.id = cat.id;
+                    if (cat.color) el.style.setProperty('--cat-color', cat.color);
+                    if (cat.colorRgb) el.style.setProperty('--cat-color-rgb', cat.colorRgb);
+                    el.innerHTML = `<i class="${cat.icon} cat-icon" aria-hidden="true"></i> ${escapeHtml(cat.name)}`;
+                    el.addEventListener('click', () => {
+                        selectPrimaryById(cat.id);
+                    });
+                    primaryCategoryButtons.appendChild(el);
+                });
+
+                // add button to add primary (opens modal)
+                const addBtn = document.createElement('div');
+                addBtn.className = 'cat-btn add-cat-btn';
+                addBtn.innerHTML = `<i class="fas fa-plus"></i> 新增`;
+                addBtn.addEventListener('click', () => openAddCategoryModal({ kind: 'primary', type: selectedType }));
+                primaryCategoryButtons.appendChild(addBtn);
+            }
+
+            function renderSubCategoriesForSelected() {
+                if (!subCategoryButtons || !subCategoryGroup) return;
+                    subCategoryButtons.innerHTML = '';
+                if (!selectedPrimary || !selectedPrimary.subs || selectedPrimary.subs.length === 0) {
+                    subCategoryGroup.style.display = 'flex';
+                    const addBtn = document.createElement('div');
+                    addBtn.className = 'cat-btn add-cat-btn';
+                    addBtn.innerHTML = `<i class="fas fa-plus"></i> 新增子分類`;
+                    addBtn.addEventListener('click', () => openAddCategoryModal({ kind: 'sub', type: selectedType, primaryId: selectedPrimary.id }));
+                    subCategoryButtons.appendChild(addBtn);
+                    return;
+                }
+                subCategoryGroup.style.display = 'flex';
+                selectedPrimary.subs.forEach(sub => {
+                    const el = document.createElement('div');
+                    el.className = 'cat-btn';
+                    el.dataset.id = sub.id;
+
+                    el.style.setProperty('--cat-color', sub.color || selectedPrimary.color);
+                    el.style.setProperty('--cat-color-rgb', sub.colorRgb || selectedPrimary.colorRgb);
+
+                    el.innerHTML = `
+                        <i class="${sub.icon || selectedPrimary.icon} cat-icon"></i>
+                        ${escapeHtml(sub.name)}
+                    `;
+                    el.addEventListener('click', () => selectSubById(sub.id));
+                    subCategoryButtons.appendChild(el);
+                });
+                // add new sub button
+                const addBtn = document.createElement('div');
+                addBtn.className = 'cat-btn add-cat-btn';
+                addBtn.innerHTML = `<i class="fas fa-plus"></i> 新增`;
+                addBtn.addEventListener('click', () => openAddCategoryModal({ kind: 'sub', type: selectedType, primaryId: selectedPrimary.id }));
+                subCategoryButtons.appendChild(addBtn);
+            }
+
+            // ---------- Select handlers ----------
+            function selectPrimaryById(id) {
+                const arr = categoryData[selectedType] || [];
+                const cat = arr.find(c => Number(c.id) === Number(id));
+                if (!cat) return;
+                // remove active
+                primaryCategoryButtons.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+                // mark this active (find the element rendered)
+                const btn = primaryCategoryButtons.querySelector(`.cat-btn[data-id="${cat.id}"]`);
+                if (btn) btn.classList.add('active');
+                selectedPrimary = cat;
+                selectedSub = null;
+                renderSubCategoriesForSelected();
+            }
+            function selectSubById(id) {
+                if (!selectedPrimary) return;
+                const s = (selectedPrimary.subs || []).find(x => Number(x.id) === Number(id));
+                if (!s) return;
+                // clear active
+                subCategoryButtons.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+                const btn = subCategoryButtons.querySelector(`.cat-btn[data-id="${s.id}"]`);
+                if (btn) btn.classList.add('active');
+                selectedSub = s;
+            }
+
+            // ---------- Image upload ----------
+            function bindImageUpload() {
+                if (!receiptImageInput) return;
+                receiptImageInput.addEventListener('change', (e) => {
+                    const f = e.target.files && e.target.files[0];
+                    if (f) {
+                        fileNameDisplay.textContent = `已選擇檔案: ${f.name}`;
+                        fileNameDisplay.style.color = 'var(--neon-yellow)';
+                        clearImageBtn.style.display = 'inline-block';
+                        const reader = new FileReader();
+                        reader.onload = ev => {
+                            imagePreview.src = ev.target.result;
+                            imagePreviewContainer.style.display = 'block';
+                        };
+                        reader.readAsDataURL(f);
+                    } else {
+                        resetImageInputUI();
+                    }
+                });
+                if (clearImageBtn) clearImageBtn.addEventListener('click', resetImageInputUI);
+            }
+            function resetImageInputUI() {
+                if (!receiptImageInput) return;
+                receiptImageInput.value = '';
+                fileNameDisplay.textContent = '未選擇檔案';
+                fileNameDisplay.style.color = 'var(--text-dark)';
+                imagePreview.src = '#';
+                if (imagePreviewContainer) imagePreviewContainer.style.display = 'none';
+                if (clearImageBtn) clearImageBtn.style.display = 'none';
+            }
+
+            // ---------- Modal: add category (primary or sub) ----------
+            // 單一、整合版的 modal 控制函式（取代原本分散/重複的版本）
+            let pendingModalContext = null; // {kind:'primary'|'sub', type, primaryId?}
+
+            function ensureModalElements() {
+                // 取得常用元素（如不存在就嘗試建立 minimal fallback）
+                addCategoryModal = $('#addCategoryModal');
+                addCategoryForm = $('#addCategoryForm');
+                addCategoryNameInput = $('#newCategoryName');
+                addCategoryIconInputs = $$('input[name="icon-selector"]');
+                modalCloseBtn = $('#modalCloseBtn');
+
+                // 若 modal main container 不存在，建立 minimal fallback
+                if (!addCategoryModal) {
+                    buildMinimalAddCategoryModal();
+                    addCategoryModal = $('#addCategoryModal');
+                    addCategoryForm = $('#addCategoryForm');
+                    addCategoryNameInput = $('#newCategoryName');
+                    addCategoryIconInputs = $$('input[name="icon-selector"]');
+                    modalCloseBtn = $('#modalCloseBtn');
+                }
+
+                // safety: if still missing, abort
+                if (!addCategoryModal) {
+                    console.error('無法取得或建立 addCategoryModal');
+                    return false;
+                }
+
+                // 監聽關閉按鈕（單一綁定）
+                if (modalCloseBtn && !modalCloseBtn._boundClose) {
+                    modalCloseBtn.addEventListener('click', closeAddCategoryModal);
+                    modalCloseBtn._boundClose = true;
+                }
+
+                // 綁定表單送出（若尚未綁）
+                if (addCategoryForm && !addCategoryForm._boundSubmit) {
+                    addCategoryForm.addEventListener('submit', handleAddCategorySubmit);
+                    addCategoryForm._boundSubmit = true;
+                }
+
+                return true;
+            }
+
+            function openAddCategoryModal(ctx = { kind: 'primary', type: selectedType, primaryId: null }) {
+                // 確保元素存在（或建立 fallback）
+                ensureModalElements();
+
+                // 設上下文，讓 handleAddCategorySubmit 能使用
+                pendingModalContext = ctx;
+
+                // Modal title 元件（使用頁面上的 h2 或 id='modalTitle'）
+                const titleEl = addCategoryModal.querySelector('h2') || document.getElementById('modalTitle');
+                if (titleEl) {
+                    titleEl.textContent = ctx.kind === 'primary' ? `新增 ${ctx.type === 'expense' ? '支出' : '收入'} 主分類` : `新增子分類`;
+                }
+
+                // 顏色區塊與預覽（盡量找存在的欄位）
+                const categoryColorGroup = document.getElementById('categoryColorGroup');
+                const selectedColorValueInput = document.getElementById('selectedColorValue');
+                const colorSwatches = categoryColorGroup ? categoryColorGroup.querySelectorAll('.color-swatch') : [];
+
+                if (ctx.kind === 'sub' && ctx.primaryId != null) {
+                    // 子分類：隱藏顏色選擇並繼承主分類顏色（使用 categoryData）
+                    if (categoryColorGroup) categoryColorGroup.style.display = 'none';
+
+                    // 從 categoryData 找主分類（盡量找對應 type）
+                    const arr = categoryData && categoryData[ctx.type] ? categoryData[ctx.type] : [];
+                    const primaryCat = arr.find(c => Number(c.id) === Number(ctx.primaryId));
+                    const inherited = primaryCat && (primaryCat.color || primaryCat.colorHex) ? (primaryCat.color || primaryCat.colorHex) : null;
+
+                    if (inherited && selectedColorValueInput) {
+                        selectedColorValueInput.value = inherited;
+                    }
+
+                    // 若頁面有 preview 更新函式，呼叫它（安全檢查）
+                    if (typeof updatePreviewColor === 'function' && inherited) {
+                        updatePreviewColor(inherited);
+                    }
+                    // clear color swatch active states
+                    if (colorSwatches && colorSwatches.forEach) colorSwatches.forEach(s => s.classList.remove('active'));
+                } else {
+                    // 主分類：顯示顏色區塊並重置為預設
+                    if (categoryColorGroup) categoryColorGroup.style.display = 'block';
+                    const defaultColor = '#ff7f7f';
+                    if (selectedColorValueInput) selectedColorValueInput.value = defaultColor;
+                    if (typeof updatePreviewColor === 'function') updatePreviewColor(defaultColor);
+                    if (colorSwatches && colorSwatches.forEach) {
+                        colorSwatches.forEach(s => s.classList.remove('active'));
+                        const defaultSwatch = categoryColorGroup ? categoryColorGroup.querySelector(`.color-swatch[data-color="${defaultColor}"]`) : null;
+                        if (defaultSwatch) defaultSwatch.classList.add('active');
+                    }
+                }
+
+                // 顯示 modal
+                addCategoryModal.style.display = 'block';
+
+                // focus 在名稱輸入（如果存在）
+                if (addCategoryNameInput) {
+                    setTimeout(() => addCategoryNameInput.focus(), 150);
+                }
+            }
+
+            function closeAddCategoryModal() {
+                // hide modal and clear pending context
+                if (!addCategoryModal) {
+                    // try to get it
+                    addCategoryModal = $('#addCategoryModal');
+                }
+                if (addCategoryModal) addCategoryModal.style.display = 'none';
+                pendingModalContext = null;
+
+                // optional: reset preview and form fields (if present)
+                if (addCategoryForm) addCategoryForm.reset();
+                const previewName = document.getElementById('previewNameText');
+                const previewIcon = document.getElementById('previewIcon');
+                if (previewName) previewName.textContent = '分類名稱';
+                if (previewIcon) previewIcon.className = 'fas fa-utensils';
+            }
+
+            // fallback builder: minimal modal (只在頁面完全沒有 modal 時使用)
+            function buildMinimalAddCategoryModal() {
+                if (document.getElementById('addCategoryModal')) return;
+                const modal = document.createElement('div');
+                modal.id = 'addCategoryModal';
+                modal.className = 'modal';
+                modal.innerHTML = `
+                    <div class="modal-content" style="max-width:480px; margin:5% auto;">
+                        <h2>新增分類</h2>
+                        <span class="close-btn" id="modalCloseBtn">&times;</span>
+                        <form id="addCategoryForm" style="display:flex;flex-direction:column;gap:12px;">
+                            <label>分類名稱</label>
+                            <input id="newCategoryName" required />
+                            <div>
+                            <label><input type="radio" name="icon-selector" value="fas fa-utensils" checked> 餐飲</label>
+                            <label><input type="radio" name="icon-selector" value="fas fa-bus"> 交通</label>
+                            </div>
+                            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px;">
+                                <button type="button" id="modalCancelBtn" class="submit-btn">取消</button>
+                                <button type="submit" class="submit-btn">新增</button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+
+                // bind fallback close/cancel events
+                const modalCloseBtn_f = document.getElementById('modalCloseBtn');
+                const modalCancelBtn = document.getElementById('modalCancelBtn');
+                if (modalCloseBtn_f) modalCloseBtn_f.addEventListener('click', closeAddCategoryModal);
+                if (modalCancelBtn) modalCancelBtn.addEventListener('click', closeAddCategoryModal);
+            }
+
+
+            // ---------- Color selection ----------
+            const colorSwatches = document.querySelectorAll('.color-swatch');
+            const colorInput = document.getElementById('customColorPicker');
+            const selectedColorValue = document.getElementById('selectedColorValue');
+
+            // 點選推薦色
+            colorSwatches.forEach(s => {
+                s.addEventListener('click', () => {
+                    colorSwatches.forEach(x => x.classList.remove('active'));
+                    s.classList.add('active');
+                    selectedColorValue.value = s.dataset.color;
+                    colorInput.value = s.dataset.color;
+                });
+            });
+
+            // 選擇自訂顏色
+            colorInput.addEventListener('input', () => {
+                colorSwatches.forEach(x => x.classList.remove('active'));
+                selectedColorValue.value = colorInput.value;
+            });
+
+            function handleAddCategorySubmit(e) {
+                e.preventDefault();
+                const name = (addCategoryNameInput && addCategoryNameInput.value || '').trim();
+                const icon = (document.querySelector('input[name="icon-selector"]:checked') || {}).value || 'fas fa-folder';
+                if (!name) { alert('請輸入分類名稱'); return; }
+                if (!pendingModalContext) { alert('Modal context error'); return; }
+
+                categoryData = loadCategoryData(); // reload fresh
+                if (pendingModalContext.kind === 'primary') {
+                    const arr = categoryData[pendingModalContext.type] || [];
+                    const nid = getNextId(arr);
+                    const colorHex = selectedColorValue.value;
+                    const rgb = hexToRgb(colorHex);
+
+                    const newPrimary = {
+                        id: nid,
+                        name,
+                        icon,
+                        color: colorHex,
+                        colorRgb: `${rgb.r},${rgb.g},${rgb.b}`,
+                        subs: []
+                    };
+
+                    arr.push(newPrimary);
+                    categoryData[pendingModalContext.type] = arr;
+                    saveCategoryData(categoryData);
+                    renderPrimaryCategories();
+                    // auto-select it
+                    selectPrimaryById(nid);
+                } else if (pendingModalContext.kind === 'sub') {
+                    const arr = categoryData[pendingModalContext.type] || [];
+                    const prim = arr.find(p => Number(p.id) === Number(pendingModalContext.primaryId));
+                    if (!prim) { alert('找不到主分類'); closeAddCategoryModal(); return; }
+                    const newSubId = prim.subs && prim.subs.length ? Math.max(...prim.subs.map(s => s.id || 0)) + 1 : (prim.id * 100 + 1);
+                    prim.subs = prim.subs || [];
+                    prim.subs.push({
+                        id: newSubId,
+                        name,
+                        icon,                          // 使用 modal 選的 icon
+                        color: prim.color,             // 跟主分類一樣
+                        colorRgb: prim.colorRgb        // 一樣
+                    });
+                    saveCategoryData(categoryData);
+                    // refresh selectedPrimary and render sub
+                    selectedPrimary = prim;
+                    renderSubCategoriesForSelected();
+                    selectSubById(newSubId);
+                }
+                closeAddCategoryModal();
+            }
+
+            // ---------- Form submit ----------
+            function onRecordFormSubmit(e) {
+                e.preventDefault();
+
+                // validations
+                // ⭐ 修正 1 確認：amount 已經透過 Number() 轉換，確保儲存的是純數字 (例如 500 或 500.5)，不會有 .00 尾數。
+                const amount = Number((amountInput && amountInput.value) || 0);
+                if (!amount || amount <= 0) { alert('請輸入有效金額！'); return; }
+                if (!selectedPrimary) { alert('請選擇主分類！'); return; }
+
+                // ⭐ 修正 2 核心：確定要儲存的 Icon，如果是子分類，優先使用子分類的 Icon (如果它有)，否則用主分類的 Icon。
+                // （你新增的子分類會帶 icon，但預設的子分類可能沒有，因此需要這個 fallback 邏輯）
+                const categoryIconToUse = selectedSub
+                    ? (selectedSub.icon || selectedPrimary.icon) // 有子分類時：用子分類 icon，若無則用主分類 icon
+                    : selectedPrimary.icon; // 無子分類時：用主分類 icon
+
+
+                // compose category
+                const categoryObject = {
+                    primary: { 
+                        id: selectedPrimary.id, 
+                        name: selectedPrimary.name, 
+                        icon: selectedPrimary.icon, 
+                        color: selectedPrimary.color 
+                    },
+                    // ⭐️ 修正 2 核心：確保儲存的 sub-category object 包含 icon 屬性，以供列表頁面顯示。
+                    sub: selectedSub ? { 
+                        id: selectedSub.id, 
+                        name: selectedSub.name,
+                        icon: categoryIconToUse 
+                    } : null
+                };
+                const categoryText = selectedSub ? `${selectedPrimary.name} / ${selectedSub.name}` : selectedPrimary.name;
+
+                // description default
+                const description = (descriptionInput && descriptionInput.value && descriptionInput.value.trim()) ? descriptionInput.value.trim() : '無備註';
+
+                // image file name
+                const receiptImage = (receiptImageInput && receiptImageInput.files && receiptImageInput.files[0]) ? receiptImageInput.files[0].name : '無';
+
+                // prepare transaction
+                const transactions = loadTransactions();
+                const newId = getNextId(transactions);
+                const newTransaction = {
+                    id: newId,
+                    type: selectedType,
+                    amount,
+                    date: (dateInput && dateInput.value) || today,
+                    categoryText,
+                    categoryObject,
+                    description,
+                    receiptImage,
+                    icon: categoryIconToUse || '' // 儲存正確的 icon 字串到頂層屬性，方便顯示
+                };
+
+                // save
+                transactions.unshift(newTransaction);
+                saveTransactions(transactions);
+
+                // 🔴🔴🔴 關鍵：通知其他頁面「交易更新了」
+                localStorage.setItem('lastTransactionUpdate', Date.now());
+
+                // show small non-blocking success
+                if (resultDisplay) {
+                    resultDisplay.innerHTML = `<h3>🎉 新增成功</h3> 分類: ${escapeHtml(categoryText)} 金額: ${amount}`;
+                    resultDisplay.style.display = 'block';
+                    setTimeout(() => { resultDisplay.style.display = 'none'; }, 1200);
+                }
+
+                // reset UI
+                recordForm.reset();
+                if (dateInput) dateInput.value = today;
+                resetImageInputUI();
+                selectedPrimary = null;
+                selectedSub = null;
+                primaryCategoryButtons.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+                if (subCategoryButtons) subCategoryButtons.innerHTML = '';
+                if (subCategoryGroup) subCategoryGroup.style.display = 'none';
+
+                // jump back
+                if (window.parent && typeof window.parent.switchPage === 'function') {
+                    window.parent.switchPage(null, 'transaction.html');
+                } else {
+                    // fallback
+                    window.location.href = 'transaction.html';
+                }
+            }
+
+            // ---------- Helpers ----------
+            function escapeHtml(s='') {
+                return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+            }
+
+            function hexToRgb(hex) {
+                const bigint = parseInt(hex.replace('#',''), 16);
+                return {
+                    r: (bigint >> 16) & 255,
+                    g: (bigint >> 8) & 255,
+                    b: bigint & 255
+                };
+            }
+
+            // ---------- Icon Category Toggle ----------
+            function toggleIconCategory(categoryId) {
+                const category = document.getElementById(categoryId);
+                
+                if (category) {
+                    // 核心邏輯：切換 collapsed class
+                    category.classList.toggle('collapsed');
+                }
+            }
+
+            // Expose toggle function globally (讓 HTML 裡的 onclick 可以使用)
+            window.toggleIconCategory = toggleIconCategory;
+
+            // ---------- 即時預覽連動邏輯 (請確保這個函式存在，它是上次步驟的內容) ----------
+            function bindPreviewEvents() {
+                const nameInput = document.getElementById('newCategoryName');
+                const previewName = document.getElementById('previewNameText');
+                const previewIcon = document.getElementById('previewIcon');
+                const previewCard = document.getElementById('categoryPreviewCard');
+                const colorSwatches = document.querySelectorAll('.color-swatch');
+                const colorPicker = document.getElementById('customColorPicker');
+                const colorHiddenInput = document.getElementById('selectedColorValue');
+                const iconRadios = document.querySelectorAll('input[name="icon-selector"]');
+
+                if (!nameInput || !previewCard) return; 
+
+                // 1. 名稱連動
+                nameInput.addEventListener('input', (e) => {
+                    previewName.textContent = e.target.value.trim() || '分類名稱';
+                });
+
+                // 2. 顏色連動
+                function updatePreviewColor(color) {
+                    previewCard.style.borderLeftColor = color;
+                    if(colorHiddenInput) colorHiddenInput.value = color;
+                    if(colorPicker) colorPicker.value = color;
+                }
+
+                colorSwatches.forEach(swatch => {
+                    swatch.addEventListener('click', () => {
+                        colorSwatches.forEach(s => s.classList.remove('active'));
+                        swatch.classList.add('active');
+                        
+                        const color = swatch.getAttribute('data-color');
+                        updatePreviewColor(color);
+                    });
+                });
+
+                if (colorPicker) {
+                    colorPicker.addEventListener('input', (e) => {
+                        colorSwatches.forEach(s => s.classList.remove('active'));
+                        updatePreviewColor(e.target.value);
+                    });
+                }
+
+                // 3. Icon 連動
+                iconRadios.forEach(radio => {
+                    radio.addEventListener('change', (e) => {
+                        if(e.target.checked) {
+                            previewIcon.className = e.target.value; 
+                        }
+                    });
+                });
+                
+                // 初始化狀態
+                updatePreviewColor('#ff7f7f'); 
+                
+                // 乖乖~~~確保一開始全部展開 (預設就是沒有 collapsed class，所以不用額外操作)
+            }
+
+            // --------------------------- New: 檢查 URL 參數設定預設類型 ---------------------------
+            function checkURLTypeAndSetDefault() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const type = urlParams.get('type');
+                
+                if (type === 'income' || type === 'expense') {
+                    // 尋找對應 data-type 屬性的類型按鈕
+                    const targetButton = document.querySelector(`.type-btn[data-type="${type}"]`);
+                    
+                    // 如果找到按鈕且它不是已經選中的狀態，就模擬點擊來觸發類型切換邏輯
+                    if (targetButton && !targetButton.classList.contains('active')) {
+                        // 執行點擊來觸發原本綁定的切換邏輯
+                        targetButton.click(); 
+                        console.log(`Setting default type from URL to: ${type}`);
+                    }
+                }
+            }
+            // --------------------------- End: 檢查 URL 參數設定預設類型 ---------------------------
+
+            // ⭐️ [修改] 新增自訂分類 (並立刻同步存檔)
+            function addNewCategory() {
+                const newCat = prompt("請輸入新分類名稱 (例如: 養貓、遊戲)：");
+                
+                if (newCat && newCat.trim() !== "") {
+                    const catName = newCat.trim();
+
+                    // 重新讀取確保資料最新
+                    APP_CATEGORIES = loadCategories();
+                    
+                    // 1. 更新 APP_CATEGORIES (如果還沒有這個分類)
+                    if (!APP_CATEGORIES[currentType][catName]) {
+                        APP_CATEGORIES[currentType][catName] = []; // 初始化
+                        
+                        // 🔴 關鍵在這行：立刻存入 localStorage，這樣預算頁面才看得到！
+                        localStorage.setItem('app_categories', JSON.stringify(APP_CATEGORIES));
+                        
+                        // 2. 自動選中新分類
+                        selectedCategory = catName;
+                        
+                        // 3. 重新渲染畫面
+                        renderCategories();
+                        
+                        showToast(`已新增分類：${catName}`);
+                    } else {
+                        alert("這個分類已經存在囉！");
+                    }
+                }
+            }
+
+            // [修改] 渲染分類網格
+            function renderCategories() {
+                // ⭐️ 關鍵修改：每次渲染前，重新讀取一次最新資料
+                APP_CATEGORIES = loadCategories();
+                
+                const grid = document.getElementById('categoryGrid');
+                // ...
+            }
+
+            // ⭐ 請確保在 DOMContentLoaded 中呼叫 bindPreviewEvents()
+            document.addEventListener('DOMContentLoaded', () => {
+                // ... (你原本的 DOMContentLoaded 內容)
+
+                // 新增這行：
+                bindPreviewEvents();
+
+                // 新增這行：根據 URL 參數設定預設類型
+                checkURLTypeAndSetDefault(); // <-- 新增
+            });
+
+        })();
+    </script>
+
+
+</html>

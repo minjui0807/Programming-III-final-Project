@@ -1,0 +1,1907 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡️ 數據核心：量子記帳系統</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        
+        /* --------------------------- 全域變數 --------------------------- */
+        :root{
+            --bg-dark: #0f1115;             /* 主要背景色 (最深) */
+            --bg-secondary: #1e1e1e;        /* 次要背景色 (用於導覽列/卡片) */
+            --neon-blue: #a7d7ff;           /* 霓虹藍 (收入/主色) */
+            --neon-pink: #ffb3cf;           /* 霓虹粉 (支出/副色) */
+            --neon-green: #a8f0c6;          /* 霓虹綠 (餘額) */
+            --neon-yellow: #fff1a6;         /* 霓虹黃 (強調/類別) */
+            --text-light: #e6e6e6;          /* 文字淺色 */
+            --text-dark: #b8b8b8;           /* 文字深色 */
+            --gray-default: #d8d8d8;        /* 預設灰色 */
+            --sidebar-width: 250px;           /* 側邊欄寬度 */
+            --sidebar-collapsed-width: 72px;  /* 側邊欄收合後寬度 */
+
+            --deep-blue: #0f2640;     
+            --mouse-x: 50%;                   /* 預設滑鼠 X 位置 */
+            --mouse-y: 50%;                   /* 預設滑鼠 Y 位置 */
+
+            --neon-blue-rgb: 167, 215, 255; 
+            --neon-pink-rgb: 255, 179, 207;
+        }
+
+        /* --------------------------- 基礎版面 --------------------------- */
+        body{
+            margin:0;
+            padding:0;
+            background: var(--bg-dark);
+            color: var(--text-light);
+            font-family: 'Noto Sans TC', 'Poppins', '微軟正黑體', sans-serif;
+            display:flex;
+            min-height: 100vh;
+        }
+
+        body.modal-open {
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* --------------------------- 主內容區 --------------------------- */
+        .main-content{
+            flex-grow:1;
+            padding:30px;
+        }
+
+        .page{
+            display:none;
+        }
+
+        .page.active{
+            display:block;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: var(--bg-primary);
+            border-radius: 10px;
+        }
+
+        h1 {
+            color: var(--neon-blue);
+            text-align: center;
+            margin-bottom: 30px;
+            /* text-shadow: 0 0 5px rgba(167, 215, 255, 0.5); */
+            text-shadow: 0 0 20px #8fd3ff;
+        }
+
+        /* --------------------------- 儀表板 (Dashboard) 樣式 --------------------------- */
+        .dashboard-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 25px; /* 與下方列表的距離 */
+            padding: 0 5px;
+        }
+
+        .summary-card {
+            flex: 1;
+            background: var(--bg-secondary); /* 使用一致的卡片背景 */
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-width: 0; /* 防止內容溢出 */
+        }
+
+        .summary-label {
+            font-size: 0.9rem;
+            color: var(--text-dark);
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .summary-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+
+        /* 顏色變數應用 */
+        .val-income { color: var(--neon-blue); text-shadow: 0 0 10px rgba(167, 215, 255, 0.3); }
+        .val-expense { color: var(--neon-pink); text-shadow: 0 0 10px rgba(255, 179, 207, 0.3); }
+        .val-balance { color: var(--neon-green); text-shadow: 0 0 10px rgba(168, 240, 198, 0.3); }
+
+        /* 進度條容器 */
+        .progress-bg {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        /* 進度條本體 */
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            width: 0%; /* 預設 0，由 JS 控制 */
+            transition: width 0.5s ease-out;
+        }
+
+        .fill-income { background: var(--neon-blue); }
+        .fill-expense { background: var(--neon-pink); }
+        .fill-balance { background: var(--neon-green); }
+
+        /* 手機版適配：變成直排或兩排 */
+        @media (max-width: 600px) {
+            .dashboard-container {
+                flex-direction: column;
+            }
+            .summary-card {
+                margin-bottom: 10px;
+            }
+        }
+
+        /* --------------------------- 交易卡片樣式 --------------------------- */
+        .transaction-card {
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 5px solid transparent;
+            display: flex;
+            align-items: center;
+        }
+        
+        .transaction-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .expense-border { border-left-color: var(--neon-pink); }
+        .income-border { border-left-color: var(--neon-blue); }
+
+        .card-content {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        .icon-section {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #2a2a2a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2em;
+            margin-right: 15px;
+            color: var(--text-light);
+        }
+
+        .info-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-grow: 1;
+        }
+
+        .category-and-desc {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+            flex-grow: 1;
+        }
+
+        .category-tag {
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-bottom: 3px;
+            opacity: 0.8;
+        }
+
+        .description {
+            font-size: 0.9em;
+            color: var(--text-dark);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 250px;
+        }
+
+        .amount-section {
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+            min-width: 100px;
+        }
+        
+        .expense-color { font-size: 1.2em; font-weight: bold; color: var(--neon-pink); }
+        .income-color { font-size: 1.2em; font-weight: bold; color: var(--neon-blue); }
+
+        /* --------------------------- 日期群組/收合樣式 --------------------------- */
+
+        .date-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border-left: 5px solid var(--neon-yellow);
+            user-select: none;
+        }
+        .date-group-header:hover {
+            background-color: #2a2a2a;
+        }
+        .date-group-header .date-text {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--neon-yellow);
+        }
+        .date-group-header .date-summary {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 1em;
+            color: var(--text-light);
+        }
+        .date-group-header .toggle-icon {
+            transition: transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+            margin-left: 5px;
+        }
+        .date-group-header.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        .daily-transactions {
+            display: grid;
+            gap: 15px;
+            overflow: hidden;
+
+            /* ⭐️核心：高度過渡更柔順 */
+            transition: 
+                max-height 0.45s cubic-bezier(0.25, 0.1, 0.25, 1),
+                opacity 0.35s ease;
+
+            max-height: 2000px;
+            opacity: 1;
+        }
+
+        .daily-transactions.collapsed {
+            max-height: 0;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* --------------------------- 無資料狀態樣式 (Empty State) - 最終合併版 --------------------------- */
+        .no-transactions-message {
+            /* ==== 核心：實現垂直堆疊與置中 (來自您的修改) ==== */
+            display: flex;
+            flex-direction: column; /* 將子元素垂直排列 */
+            align-items: center; /* 讓子元素在容器中水平置中 */
+            justify-content: center; /* 讓子元素在容器中垂直置中 (如果空間足夠) */
+            min-height: 250px; /* 確保容器有足夠的空間來展示置中效果 */
+            box-sizing: border-box; 
+
+            /* ==== 原始樣式與空間調整 ==== */
+            padding: 60px 20px; 
+            border: 1px dashed var(--text-dark);
+            border-radius: 8px;
+            color: var(--text-dark);
+            width: 100%;
+            margin: 20px 0 30px 0;
+        }
+
+        /* 圖示 */
+        .no-transactions-message .fa-ghost,
+        .no-transactions-message .fas.fa-ghost {
+            font-size: 4em; /* 採用較大的字體 (4em) */
+            color: var(--neon-yellow); /* 沿用原始樣式中的霓虹粉色 */
+            margin-bottom: 20px;
+        }
+
+        /* 文字 */
+        .no-transactions-message p {
+            font-size: 1.2em;
+            text-align: center; /* 確保文字本身內容置中 */
+            color: var(--text-dark, #b8b8b8); 
+            margin-top: 0; /* 確保沒有上邊距干擾 */
+            margin-bottom: 30px;
+            max-width: 300px; /* 限制文字寬度，讓文字不會太長 */
+        }
+
+        /* 按鈕 */
+        .no-transactions-message .add-button {
+            /* 確保按鈕與上方的文字只有 p 的 margin-bottom 隔開，不需要額外的 margin-top */
+            margin-top: 0;
+        }
+
+        /* ------------------------------------- */
+        /* 按鈕核心樣式：置中、對齊、純藍 Hotspot */
+        /* ------------------------------------- */
+        .add-button {
+            /* 置中與對齊 */
+            display: flex; 
+            align-items: center;
+            justify-content: center;
+            gap: 8px; 
+
+            color: var(--text-light); 
+            padding: 12px 32px;
+            border: 2px solid rgba(167, 215, 255, 0.3); 
+            border-radius: 12px; 
+            font-size: 1.15em; 
+            font-weight: bold;
+            cursor: pointer;
+            overflow: hidden; 
+            position: relative; 
+            z-index: 10; 
+
+            /* 靜態背景：深色 */
+            background-color: var(--bg-secondary); 
+            
+            /* ⭐️ 修正 1：讓漸層中心點由 CSS 變數控制 */
+            background-image: radial-gradient(circle at var(--mouse-x) var(--mouse-y), var(--neon-blue) 0%, var(--deep-blue) 60%, var(--bg-secondary) 100%);
+            
+            /* 預設背景大小 (很大)，讓亮點在按鈕外部看不見 */
+            background-size: 500% 500%; 
+            /* 移除 background-position: center; 因為中心點已經被 var() 控制 */
+
+            /* ⭐️ 修正 2：靜態時只過渡 transform, box-shadow, border-color */
+            transition: transform 0.2s, box-shadow 0.3s, border-color 0.3s; 
+            box-shadow: 0 0 5px rgba(167, 215, 255, 0.2); 
+        }
+
+        /* 圖示對齊的終極修正 */
+        .add-button i {
+            transform: translateY(-1px); 
+        }
+
+        /* 滑鼠懸停時 (Hover) */
+        .add-button:hover {
+            border-color: var(--neon-blue); 
+            box-shadow: 0 0 25px rgba(167, 215, 255, 0.9), 0 0 8px var(--neon-blue); 
+            transform: scale(1.03); 
+            
+            /* ⭐️ 修正 3：懸停時，讓光點從大變小，且變動需要平滑過渡 */
+            transition: transform 0.2s, box-shadow 0.3s, border-color 0.3s, background-size 0.5s; 
+            background-size: 150% 150%; /* 讓 Hotspot 變得可見 */
+        }
+
+        /* 滑鼠點擊時 (Active) */
+        .add-button:active {
+            transform: scale(0.95); 
+            box-shadow: 0 0 5px rgba(167, 215, 255, 0.2); 
+            transition: transform 0.1s, box-shadow 0.1s; 
+        }
+
+        /* [CSS] 分類文字顏色：根據收支變色 */
+        .cat-income {
+            color: var(--neon-blue) !important;
+            text-shadow: 0 0 5px rgba(167, 215, 255, 0.5); /* 淡淡的藍色光暈 */
+            font-weight: bold;
+        }
+
+        .cat-expense {
+            color: var(--neon-pink) !important;
+            text-shadow: 0 0 5px rgba(255, 179, 207, 0.5); /* 淡淡的粉色光暈 */
+            font-weight: bold;
+        }
+
+        /* --------------------------- Modal 樣式 --------------------------- */
+        .modal {
+            display: none; /* ⭐️ 關鍵 1：預設一定要隱藏！ */
+            position: fixed; /* ⭐️ 關鍵 2：固定在螢幕上，不隨內容流動 */
+            z-index: 1000; /* 確保它在最上層，蓋住其他內容 */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%; /* 佔滿整個螢幕 */
+            background-color: rgba(0, 0, 0, 0.7); /* 半透明黑色背景 */
+            
+            /* 讓內容居中顯示 */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--bg-secondary);
+            margin: 5% auto; 
+            padding: 30px;
+            border: 1px solid var(--neon-yellow);
+            width: 90%;
+            max-width: 500px;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(255, 241, 166, 0.3);
+            animation: fadeIn 0.3s;
+            max-height: 85vh;          /* ⭐ 不超過視窗 */
+            overflow: hidden;          /* ⭐ 關鍵：外層不出捲軸 */
+        }
+
+        .modal-scroll {
+            max-height: 85vh;
+            overflow-y: auto;          /* ⭐ 可以滑 */
+            padding: 20px;
+            box-sizing: border-box;
+
+            /* === 隱藏 scrollbar === */
+            scrollbar-width: none;     /* Firefox */
+            -ms-overflow-style: none;  /* IE / Edge */
+        }
+
+        .modal-scroll::-webkit-scrollbar {
+            display: none;             /* Chrome / Safari */
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .close {
+            color: var(--text-dark);
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            transition: color 0.2s;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: var(--neon-pink);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--neon-yellow);
+            font-weight: bold;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 5px;
+            box-sizing: border-box;
+            background-color: #2a2a2a;
+            color: var(--text-light);
+            font-size: 1em;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--neon-blue);
+        }
+        
+        /* 讓日期選擇按鈕（日曆圖標）在暗色模式下顯示為白色 */
+        #modal_date::-webkit-calendar-picker-indicator {
+            filter: invert(1); 
+            cursor: pointer;
+            opacity: 0.8; 
+        }
+
+
+        .modal-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 25px;
+            gap: 10px;
+        }
+
+        .modal-actions button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .modal-actions button:active {
+            transform: scale(0.98);
+        }
+
+        #modalDeleteBtn {
+            background-color: var(--neon-pink);
+            color: var(--bg-dark);
+        }
+        #modalDeleteBtn:hover {
+            background-color: #ff8ca3;
+        }
+
+        #modalSaveBtn {
+            background-color: var(--neon-green);
+            color: var(--bg-dark);
+            flex-grow: 1;
+        }
+        #modalSaveBtn:hover {
+            background-color: #79f7a7;
+        }
+
+        .record-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.04);
+            padding: 25px 30px;
+            border-radius: 16px;
+            box-shadow: 0 0 20px rgba(155,228,255,0.05);
+        }
+
+        .record-title {
+            font-size: 1.6rem;
+            margin-bottom: 20px;
+            color: var(--neon-blue);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* 表單群組 */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            margin-bottom: 6px;
+            color: var(--text-light);
+            font-size: 0.95rem;
+        }
+
+        /* 輸入框 */
+        .record-form input,
+        .record-form select {
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            color: var(--text-light);
+            font-size: 1rem;
+        }
+
+        .record-form input::placeholder {
+            color: var(--text-dark);
+        }
+
+        /* 類型選擇 */
+        .type-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .type-btn {
+            flex: 1;
+            padding: 12px 0;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-light);
+            cursor: pointer;
+            transition: 0.25s;
+        }
+
+        .type-btn.active {
+            background: linear-gradient(135deg, #7bc8ff, #5fb0ff);
+            color: #0d1a2b;
+            font-weight: bold;
+            border-color: transparent;
+        }
+
+        .type-btn.income.active {
+            background: linear-gradient(135deg, #8cd6ff, #4da6ff);
+            color: #0f1a2b;
+        }
+        
+        .type-btn.expense.active {
+            background: linear-gradient(135deg, #ff9ac2, #ff7ba9);
+            color: #2b0f17;
+        }
+
+        /* --- New: 類型按鈕 (Type Button) 的視覺強化 --- */
+        .type-selector {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .type-btn {
+            padding: 10px 30px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            opacity: 0.6; /* 預設較暗 */
+            color: var(--bg-dark); /* 文字顏色為深色 */
+        }
+
+        /* 支出 (Expense) 預設樣式 */
+        #expenseBtn {
+            background-color: var(--neon-pink); 
+            box-shadow: 0 0 8px rgba(255, 156, 207, 0.4);
+        }
+
+        /* 收入 (Income) 預設樣式 */
+        #incomeBtn {
+            background-color: var(--neon-blue); 
+            box-shadow: 0 0 8px rgba(155, 228, 255, 0.4);
+        }
+
+        /* 類型選中時 (Active) 的樣式：高亮 */
+        .type-btn.active {
+            opacity: 1;
+            transform: scale(1.05);
+        }
+
+        /* --- New: 分類管理容器顏色指示 --- */
+        #categoryManagement.expense-type .section-header {
+            border-left-color: var(--neon-pink);
+            color: var(--neon-pink);
+        }
+
+        #categoryManagement.income-type .section-header {
+            border-left-color: var(--neon-blue);
+            color: var(--neon-blue);
+        }
+
+        /* 子分類 (Sub Category) 列表樣式調整 */
+        .sub-category-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* 讓子分類自動分佈 */
+            gap: 10px;
+            margin-top: 15px;
+            padding: 10px;
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+        }
+
+        /* 送出按鈕 */
+        .submit-btn {
+            width: 100%;
+            padding: 14px 18px;
+            background: linear-gradient(135deg, #8cd6ff, #4da6ff);
+            color: #0d1a2b;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: 0.25s;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(123, 200, 255, 0.4);
+        }
+
+        .submit-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* --- New: 懸浮按鈕 (FAB) 樣式 --- */
+        .fab-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 500; /* 確保在大多數內容之上 */
+        }
+
+        .fab {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            /* 使用霓虹藍作為主按鈕顏色 */
+            background-color: var(--neon-blue);
+            color: var(--bg-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.8em;
+            cursor: pointer;
+            transition: transform 0.3s, background-color 0.3s;
+            position: relative;
+            /* 新增：滑鼠懸停時的發光效果 */
+            box-shadow: 0 0 10px rgba(167, 215, 255, 0.5), 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .fab:hover {
+            background-color: #7bc8ff;
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(167, 215, 255, 0.8), 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .fab.open {
+            /* 展開時顏色變為粉色，圖標旋轉 45 度 */
+            background-color: var(--neon-pink);
+            transform: rotate(90deg); 
+        }
+
+        .fab-options {
+            position: absolute;
+            bottom: 100%;
+            right: 0;
+            margin-bottom: 15px; 
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+            transition: opacity 0.3s, transform 0.3s, visibility 0.3s;
+        }
+
+        .fab-container.open .fab-options {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .fab-option-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.4em;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .fab-option-btn:hover {
+            transform: scale(1.1);
+        }
+
+        #fabIncomeBtn {
+            background-color: var(--neon-blue); /* 收入：藍色 */
+            color: var(--bg-dark);
+        }
+
+        #fabExpenseBtn {
+            background-color: var(--neon-pink); /* 支出：粉色 */
+            color: var(--bg-dark);
+        }
+
+        .fab-container {
+            position: fixed;
+            bottom: 40px; /* 稍微抬高 */
+            right: 40px;
+            z-index: 1000; /* 確保在最上層 */
+            user-select: none;
+            perspective: 1000px; /* 引入 3D 視角 */
+        }
+
+        /* --- 主按鈕 (FAB) 樣式 --- */
+        .fab {
+            --fab-color-rgb: var(--neon-blue-rgb); /* 初始主色 */
+            width: 68px; /* 稍微加大 */
+            height: 68px;
+            border-radius: 50%;
+
+            /* 玻璃擬態效果 */
+            background: rgba(var(--fab-color-rgb), 0.1); 
+            backdrop-filter: blur(8px); 
+            border: 1px solid rgba(var(--fab-color-rgb), 0.4);
+            
+            color: var(--text-light); 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em; /* 圖標更大 */
+            cursor: pointer;
+            
+            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s, background 0.3s, border-color 0.3s;
+            position: relative;
+            
+            /* 核心發光與 3D 陰影 */
+            box-shadow: 
+                0 0 10px rgba(var(--fab-color-rgb), 0.5), 
+                0 8px 15px rgba(0, 0, 0, 0.4); 
+            transform: translateZ(5px); /* 輕微的 3D 抬升感 */
+        }
+
+        /* 主圖標顏色，讓它從背景中凸顯 */
+        .fab i {
+            transition: color 0.3s, transform 0.3s;
+            color: var(--neon-blue);
+            transform: rotate(0deg);
+        }
+
+        /* 懸停效果 */
+        .fab:hover {
+            transform: translateZ(10px) scale(1.05);
+            box-shadow: 
+                0 0 25px rgba(var(--fab-color-rgb), 0.9),
+                0 10px 20px rgba(0, 0, 0, 0.6);
+        }
+
+        /* 點擊展開時的樣式 */
+        .fab-container.open .fab {
+            --fab-color-rgb: var(--neon-pink-rgb); /* 展開時變為霓虹粉 RGB */
+            border-color: rgba(var(--neon-pink-rgb), 0.4);
+            background: rgba(var(--neon-pink-rgb), 0.1);
+            transform: rotate(135deg) translateZ(5px); 
+            box-shadow: 
+                0 0 20px var(--neon-pink), 
+                0 4px 20px rgba(0, 0, 0, 0.8); 
+        }
+
+        .fab-container.open .fab i {
+            color: var(--neon-pink);
+            /* 展開時圖標旋轉，讓閃電像一個 X */
+            transform: rotate(90deg); 
+        }
+
+
+        /* --- 選項按鈕組 --- */
+        .fab-options {
+            position: absolute;
+            bottom: 100%;
+            right: 0;
+            margin-bottom: 20px; 
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            
+            /* 初始狀態：隱藏且偏移 */
+            opacity: 0;
+            visibility: hidden;
+            transform: translateZ(0) translateY(20px);
+            transition: opacity 0.4s ease-out, transform 0.4s ease-out, visibility 0.4s;
+        }
+
+        .fab-container.open .fab-options {
+            /* 展開狀態：可見 */
+            opacity: 1;
+            visibility: visible;
+            transform: translateZ(0) translateY(0);
+        }
+
+        /* 讓子按鈕有階梯式出現的效果 */
+        .fab-container.open #fabIncomeBtn {
+            transition-delay: 0.05s;
+        }
+        .fab-container.open #fabExpenseBtn {
+            transition-delay: 0.1s;
+        }
+
+        /* --- 子按鈕樣式 --- */
+        .fab-option-btn {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.6em;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); 
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.3s, opacity 0.3s;
+            transform: translateZ(5px);
+            color: var(--bg-dark);
+        }
+
+        #fabIncomeBtn {
+            /* 收入：藍色漸層 */
+            background: linear-gradient(135deg, var(--neon-blue), #5fb0ff);
+        }
+
+        #fabExpenseBtn {
+            /* 支出：粉色漸層 */
+            background: linear-gradient(135deg, var(--neon-pink), #ff7ba9);
+        }
+
+        .fab-option-btn:hover {
+            transform: translateZ(10px) scale(1.1); /* 懸停時微放大且抬升 */
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 6px 20px rgba(0, 0, 0, 0.6); 
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="main-content">
+        <div id="list" class="page active">
+            <div class="container">
+                <h1>⚡LumiTrack</h1>
+                <div class="dashboard-container">
+                    <div class="summary-card">
+                        <div class="summary-label">總收入</div>
+                        <div class="summary-value val-income" id="dashIncome">$0</div>
+                        <div class="progress-bg"><div class="progress-fill fill-income" id="barIncome" style="width: 0%"></div></div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">總支出</div>
+                        <div class="summary-value val-expense" id="dashExpense">$0</div>
+                        <div class="progress-bg"><div class="progress-fill fill-expense" id="barExpense" style="width: 0%"></div></div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">總結餘</div>
+                        <div class="summary-value val-balance" id="dashBalance">$0</div>
+                        <div class="progress-bg"><div class="progress-fill fill-balance" id="barBalance" style="width: 0%"></div></div>
+                    </div>
+                </div>
+
+                <h1>🗓️ 歷史交易紀錄</h1>
+                <div id="emptyState" style="display: none;">
+                    <div class="no-transactions-message">
+                        <i class="fas fa-ghost"></i>
+                        <p>目前還沒有任何交易紀錄，快點擊按鈕新增第一筆吧！</p>
+                        <button type="button" id="addFirstTransactionBtn" class="add-button">
+                            <i class="fas fa-plus-circle"></i> 新增交易
+                        </button>
+                    </div>
+                </div>
+                <div id="transactionList"></div>
+            </div>
+        </div>
+
+        <div id="editTransactionModal" class="modal">
+            <div class="modal-content">
+                <span class="close" id="modalCloseBtn">&times;</span>
+
+                <div class="modal-scroll">
+
+                    <h2 style="color: var(--neon-blue); margin-top: 0;">編輯交易</h2>
+                    <form id="editForm">
+                        <input type="hidden" id="modal_id">
+
+                        <div class="form-group">
+                            <label for="modal_date">日期</label>
+                            <input type="date" id="modal_date" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="modal_type">類型</label>
+                            <select id="modal_type" required>
+                                <option value="expense">支出</option>
+                                <option value="income">收入</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="modal_main_category">主分類</label>
+                            <select id="modal_main_category" required></select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="modal_sub_category">子分類</label>
+                            <select id="modal_sub_category"></select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="modal_amount">金額</label>
+                            <input type="number" id="modal_amount" min="0" step="1" required placeholder="輸入金額">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="modal_description">備註</label>
+                            <input type="text" id="modal_description" placeholder="輸入備註...">
+                        </div>
+
+                        <div class="modal-actions">
+                            <button type="button" id="modalDeleteBtn" style="display: none;">
+                                <i class="fas fa-trash"></i> 刪除
+                            </button>
+                            
+                            <button type="submit" id="modalSaveBtn">
+                                <i class="fas fa-save"></i> 儲存修改
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+
+            </div>
+        </div>
+
+        <div class="fab-container" id="fabContainer">
+            <div class="fab" id="mainFab">
+                <i class="fa fa-ellipsis-h" aria-hidden="true"></i>
+            </div>
+            <div class="fab-options">
+                <div class="fab-option-btn" id="fabIncomeBtn" data-type="income">
+                    <i class="fas fa-plus"></i>
+                </div>
+                <div class="fab-option-btn" id="fabExpenseBtn" data-type="expense">
+                    <i class="fas fa-minus"></i>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+
+    
+</body>
+    <script>
+
+        const CATEGORY_KEY = 'categoryData';
+
+        function loadCategoryData() {
+            return JSON.parse(localStorage.getItem(CATEGORY_KEY) || '{}');
+        }
+
+        // --------------------------- 數據核心 (假資料模式) ---------------------------
+        const DUMMY_TRANSACTIONS = [];
+        const DUMMY_CATEGORY_LISTS = {
+            expense: ['餐飲', '交通', '購物', '娛樂', '住房', '其他'],
+            income: ['薪水', '獎金', '投資', '兼職', '其他收入'] // 將其他改為其他收入以避免衝突
+        };
+
+        // [新增] 預設的子分類資料 (為了讓編輯功能運作)
+        const DEFAULT_SUB_CATEGORIES = {
+            // 支出類
+            '餐飲': ['早餐', '午餐', '晚餐', '飲料', '零食'],
+            '交通': ['捷運', '公車', '計程車', '加油', '停車費'],
+            '購物': ['日用品', '服飾', '3C', '美妝', '雜貨'],
+            '娛樂': ['電影', '遊戲', 'KTV', '聚會', '訂閱服務'],
+            '住房': ['房租', '水電費', '管理費', '網路費', '修繕'],
+            '其他': ['醫療', '保險', '教育', '捐款', '雜項'],
+            
+            // 收入類
+            '薪水': ['正職薪資', '加班費'],
+            '獎金': ['年終', '績效', '三節'],
+            '投資': ['股票', '利息', '股息', '基金'],
+            '兼職': ['外包', '打工'],
+            '其他收入': ['紅包', '二手拍賣', '退稅']
+        };
+
+        // [JS] 1. 讀取與記帳頁面同步的分類資料
+        function loadAppCategories() {
+            const stored = localStorage.getItem('app_categories');
+            if (stored) {
+                return JSON.parse(stored);
+            }
+            // 預設資料 (若 localStorage 沒東西)
+            return {
+                expense: {
+                    '餐飲': ['早餐', '午餐', '晚餐', '飲料', '零食'],
+                    '交通': ['捷運', '公車', '計程車', '加油', '停車費'],
+                    '購物': ['日用品', '服飾', '3C', '美妝', '雜貨'],
+                    '娛樂': ['電影', '遊戲', 'KTV', '聚會', '訂閱服務'],
+                    '住房': ['房租', '水電費', '管理費', '網路費', '修繕'],
+                    '其他': ['醫療', '保險', '教育', '捐款', '雜項']
+                },
+                income: {
+                    '薪水': ['正職薪資', '加班費'],
+                    '獎金': ['年終', '績效', '三節'],
+                    '投資': ['股票', '利息', '股息', '基金'],
+                    '兼職': ['外包', '打工'],
+                    '其他收入': ['紅包', '二手拍賣', '退稅']
+                }
+            };
+        }
+        let APP_CATEGORIES = loadAppCategories();
+
+        // [JS] 確保有這個圖示對照表，不然存檔會報錯！
+        const CATEGORY_ICON_MAP = {
+            // 支出
+            '餐飲': 'fas fa-utensils',
+            '交通': 'fas fa-bus',
+            '購物': 'fas fa-shopping-bag',
+            '娛樂': 'fas fa-gamepad',
+            '住房': 'fas fa-home',
+            '其他': 'fas fa-box',
+            // 收入
+            '薪水': 'fas fa-money-bill-wave',
+            '獎金': 'fas fa-star',
+            '投資': 'fas fa-chart-line',
+            '兼職': 'fas fa-briefcase',
+            '其他收入': 'fas fa-hand-holding-usd'
+        };
+
+        // [JS] 更新 Modal 分類選單 (修復：確保打開時會選中正確的分類)
+        function updateModalCategories(type, selectedMain, selectedSub) {
+            const mainSelect = document.getElementById('modal_main_category');
+            const subSelect = document.getElementById('modal_sub_category');
+            
+            // 防呆
+            if (!mainSelect || !subSelect) return;
+
+            // 確保有分類資料
+            if (typeof APP_CATEGORIES === 'undefined') APP_CATEGORIES = loadAppCategories();
+            const categoryData = APP_CATEGORIES[type] || {};
+            const mainCategories = Object.keys(categoryData);
+
+            // 1. 清空並產生主分類選項
+            mainSelect.innerHTML = '';
+            
+            mainCategories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                mainSelect.appendChild(option);
+            });
+
+            // ⭐️ 關鍵修復：如果原本存的分類不在清單裡（例如舊資料），強制加回去！
+            if (selectedMain && !mainCategories.includes(selectedMain)) {
+                const option = document.createElement('option');
+                option.value = selectedMain;
+                option.textContent = selectedMain;
+                mainSelect.appendChild(option);
+            }
+
+            // ⭐️ 關鍵修復：強制設定選中的值
+            if (selectedMain) {
+                mainSelect.value = selectedMain;
+            } else if (mainCategories.length > 0) {
+                // 如果沒有指定，預設選第一個
+                mainSelect.value = mainCategories[0];
+            }
+
+            // 2. 定義產生子分類的函式
+            const updateSubOptions = (mainCat) => {
+                subSelect.innerHTML = '';
+                
+                // 加入預設選項
+                const defaultOpt = document.createElement('option');
+                defaultOpt.value = '';
+                defaultOpt.textContent = '-- 無 --';
+                subSelect.appendChild(defaultOpt);
+
+                const subList = categoryData[mainCat] || [];
+                subList.forEach(sub => {
+                    const option = document.createElement('option');
+                    option.value = sub;
+                    option.textContent = sub;
+                    subSelect.appendChild(option);
+                });
+
+                // ⭐️ 子分類也要防呆：如果原本有選，但不在清單裡，強制加回去
+                if (selectedSub && selectedSub !== '' && !subList.includes(selectedSub)) {
+                    const option = document.createElement('option');
+                    option.value = selectedSub;
+                    option.textContent = selectedSub;
+                    subSelect.appendChild(option);
+                }
+
+                // ⭐️ 強制設定子分類的值
+                if (selectedSub) {
+                    subSelect.value = selectedSub;
+                } else {
+                    subSelect.value = '';
+                }
+            };
+
+            // 3. 立即執行一次子分類更新
+            updateSubOptions(mainSelect.value);
+
+            // 4. 綁定監聽：當使用者手動改主分類時，更新子分類
+            mainSelect.onchange = function() {
+                updateSubOptions(this.value);
+            };
+        }
+
+        // 從 localStorage 讀取數據，若無則使用假資料並存入
+        let TRANSACTIONS = JSON.parse(localStorage.getItem('transactions'));
+        let CATEGORY_LISTS = JSON.parse(localStorage.getItem('categoryLists'));
+
+        // ⭐️ 核心修正 1: 資料初始化與補齊
+        if (!TRANSACTIONS) {
+            // 如果連資料都沒有，則初始化為空陣列並存入
+            TRANSACTIONS = DUMMY_TRANSACTIONS;
+            localStorage.setItem('transactions', JSON.stringify(TRANSACTIONS));
+            console.log('--- ⚠️ 交易資料初始化為空陣列 ⚠️ ---');
+        } else {
+            // 如果有資料 (不論是否為空陣列)，檢查並補齊必要的欄位 (例如 recordpage.html 沒存的 icon)
+            let isDataModified = false;
+            TRANSACTIONS = TRANSACTIONS.map(t => {
+                // 如果 icon 欄位缺失 (例如為 undefined 或空字串 '')，則嘗試根據 category 補上圖標
+                if (!t.icon || t.icon === "") {
+                    const primaryCategory = t.category.split(' / ')[0]; // 即使是「主分類 / 子分類」，也只取主分類
+                    const iconMapKey = primaryCategory in CATEGORY_ICON_MAP ? primaryCategory : (t.type === 'expense' ? '其他' : '其他收入');
+                    t.icon = CATEGORY_ICON_MAP[iconMapKey] || 'fas fa-question';
+                    isDataModified = true;
+                }
+                return t;
+            });
+
+            // 如果有任何資料被修改（補上圖標），則存回 localStorage
+            if (isDataModified) {
+                localStorage.setItem('transactions', JSON.stringify(TRANSACTIONS));
+                console.log('--- ✅ 成功補齊交易紀錄中的圖標欄位 ---');
+            }
+        }
+
+
+        // 確保分類列表存在
+        if (!CATEGORY_LISTS) {
+            CATEGORY_LISTS = DUMMY_CATEGORY_LISTS;
+            localStorage.setItem('categoryLists', JSON.stringify(CATEGORY_LISTS));
+        }
+
+        // ⭐️ 新增：確保新 ID 是唯一的，從現有 ID 的最大值 + 1 開始
+        let nextId = TRANSACTIONS.length > 0 ? Math.max(...TRANSACTIONS.map(t => t.id)) + 1 : 1;
+
+
+        // --------------------------- 數據操作函式 ---------------------------
+
+        /**
+         * 將當前交易列表存回 localStorage
+         */
+        function saveToLocalStorage() {
+            localStorage.setItem('transactions', JSON.stringify(TRANSACTIONS));
+        }
+
+        /**
+         * 根據 ID 取得交易物件
+         * @param {number} id - 交易 ID
+         * @returns {Object|null} 交易物件或 null
+         */
+        function getTransactionById(id) {
+            return TRANSACTIONS.find(t => t.id === id);
+        }
+
+        // --------------------------- Modal 相關函式 ---------------------------
+
+        /**
+         * 關閉編輯 Modal
+         */
+        function closeModal() {
+            document.getElementById('editTransactionModal').style.display = 'none';
+            // 清空表單，避免下次打開殘留資料
+            document.getElementById('editForm').reset();
+            document.getElementById('modal_id').value = '';
+            
+            // 隱藏刪除按鈕
+            document.getElementById('modalDeleteBtn').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('editTransactionModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        /**
+         * [修改] 根據類型更新 Modal 內的主分類與子分類
+         * @param {string} type - 'expense' 或 'income'
+         * @param {string} selectedMain - 當前選中的主分類
+         * @param {string} selectedSub - 當前選中的子分類
+         */
+        function updateModalCategories(type, selectedMain, selectedSub) {
+            const mainSelect = document.getElementById('modal_main_category');
+            const subSelect = document.getElementById('modal_sub_category');
+            
+            // 1. 清空主分類並重新生成
+            mainSelect.innerHTML = '';
+            const categories = CATEGORY_LISTS[type] || [];
+            
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                if (category === selectedMain) {
+                    option.selected = true;
+                }
+                mainSelect.appendChild(option);
+            });
+
+            // 若原主分類不在清單中（防呆），加回去
+            if (selectedMain && !categories.includes(selectedMain)) {
+                const option = document.createElement('option');
+                option.value = selectedMain;
+                option.textContent = selectedMain;
+                option.selected = true;
+                mainSelect.appendChild(option);
+            }
+
+            // 2. 定義更新子分類的內部函式
+            const updateSubOptions = (mainCat) => {
+                subSelect.innerHTML = '';
+                // 取得該主分類下的子分類列表，若無則給一個預設空選項
+                const subCategories = DEFAULT_SUB_CATEGORIES[mainCat] || ['一般'];
+                
+                subCategories.forEach(sub => {
+                    const option = document.createElement('option');
+                    option.value = sub;
+                    option.textContent = sub;
+                    // 如果傳入的子分類符合，則選中
+                    if (sub === selectedSub) {
+                        option.selected = true;
+                    }
+                    subSelect.appendChild(option);
+                });
+
+                // 防呆：若原來的子分類不在預設清單中，也要加回去顯示
+                if (selectedSub && !subCategories.includes(selectedSub)) {
+                    const option = document.createElement('option');
+                    option.value = selectedSub;
+                    option.textContent = selectedSub;
+                    option.selected = true;
+                    subSelect.appendChild(option);
+                }
+            };
+
+            // 3. 初始執行一次更新子分類 (使用當前選中的主分類)
+            updateSubOptions(mainSelect.value);
+
+            // 4. [關鍵] 移除舊的監聽器並綁定新的 (避免重複綁定)
+            // 為了簡單起見，我們使用 onchange 屬性覆蓋
+            mainSelect.onchange = function() {
+                updateSubOptions(this.value);
+            };
+        }
+
+        /**
+         * 清空並開啟 Modal 用於新增交易 (此功能目前被 recordpage.html 取代)
+         */
+        function openNewTransactionModal() {
+            // 設置 Modal 標題
+            document.querySelector('#editTransactionModal h2').textContent = '新增交易';
+            
+            // 清空並設置預設值
+            document.getElementById('modal_id').value = 0; // 使用 0 或 -1 表示新交易
+            document.getElementById('modal_date').value = new Date().toISOString().split('T')[0]; // 預設今天
+            document.getElementById('modal_type').value = 'expense';
+            document.getElementById('modal_amount').value = '';
+            document.getElementById('modal_description').value = '';
+
+            // 預設分類為支出類的第一項
+            updateModalCategories('expense', CATEGORY_LISTS['expense'][0] || '');
+
+            // 隱藏刪除按鈕
+            document.getElementById('modalDeleteBtn').style.display = 'none';
+
+            // 變更儲存按鈕文字
+            document.getElementById('modalSaveBtn').innerHTML = '<i class="fas fa-plus-circle"></i> 新增交易';
+
+            // 顯示 Modal
+            document.getElementById('editTransactionModal').style.display = 'block';
+        }
+
+        /**
+         * [JS] 開啟編輯視窗 (修復：使用 Clone Node 徹底解決重複跳窗問題)
+         */
+        function editTransaction(id) {
+            const transaction = TRANSACTIONS.find(t => t.id === id);
+            if (!transaction) return;
+
+            // 1. 填入資料
+            document.getElementById('modal_id').value = transaction.id;
+            document.getElementById('modal_date').value = transaction.date;
+            document.getElementById('modal_type').value = transaction.type;
+            document.getElementById('modal_amount').value = transaction.amount;
+            document.getElementById('modal_description').value = transaction.description || '';
+
+            // 2. 解析分類
+            let fullCategory = transaction.category || transaction.categoryText || '';
+            let mainCat = fullCategory;
+            let subCat = '';
+
+            if (fullCategory.includes(' / ')) {
+                const parts = fullCategory.split(' / ');
+                mainCat = parts[0];
+                subCat = parts[1];
+            }
+
+            updateModalCategories(transaction.type, mainCat, subCat);
+
+            // 3. 綁定類型切換
+            const typeSelect = document.getElementById('modal_type');
+            typeSelect.onchange = function() {
+                const newType = this.value;
+                const catData = APP_CATEGORIES[newType] || {};
+                const firstMain = Object.keys(catData)[0] || '';
+                updateModalCategories(newType, firstMain, '');
+            };
+
+            // 4. 設定刪除按鈕 (⭐️ 大絕招：影分身替換術)
+            let delBtn = document.getElementById('modalDeleteBtn');
+            if (delBtn) {
+                // 複製一個全新的按鈕 (會清除所有舊的 onclick 事件)
+                const newBtn = delBtn.cloneNode(true);
+                // 用新按鈕替換掉舊按鈕
+                delBtn.parentNode.replaceChild(newBtn, delBtn);
+                // 更新變數指向新按鈕
+                delBtn = newBtn;
+
+                delBtn.style.display = 'inline-block';
+                
+                // 綁定這一次的刪除事件
+                delBtn.onclick = function(e) {
+                    e.preventDefault(); // 阻止表單送出
+                    
+                    // ⭐️ 這裡只會執行一次，因為按鈕是全新的！
+                    if (confirm('確定要刪除這筆交易嗎？')) {
+                        deleteTransaction(transaction.id);
+                    }
+                };
+            }
+
+            // 5. 顯示視窗
+            const modal = document.getElementById('editTransactionModal');
+            modal.style.display = 'flex';
+        }
+
+        /**
+         * [JS] 刪除交易 (純邏輯，不跳窗)
+         */
+        function deleteTransaction(id) {
+            // 直接執行刪除動作
+            TRANSACTIONS = TRANSACTIONS.filter(t => t.id !== id);
+            saveToLocalStorage();
+            renderTransactionList();
+            closeModal();
+            console.log('刪除成功！');
+        }
+
+
+
+        function updateModalCategoriesFromCategoryData(type, selectedMain, selectedSub) {
+            const mainSelect = document.getElementById('modal_main_category');
+            const subSelect = document.getElementById('modal_sub_category');
+            const categoryData = loadCategoryData();
+
+            mainSelect.innerHTML = '';
+            subSelect.innerHTML = '';
+
+            const primaryList = categoryData[type] || [];
+
+            // 主分類
+            primaryList.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.name;
+                opt.textContent = p.name;
+                if (p.name === selectedMain) opt.selected = true;
+                mainSelect.appendChild(opt);
+            });
+
+            const selectedPrimary = primaryList.find(p => p.name === mainSelect.value);
+
+            // 子分類
+            subSelect.innerHTML = '<option value="">-- 無 --</option>';
+            if (selectedPrimary && selectedPrimary.subs) {
+                selectedPrimary.subs.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.name;
+                    opt.textContent = s.name;
+                    if (s.name === selectedSub) opt.selected = true;
+                    subSelect.appendChild(opt);
+                });
+            }
+
+            mainSelect.onchange = () => {
+                updateModalCategoriesFromCategoryData(type, mainSelect.value, '');
+            };
+        }
+
+        // [JS] 3. 儲存修改 (超級直白版：直接抓選單文字，保證不為空)
+        function saveModalChanges(e) {
+            e.preventDefault();
+            
+            // 1. 取得基本欄位
+            const id = parseInt(document.getElementById('modal_id').value);
+            const date = document.getElementById('modal_date').value;
+            const type = document.getElementById('modal_type').value;
+            const amount = parseFloat(document.getElementById('modal_amount').value);
+            const description = document.getElementById('modal_description').value || '';
+            
+            // 2. ⭐️ 核心修正：取得分類 (直攻選單的文字內容)
+            const mainSelect = document.getElementById('modal_main_category');
+            const subSelect = document.getElementById('modal_sub_category');
+            
+            let mainCat = '';
+            let subCat = '';
+
+            // 抓取主分類 (如果選單有選中，就抓選中的文字；沒選中就抓 value)
+            if (mainSelect.selectedIndex !== -1) {
+                mainCat = mainSelect.options[mainSelect.selectedIndex].text;
+            } else {
+                mainCat = mainSelect.value;
+            }
+
+            // 抓取子分類
+            if (subSelect.selectedIndex !== -1) {
+                subCat = subSelect.options[subSelect.selectedIndex].text;
+            } else {
+                subCat = subSelect.value;
+            }
+
+            // 排除預設選項 "-- 無 --" 或空字串
+            if (subCat === '-- 無 --' || subCat.trim() === '') {
+                subCat = '';
+            }
+
+            // 3. 組合字串
+            let finalCategory = mainCat;
+            
+            // 防呆：如果主分類還是抓不到，給預設值
+            if (!finalCategory || finalCategory.trim() === '') {
+                finalCategory = '未分類';
+            } else if (subCat) {
+                // 如果有子分類，組合成 "主分類 / 子分類"
+                finalCategory = `${mainCat} / ${subCat}`;
+            }
+
+            // 4. 驗證資料
+            if (!date || !type || isNaN(amount)) {
+                alert('請檢查日期、類型與金額是否正確！');
+                return;
+            }
+
+            // 5. 決定圖示
+            let newIcon = 'fas fa-question';
+            // 嘗試從主分類名稱找圖示
+            if (typeof CATEGORY_ICON_MAP !== 'undefined' && CATEGORY_ICON_MAP[mainCat]) {
+                newIcon = CATEGORY_ICON_MAP[mainCat];
+            } else {
+                newIcon = type === 'expense' ? 'fas fa-receipt' : 'fas fa-coins';
+            }
+
+            // 6. 準備資料物件
+            const newData = {
+                date: date,
+                type: type,
+                category: finalCategory,     // 新版欄位
+                categoryText: finalCategory, // 舊版欄位 (雙重保險)
+                amount: amount,
+                description: description,
+                icon: newIcon
+            };
+
+            // 7. 寫入陣列
+            if (id === 0 || isNaN(id)) {
+                // 新增
+                newData.id = Date.now();
+                TRANSACTIONS.unshift(newData);
+            } else {
+                // 修改
+                const index = TRANSACTIONS.findIndex(t => t.id === id);
+                if (index !== -1) {
+                    TRANSACTIONS[index] = { ...TRANSACTIONS[index], ...newData };
+                }
+            }
+            
+            // 8. 存檔並更新畫面
+            saveToLocalStorage();
+            renderTransactionList();
+            closeModal();
+        }
+
+
+        /**
+         * 處理 Modal 中的刪除按鈕
+         */
+        document.getElementById('modalDeleteBtn').addEventListener('click', (e) => {
+            const idToDelete = parseInt(e.currentTarget.getAttribute('data-id'));
+            if (confirm(`確定要刪除這筆交易 ID: ${idToDelete} 嗎？此操作無法撤銷。`)) {
+                deleteTransaction(idToDelete);
+            }
+        });
+
+        // --------------------------- 渲染邏輯 ---------------------------
+
+        /**
+        * [JS] 渲染交易列表 (終極整合版)
+        * 包含：儀表板更新 + 日期分組 + 分類防呆顯示
+        */
+        function renderTransactionList(list = TRANSACTIONS) {
+            const listContainer = document.getElementById('transactionList');
+            if (!listContainer) return; // 找不到容器就結束
+
+            // ==========================================
+            // Part 1: 計算總金額並更新儀表板 (Dashboard)
+            // ==========================================
+            let totalIncome = 0;
+            let totalExpense = 0;
+
+            // 安全檢查：確保 list 是陣列
+            const safeList = Array.isArray(list) ? list : [];
+
+            if (safeList.length > 0) {
+                safeList.forEach(t => {
+                    const amt = parseFloat(t.amount) || 0;
+                    if (t.type === 'income') totalIncome += amt;
+                    else if (t.type === 'expense') totalExpense += amt;
+                });
+            }
+            const totalBalance = totalIncome - totalExpense;
+
+            // 只有當儀表板元素存在時才更新 (防呆)
+            const dashIncome = document.getElementById('dashIncome');
+            if (dashIncome) {
+                document.getElementById('dashIncome').textContent = `$${totalIncome.toLocaleString()}`;
+                document.getElementById('dashExpense').textContent = `$${totalExpense.toLocaleString()}`;
+                document.getElementById('dashBalance').textContent = `$${totalBalance.toLocaleString()}`;
+
+                // 更新進度條視覺效果
+                const barIncome = document.getElementById('barIncome');
+                const barExpense = document.getElementById('barExpense');
+                const barBalance = document.getElementById('barBalance');
+
+                if (barIncome) barIncome.style.width = totalIncome > 0 ? '100%' : '0%';
+                
+                if (barExpense) {
+                    let expensePercent = 0;
+                    if (totalIncome > 0) expensePercent = (totalExpense / totalIncome) * 100;
+                    else if (totalExpense > 0) expensePercent = 100;
+                    if (expensePercent > 100) expensePercent = 100;
+                    barExpense.style.width = `${expensePercent}%`;
+                }
+
+                if (barBalance) {
+                    let balancePercent = 0;
+                    if (totalIncome > 0 && totalBalance > 0) balancePercent = (totalBalance / totalIncome) * 100;
+                    barBalance.style.width = `${balancePercent}%`;
+                }
+            }
+
+            // ==========================================
+            // Part 2: 處理無資料狀態 (Empty State)
+            // ==========================================
+            const emptyState = document.getElementById('emptyState');
+            if (safeList.length === 0) {
+                if (emptyState) emptyState.style.display = 'block';
+                listContainer.style.display = 'none';
+                
+                // 如果 HTML 裡沒有寫 emptyState，這裡手動插入 (相容舊版)
+                if (!emptyState) {
+                    listContainer.style.display = 'block';
+                    listContainer.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+                            <p>目前沒有任何交易紀錄</p>
+                            <button id="addFirstTransactionBtn" class="add-btn-small">
+                                <i class="fas fa-plus"></i> 新增第一筆
+                            </button>
+                        </div>`;
+                    // 綁定按鈕
+                    setTimeout(() => {
+                        const btn = document.getElementById('addFirstTransactionBtn');
+                        if(btn) btn.onclick = () => window.parent.switchPage ? window.parent.switchPage(null, 'recordpage.html') : window.location.href = 'recordpage.html';
+                    }, 0);
+                }
+                return; // 沒資料就停在這裡，不往下渲染列表
+            }
+
+            // 有資料：隱藏空狀態，顯示列表容器
+            if (emptyState) emptyState.style.display = 'none';
+            listContainer.style.display = 'block';
+            listContainer.innerHTML = ''; // 清空舊內容
+
+            // ==========================================
+            // Part 3: 日期分組與渲染列表
+            // ==========================================
+            
+            // 3.1 依照日期分組
+            const grouped = safeList.reduce((acc, t) => {
+                const date = t.date || '未知日期';
+                if (!acc[date]) acc[date] = [];
+                acc[date].push(t);
+                return acc;
+            }, {});
+
+            // 3.2 日期排序 (從最近到最遠)
+            const sortedDates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
+
+            // 3.3 遍歷每一天
+            sortedDates.forEach(date => {
+                // 計算當日小計
+                let dailyTotal = 0;
+                grouped[date].forEach(t => dailyTotal += (t.type === 'income' ? parseFloat(t.amount) : -parseFloat(t.amount)));
+                
+                // 建立日期區塊
+                const dateDiv = document.createElement('div');
+                dateDiv.className = 'date-group';
+                
+                const formattedTotal = (dailyTotal >= 0 ? '+' : '-') + '$' + Math.abs(dailyTotal).toLocaleString();
+                const summaryColor = dailyTotal >= 0 ? 'income-color' : 'expense-color';
+
+                // 插入日期標題 (Header)
+                dateDiv.innerHTML = `
+                    <div class="date-group-header" onclick="toggleDateGroup(this)">
+                        <div class="date-text">${date}</div>
+                        <div class="date-summary">
+                            <span class="${summaryColor}">${formattedTotal}</span>
+                            <i class="fas fa-chevron-down toggle-icon"></i>
+                        </div>
+                    </div>
+                    <div class="daily-transactions" style="display: block;"></div>
+                `;
+                listContainer.appendChild(dateDiv);
+                
+                const dailyContainer = dateDiv.querySelector('.daily-transactions');
+                
+                // 3.4 渲染當日的每一筆交易
+                grouped[date].forEach(t => {
+                    const card = document.createElement('div');
+                    // 綁定點擊編輯事件
+                    card.onclick = () => editTransaction(t.id);
+                    
+                    const isExp = t.type === 'expense';
+                    const amountClass = isExp ? 'expense-color' : 'income-color';
+                    const categoryClass = isExp ? 'cat-expense' : 'cat-income';
+                    
+                    // ⭐️ [關鍵修正] 同時檢查 category 和 categoryText，確保顯示
+                    let displayCategory = t.category;
+                    if (!displayCategory || displayCategory === 'undefined') {
+                        displayCategory = t.categoryText || '未分類';
+                    }
+
+                    card.className = `transaction-card ${isExp ? 'expense-border' : 'income-border'}`;
+                    card.innerHTML = `
+                        <div class="card-content">
+                            <div class="icon-section"><i class="${t.icon || 'fas fa-folder'}"></i></div>
+                            <div class="info-section">
+                                <div class="category-and-desc">
+                                    <span class="category-tag ${categoryClass}">
+                                        ${displayCategory}
+                                    </span>
+                                    <span class="description">${t.description || '無備註'}</span>
+                                </div>
+                            </div>
+                            <div class="amount-section ${amountClass}">
+                                ${isExp ? '-' : '+'} $${parseFloat(t.amount).toLocaleString()}
+                            </div>
+                        </div>
+                    `;
+                    dailyContainer.appendChild(card);
+                });
+            });
+        }
+
+        /**
+        * [JS] 點擊日期標題時收合/展開
+        */
+        function toggleDateGroup(header) {
+            const content = header.nextElementSibling;
+            const icon = header.querySelector('.toggle-icon');
+            
+            // 切換顯示狀態
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                if(icon) icon.style.transform = 'rotate(0deg)';
+            } else {
+                content.style.display = 'none';
+                if(icon) icon.style.transform = 'rotate(-90deg)';
+            }
+        }
+
+        // --------------------------- 事件綁定 ---------------------------
+
+        /**
+         * 綁定所有動態生成的 UI 元素的事件
+         */
+        function bindEventHandlers() {
+            // 1. 綁定交易卡片的點擊事件，開啟編輯 Modal
+            document.querySelectorAll('.transaction-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const idToEdit = parseInt(card.getAttribute('data-id'));
+                    editTransaction(idToEdit);
+                });
+            });
+
+            // 2. 綁定日期群組標題的點擊事件，實現收合功能
+            document.querySelectorAll('.date-group-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const date = header.getAttribute('data-date-toggle');
+                    const content = document.querySelector(`.daily-transactions[data-date-content="${date}"]`);
+                    if (content) {
+                        // 切換 CSS class 來實現收合/展開效果
+                        header.classList.toggle('collapsed');
+                        content.classList.toggle('collapsed');
+                    }
+                });
+            });
+            
+            // 3. 點擊 Modal 外部時關閉 Modal
+            document.getElementById('editTransactionModal').addEventListener('click', function(e) {
+                if (e.target.id === 'editTransactionModal') {
+                    closeModal();
+                }
+            });
+
+            // 4. 使用 Escape 鍵關閉 Modal
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && document.getElementById('editTransactionModal').style.display === 'block') {
+                    closeModal();
+                }
+            });
+        }
+
+        // Hotspot 漸層跟隨滑鼠移動效果 及 事件綁定
+        document.addEventListener('DOMContentLoaded', () => {
+            // --------------------------- New: 懸浮按鈕 (FAB) 邏輯 ---------------------------
+            const fabContainer = document.getElementById('fabContainer');
+            const mainFab = document.getElementById('mainFab');
+            const fabIncomeBtn = document.getElementById('fabIncomeBtn');
+            const fabExpenseBtn = document.getElementById('fabExpenseBtn');
+
+            // 導航函式，用於處理 FAB 點擊
+            function navigateToRecordPage(type) {
+                // 帶上 type 參數到 recordpage.html，例如: recordpage.html?type=income
+                const targetUrl = `recordpage.html?type=${type}`;
+                
+                if (window.parent && typeof window.parent.switchPage === 'function') {
+                    // 呼叫父層的 switchPage 進行頁面切換
+                    window.parent.switchPage(null, targetUrl);
+                } else {
+                    // Fallback：直接跳轉
+                    console.warn(`Parent switchPage not found. Falling back to direct page load: ${targetUrl}`);
+                    window.location.href = targetUrl;
+                }
+            }
+
+            // 1. 綁定主按鈕點擊事件 (開/關子按鈕)
+            mainFab.addEventListener('click', () => {
+                fabContainer.classList.toggle('open');
+            });
+
+            // 2. 綁定選項按鈕點擊事件 (導航到 recordpage.html 並帶上類型)
+            fabIncomeBtn.addEventListener('click', () => {
+                navigateToRecordPage('income');
+            });
+
+            fabExpenseBtn.addEventListener('click', () => {
+                navigateToRecordPage('expense');
+            });
+            // --------------------------- End: 懸浮按鈕 (FAB) 邏輯 ---------------------------
+
+            // 選擇所有使用新樣式的按鈕
+            const addButtons = document.querySelectorAll('.add-button');
+            if (addButtons.length === 0) return;
+
+            addButtons.forEach(addButton => {
+                // 1. 綁定 Hotspot 效果 (滑鼠移動時，更新 CSS 變數)
+                addButton.addEventListener('mousemove', (e) => {
+                    const rect = addButton.getBoundingClientRect();
+                    // 計算滑鼠在按鈕內的百分比位置 (0 ~ 100%)
+                    const x = (e.clientX - rect.left) / rect.width * 100;
+                    const y = (e.clientY - rect.top) / rect.height * 100;
+                    // ⭐️ 核心修正：直接設置 CSS 變數，控制徑向漸層的中心點
+                    addButton.style.setProperty('--mouse-x', `${x}%`);
+                    addButton.style.setProperty('--mouse-y', `${y}%`);
+                });
+            });
+
+            // 頁面載入時先渲染一次列表
+            renderTransactionList();
+        });
+
+        // 綁定 Modal 按鈕事件 (保留不變)
+        document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+        document.getElementById('editForm').addEventListener('submit', saveModalChanges);
+
+        document.getElementById('editForm').addEventListener('submit', saveModalChanges);
+
+        // ⭐️ 核心修正：點擊無資料按鈕時，呼叫父框架的 switchPage，並增加直接跳轉的 fallback
+        document.getElementById('addFirstTransactionBtn').addEventListener('click', function() {
+            if (window.parent && typeof window.parent.switchPage === 'function') {
+                // 呼叫父層的 switchPage(element=null, url='recordpage.html')
+                // 確保調用時，第二個參數傳遞目標 URL
+                window.parent.switchPage(null, 'recordpage.html');
+            } else {
+                // Fallback：如果沒有父框架或 switchPage，則直接跳轉
+                console.warn('Parent switchPage not found. Falling back to direct page load.');
+                window.location.href = 'recordpage.html';
+            }
+        });
+
+    </script>
+</html>

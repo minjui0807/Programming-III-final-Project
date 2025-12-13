@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚙️ 系統設定</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+    <style>
+        /* --------------------------- 全域設定 --------------------------- */
+        :root{
+            --bg-dark: #0f1115;
+            --bg-secondary: #1e1e1e;
+            --neon-blue: #a7d7ff;
+            --neon-pink: #ffb3cf;
+            --neon-green: #a8f0c6;
+            --neon-yellow: #fff1a6;
+            --neon-red: #ff7f7f;
+            --text-light: #e6e6e6;
+            --text-dark: #b8b8b8;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-dark);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: var(--text-light);
+            overflow-x: hidden;
+            box-sizing: border-box;
+            font-size: 18px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding-bottom: 80px;
+        }
+
+        h2 {
+            color: var(--text-light);
+            border-bottom: 2px solid var(--bg-secondary);
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+            font-size: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        h2 i { color: var(--neon-blue); }
+
+        /* --------------------------- 設定區塊 --------------------------- */
+        .settings-section {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--text-light);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-desc {
+            color: var(--text-dark);
+            font-size: 1rem;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        /* --------------------------- 按鈕群組 --------------------------- */
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            color: #000;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .btn:active { transform: scale(0.98); }
+
+        .btn-primary { background: var(--neon-blue); box-shadow: 0 0 15px rgba(167, 215, 255, 0.3); }
+        .btn-excel { background: #21a366; color: white; box-shadow: 0 0 15px rgba(33, 163, 102, 0.4); } 
+        .btn-success { background: var(--neon-green); box-shadow: 0 0 15px rgba(168, 240, 198, 0.3); }
+        .btn-danger { background: rgba(255, 127, 127, 0.2); color: var(--neon-red); border: 1px solid var(--neon-red); }
+        .btn-danger:hover { background: rgba(255, 127, 127, 0.3); color: #fff; }
+
+        #fileInput { display: none; }
+
+        .about-info {
+            text-align: center;
+            color: var(--text-dark);
+            font-size: 0.9rem;
+            margin-top: 50px;
+            opacity: 0.6;
+        }
+
+        .toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: var(--neon-green); color: #000;
+            padding: 10px 20px; border-radius: 20px;
+            font-weight: bold; opacity: 0; transition: opacity 0.3s;
+            pointer-events: none; z-index: 1000;
+            box-shadow: 0 0 15px rgba(125, 242, 168, 0.4);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2><i class="fas fa-cog"></i> 系統設定</h2>
+
+    <div class="settings-section">
+        <div class="section-title"><i class="fas fa-database" style="color: var(--neon-yellow);"></i> 資料備份與匯出</div>
+        <p class="section-desc">
+            支援 JSON 完整備份，或使用 Excel 進行資料交換。<br>
+            <span style="font-size:0.9rem; color: var(--neon-blue);">💡 匯入 Excel 時，系統會自動建立缺少的分類喔！</span>
+        </p>
+        <div class="btn-group">
+            <button class="btn btn-excel" onclick="exportToExcel()">
+                <i class="fas fa-file-excel"></i> 匯出 Excel
+            </button>
+
+            <button class="btn btn-primary" onclick="exportData()">
+                <i class="fas fa-file-export"></i> 匯出備份 (JSON)
+            </button>
+            
+            <button class="btn btn-success" onclick="document.getElementById('fileInput').click()">
+                <i class="fas fa-file-import"></i> 匯入還原
+            </button>
+            
+            <input type="file" id="fileInput" accept=".json, .xlsx, .xls" onchange="handleFileSelect(this)">
+        </div>
+    </div>
+
+    <div class="settings-section" style="border-color: rgba(255, 127, 127, 0.3);">
+        <div class="section-title"><i class="fas fa-exclamation-triangle" style="color: var(--neon-red);"></i> 危險區域</div>
+        <p class="section-desc">
+            這裡的操作無法復原，請小心使用。
+        </p>
+        <div class="btn-group">
+            <button class="btn btn-danger" onclick="clearAllData()">
+                <i class="fas fa-trash-alt"></i> 清除所有資料
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<div id="toast" class="toast">操作成功！</div>
+
+<script>
+    // ------------------- 1. 檔案選擇處理 (分流) -------------------
+    function handleFileSelect(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        const fileName = file.name.toLowerCase();
+
+        if (fileName.endsWith('.json')) {
+            importJSON(file);
+        } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+            importExcel(file);
+        } else {
+            alert('不支援的檔案格式！請使用 .json 或 .xlsx');
+        }
+        input.value = ''; // 清空以利重複選取
+    }
+
+    // ------------------- 2. 匯入 Excel 邏輯 (核心) -------------------
+    function importExcel(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                
+                // 讀取第一個工作表
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                
+                // 轉成 JSON 陣列
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                if (jsonData.length === 0) {
+                    throw new Error("Excel 裡面沒有資料！");
+                }
+
+                if (!confirm(`偵測到 ${jsonData.length} 筆資料。\n確定要匯入嗎？\n(這將會覆蓋目前的交易紀錄，但保留並合併分類)`)) {
+                    return;
+                }
+
+                // 準備轉換資料
+                const newTransactions = [];
+                const newCategories = JSON.parse(localStorage.getItem('app_categories')) || { expense: {}, income: {} };
+                
+                // 確保結構存在
+                if(Array.isArray(newCategories.expense)) { // 舊版修復
+                    const tmp = {}; newCategories.expense.forEach(c=>tmp[c]=[]); newCategories.expense=tmp;
+                }
+
+                // 預設圖標對照 (用於新分類)
+                const ICON_MAP = {
+                    '餐飲': 'fas fa-utensils', '交通': 'fas fa-bus', '購物': 'fas fa-shopping-bag',
+                    '娛樂': 'fas fa-gamepad', '住房': 'fas fa-home', '其他': 'fas fa-box',
+                    '薪水': 'fas fa-money-bill-wave', '獎金': 'fas fa-star', '投資': 'fas fa-chart-line'
+                };
+
+                // 遍歷 Excel 資料並轉換格式
+                jsonData.forEach(row => {
+                    // 欄位對應 (容錯處理，怕 Excel 欄位名稱不同)
+                    const date = row['日期'] || row['Date'];
+                    const typeRaw = row['類型'] || row['Type'];
+                    const mainCat = row['主分類'] || row['Category'];
+                    const subCat = row['子分類'] || row['SubCategory'];
+                    const amount = row['金額'] || row['Amount'];
+                    const desc = row['備註'] || row['Description'] || '';
+
+                    if (!date || !amount) return; // 跳過無效資料
+
+                    // 類型轉換 (中文 -> 英文)
+                    let type = 'expense';
+                    if (typeRaw && (typeRaw.includes('收') || typeRaw.toLowerCase() === 'income')) {
+                        type = 'income';
+                    }
+
+                    // 分類組合
+                    let fullCategory = mainCat;
+                    if (subCat) fullCategory += ` / ${subCat}`;
+
+                    // ⭐️ 自動補齊分類 (如果系統沒有這個分類，就加進去)
+                    if (mainCat) {
+                        if (type === 'expense') {
+                            if (!newCategories.expense[mainCat]) newCategories.expense[mainCat] = [];
+                        } else {
+                            if (!newCategories.income[mainCat]) newCategories.income[mainCat] = [];
+                        }
+                    }
+
+                    // 決定圖標
+                    const icon = ICON_MAP[mainCat] || (type === 'expense' ? 'fas fa-tag' : 'fas fa-coins');
+
+                    newTransactions.push({
+                        id: Date.now() + Math.random(), // 產生唯一 ID
+                        date: date,
+                        type: type,
+                        category: fullCategory || '未分類',
+                        categoryText: fullCategory || '未分類',
+                        amount: parseFloat(amount),
+                        description: desc,
+                        icon: icon
+                    });
+                });
+
+                // 存檔
+                localStorage.setItem('transactions', JSON.stringify(newTransactions));
+                localStorage.setItem('app_categories', JSON.stringify(newCategories));
+
+                showToast(`✅ 成功匯入 ${newTransactions.length} 筆交易！`);
+                
+                setTimeout(() => { window.parent.location.reload(); }, 1500);
+
+            } catch (err) {
+                alert("❌ Excel 匯入失敗：\n" + err.message);
+                console.error(err);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    // ------------------- 3. 匯入 JSON 邏輯 (原版) -------------------
+    function importJSON(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (!data.transactions || !data.app_categories) throw new Error("格式錯誤");
+
+                if (confirm(`確定要還原備份檔嗎？\n交易紀錄將被覆蓋！`)) {
+                    localStorage.setItem('transactions', JSON.stringify(data.transactions));
+                    localStorage.setItem('app_categories', JSON.stringify(data.app_categories));
+                    if (data.budget_settings) {
+                        localStorage.setItem('budget_settings', JSON.stringify(data.budget_settings));
+                    }
+                    showToast("✅ JSON 還原成功！");
+                    setTimeout(() => { window.parent.location.reload(); }, 1500);
+                }
+            } catch (err) {
+                alert("❌ 檔案格式錯誤！");
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    // ------------------- 4. 匯出 Excel -------------------
+    function exportToExcel() {
+        const transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+        if (transactions.length === 0) {
+            alert('目前沒有交易資料可以匯出喔！');
+            return;
+        }
+
+        const excelData = transactions.map(t => {
+            let mainCat = t.category || t.categoryText || '未分類';
+            let subCat = '';
+            if (mainCat.includes(' / ')) {
+                const parts = mainCat.split(' / ');
+                mainCat = parts[0];
+                subCat = parts[1];
+            }
+            return {
+                '日期': t.date,
+                '類型': t.type === 'expense' ? '支出' : '收入',
+                '主分類': mainCat,
+                '子分類': subCat,
+                '金額': parseFloat(t.amount),
+                '備註': t.description || ''
+            };
+        });
+
+        const ws = XLSX.utils.json_to_sheet(excelData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "交易紀錄");
+        
+        const dateStr = new Date().toISOString().slice(0,10);
+        XLSX.writeFile(wb, `記帳明細_${dateStr}.xlsx`);
+        showToast("✅ Excel 下載成功！");
+    }
+
+    // ------------------- 5. 匯出 JSON -------------------
+    function exportData() {
+        const data = {
+            transactions: JSON.parse(localStorage.getItem('transactions')) || [],
+            app_categories: JSON.parse(localStorage.getItem('app_categories')) || {},
+            budget_settings: JSON.parse(localStorage.getItem('budget_settings')) || {},
+            exportDate: new Date().toLocaleString()
+        };
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const dateStr = new Date().toISOString().slice(0,10);
+        a.download = `量子記帳備份_${dateStr}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast("✅ 備份檔匯出成功！");
+    }
+
+    function clearAllData() {
+        if (confirm("⚠️ 警告！這將會刪除所有資料！\n確定要執行嗎？")) {
+            localStorage.clear();
+            showToast("🗑️ 資料已清除！");
+            setTimeout(() => { window.parent.location.reload(); }, 1500);
+        }
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.style.opacity = '1';
+        setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+    }
+</script>
+
+</body>
+</html>

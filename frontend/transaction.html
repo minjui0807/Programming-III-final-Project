@@ -448,6 +448,38 @@
             display: none;             /* Chrome / Safari */
         }
 
+        .photo-preview {
+            width: 100%;
+            height: 200px;
+            margin-top: 6px;
+            border: 2px dashed rgba(255,255,255,0.3);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #aaa;
+            overflow: hidden;
+        }
+
+        .photo-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .photo-upload-btn {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 8px 14px;
+            border-radius: 8px;
+            background: var(--neon-blue);
+            color: var(--neon-yellow);
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -501,7 +533,6 @@
             cursor: pointer;
             opacity: 0.8; 
         }
-
 
         .modal-actions {
             display: flex;
@@ -997,6 +1028,22 @@
                             <input type="number" id="modal_amount" min="0" step="1" required placeholder="輸入金額">
                         </div>
 
+                        <!-- 📸 交易照片 -->
+                        <div class="form-group">
+                            <label>交易照片</label>
+
+                            <label class="photo-upload-btn">
+                                <i class="fas fa-upload"></i> 上傳 / 更換照片
+                                <input type="file" id="photoInput" accept="image/*" hidden>
+                            </label>
+
+                            <div class="photo-preview" id="photoPreview">
+                                <i class="fas fa-camera"></i>
+                                <p>尚未上傳照片</p>
+                            </div>
+
+                        </div>
+
                         <div class="form-group">
                             <label for="modal_description">備註</label>
                             <input type="text" id="modal_description" placeholder="輸入備註...">
@@ -1096,6 +1143,25 @@
         }
         let APP_CATEGORIES = loadAppCategories();
 
+        function resolveCategoryIcon(type, mainCat, subCat) {
+            const categoryData = loadCategoryData();
+            const list = categoryData[type] || [];
+
+            // 找主分類
+            const main = list.find(c => c.name === mainCat);
+            if (!main) return 'fas fa-folder'; // fallback
+
+            // 如果有子分類 → 優先用子分類 icon
+            if (subCat && main.subs && main.subs.length > 0) {
+                const sub = main.subs.find(s => s.name === subCat);
+                if (sub && sub.icon) return sub.icon;
+            }
+
+            // 沒子分類 or 找不到 → 用主分類 icon
+            return main.icon || 'fas fa-folder';
+        }
+
+
         // [JS] 確保有這個圖示對照表，不然存檔會報錯！
         const CATEGORY_ICON_MAP = {
             // 支出
@@ -1112,88 +1178,6 @@
             '兼職': 'fas fa-briefcase',
             '其他收入': 'fas fa-hand-holding-usd'
         };
-
-        // [JS] 更新 Modal 分類選單 (修復：確保打開時會選中正確的分類)
-        function updateModalCategories(type, selectedMain, selectedSub) {
-            const mainSelect = document.getElementById('modal_main_category');
-            const subSelect = document.getElementById('modal_sub_category');
-            
-            // 防呆
-            if (!mainSelect || !subSelect) return;
-
-            // 確保有分類資料
-            if (typeof APP_CATEGORIES === 'undefined') APP_CATEGORIES = loadAppCategories();
-            const categoryData = APP_CATEGORIES[type] || {};
-            const mainCategories = Object.keys(categoryData);
-
-            // 1. 清空並產生主分類選項
-            mainSelect.innerHTML = '';
-            
-            mainCategories.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat;
-                option.textContent = cat;
-                mainSelect.appendChild(option);
-            });
-
-            // ⭐️ 關鍵修復：如果原本存的分類不在清單裡（例如舊資料），強制加回去！
-            if (selectedMain && !mainCategories.includes(selectedMain)) {
-                const option = document.createElement('option');
-                option.value = selectedMain;
-                option.textContent = selectedMain;
-                mainSelect.appendChild(option);
-            }
-
-            // ⭐️ 關鍵修復：強制設定選中的值
-            if (selectedMain) {
-                mainSelect.value = selectedMain;
-            } else if (mainCategories.length > 0) {
-                // 如果沒有指定，預設選第一個
-                mainSelect.value = mainCategories[0];
-            }
-
-            // 2. 定義產生子分類的函式
-            const updateSubOptions = (mainCat) => {
-                subSelect.innerHTML = '';
-                
-                // 加入預設選項
-                const defaultOpt = document.createElement('option');
-                defaultOpt.value = '';
-                defaultOpt.textContent = '-- 無 --';
-                subSelect.appendChild(defaultOpt);
-
-                const subList = categoryData[mainCat] || [];
-                subList.forEach(sub => {
-                    const option = document.createElement('option');
-                    option.value = sub;
-                    option.textContent = sub;
-                    subSelect.appendChild(option);
-                });
-
-                // ⭐️ 子分類也要防呆：如果原本有選，但不在清單裡，強制加回去
-                if (selectedSub && selectedSub !== '' && !subList.includes(selectedSub)) {
-                    const option = document.createElement('option');
-                    option.value = selectedSub;
-                    option.textContent = selectedSub;
-                    subSelect.appendChild(option);
-                }
-
-                // ⭐️ 強制設定子分類的值
-                if (selectedSub) {
-                    subSelect.value = selectedSub;
-                } else {
-                    subSelect.value = '';
-                }
-            };
-
-            // 3. 立即執行一次子分類更新
-            updateSubOptions(mainSelect.value);
-
-            // 4. 綁定監聽：當使用者手動改主分類時，更新子分類
-            mainSelect.onchange = function() {
-                updateSubOptions(this.value);
-            };
-        }
 
         // 從 localStorage 讀取數據，若無則使用假資料並存入
         let TRANSACTIONS = JSON.parse(localStorage.getItem('transactions'));
@@ -1266,6 +1250,12 @@
             document.getElementById('editForm').reset();
             document.getElementById('modal_id').value = '';
             
+            currentPhotoBase64 = '';
+            document.getElementById('photoPreview').innerHTML = `
+                <i class="fas fa-camera"></i>
+                <p>尚未上傳照片</p>
+            `;
+            
             // 隱藏刪除按鈕
             document.getElementById('modalDeleteBtn').style.display = 'none';
         }
@@ -1276,6 +1266,49 @@
                 closeModal();
             }
         }
+
+        let currentPhotoBase64 = '';
+
+        document.getElementById('photoInput').addEventListener('change', async function () {
+            const file = this.files[0];
+            if (!file) return;
+
+            currentPhotoBase64 = await resizeImageKeepRatio(file);
+
+            document.getElementById('photoPreview').innerHTML =
+                `<img src="${currentPhotoBase64}">`;
+        });
+
+        function resizeImageKeepRatio(file, maxEdge = 1200, quality = 0.8) {
+            return new Promise(resolve => {
+                const img = new Image();
+                const reader = new FileReader();
+
+                reader.onload = e => img.src = e.target.result;
+                reader.readAsDataURL(file);
+
+                img.onload = () => {
+                    let { width, height } = img;
+
+                    // 只處理過大的圖片
+                    if (Math.max(width, height) > maxEdge) {
+                        const scale = maxEdge / Math.max(width, height);
+                        width = Math.round(width * scale);
+                        height = Math.round(height * scale);
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+            });
+        }
+
 
         /**
          * [修改] 根據類型更新 Modal 內的主分類與子分類
@@ -1399,7 +1432,12 @@
                 subCat = parts[1];
             }
 
-            updateModalCategories(transaction.type, mainCat, subCat);
+            updateModalCategoriesFromCategoryData(
+                transaction.type,
+                mainCat,
+                subCat
+            );
+
 
             // 3. 綁定類型切換
             const typeSelect = document.getElementById('modal_type');
@@ -1407,8 +1445,13 @@
                 const newType = this.value;
                 const catData = APP_CATEGORIES[newType] || {};
                 const firstMain = Object.keys(catData)[0] || '';
-                updateModalCategories(newType, firstMain, '');
+                updateModalCategoriesFromCategoryData(
+                    newType,
+                    firstMain, // 使用新類型的第一個主分類
+                    ''         // 子分類重置
+                );
             };
+
 
             // 4. 設定刪除按鈕 (⭐️ 大絕招：影分身替換術)
             let delBtn = document.getElementById('modalDeleteBtn');
@@ -1433,10 +1476,24 @@
                 };
             }
 
+            const preview = document.getElementById('photoPreview');
+            currentPhotoBase64 = transaction.photo || '';
+
+            if (currentPhotoBase64) {
+                preview.innerHTML = `<img src="${currentPhotoBase64}">`;
+            } else {
+                preview.innerHTML = `
+                    <i class="fas fa-camera"></i>
+                    <p>尚未上傳照片</p>
+                `;
+            }
+
+
             // 5. 顯示視窗
             const modal = document.getElementById('editTransactionModal');
             modal.style.display = 'flex';
         }
+        
 
         /**
          * [JS] 刪除交易 (純邏輯，不跳窗)
@@ -1544,14 +1601,7 @@
                 return;
             }
 
-            // 5. 決定圖示
-            let newIcon = 'fas fa-question';
-            // 嘗試從主分類名稱找圖示
-            if (typeof CATEGORY_ICON_MAP !== 'undefined' && CATEGORY_ICON_MAP[mainCat]) {
-                newIcon = CATEGORY_ICON_MAP[mainCat];
-            } else {
-                newIcon = type === 'expense' ? 'fas fa-receipt' : 'fas fa-coins';
-            }
+            const newIcon = resolveCategoryIcon(type, mainCat, subCat);
 
             // 6. 準備資料物件
             const newData = {
@@ -1561,7 +1611,8 @@
                 categoryText: finalCategory, // 舊版欄位 (雙重保險)
                 amount: amount,
                 description: description,
-                icon: newIcon
+                icon: newIcon,
+                photo: currentPhotoBase64
             };
 
             // 7. 寫入陣列

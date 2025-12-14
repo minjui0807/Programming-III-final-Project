@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛠️ 分類管理中心</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-dark: #0f1115;
+            --bg-secondary: #1e1e1e;
+            --neon-blue: #a7d7ff;
+            --neon-pink: #ffb3cf;
+            --neon-green: #a8f0c6;
+            --neon-yellow: #fff1a6;
+            --neon-red: #ff7f7f;
+            --text-light: #e6e6e6;
+            --text-dark: #b8b8b8;
+
+            --cat-1: #ff7f7f;
+            --cat-2: #ffcc66;
+            --cat-3: #a8f0c6;
+            --cat-4: #a7d7ff;
+            --cat-5: #ffb3cf;
+            --cat-6: #cf9cff;
+            --cat-7: #66ffcc;
+            --cat-8: #ff9c66;
+            --cat-9: #99ccff;
+            --cat-10: #d4d4d4;
+            --cat-11: #ffd1dc;
+            --cat-12: #ffe066;
+            --cat-13: #8affc1;
+            --cat-14: #8ed1ff;
+            --cat-15: #c9a7ff;
+            --cat-16: #ffb380;
+            --cat-17: #b3ffb3;
+            --cat-18: #b3d9ff;
+            --cat-19: #ffe6b3;
+            --cat-20: #ffadad;
+
+            --card-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        body{
+            margin:0;
+            padding:20px;
+            background:var(--bg-dark);
+            font-family:'Segoe UI','Noto Sans TC',sans-serif;
+            color:var(--text-light);
+        }
+
+        .container{
+            max-width:900px;
+            margin:auto;
+            padding-bottom:80px;
+        }
+
+        h2{
+            color: var(--neon-yellow);
+            border-bottom:2px solid var(--bg-secondary);
+            padding-bottom:12px;
+            margin-bottom:25px;
+            display:flex;
+            align-items:center;
+            gap:10px;
+        }
+
+        .type-switch{
+            display:flex;
+            gap:10px;
+            margin-bottom:20px;
+            padding:10px;
+            background:var(--bg-secondary);
+            border-radius:12px;
+        }
+
+        .type-switch button{
+            flex-grow:1;
+            padding:12px;
+            font-size:16px;
+            border-radius:10px;
+            transition:all 0.3s;
+            background:var(--bg-dark);
+            color:var(--text-dark);
+            border:1px solid var(--bg-secondary);
+        }
+
+        .type-switch button.active.expense{
+            background:var(--neon-pink);
+            color:var(--bg-dark);
+            box-shadow:0 0 8px var(--neon-pink);
+        }
+
+        .type-switch button.active.income{
+            background:var(--neon-blue);
+            color:var(--bg-dark);
+            box-shadow:0 0 8px var(--neon-blue);
+        }
+
+        #categoryList{
+            display:grid;
+            grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+            gap:20px;
+        }
+
+        .category-card{
+            background:var(--bg-secondary);
+            border-radius:12px;
+            padding:15px;
+            box-shadow:var(--card-shadow);
+            border-left:5px solid var(--neon-yellow);
+            transition:all 0.3s;
+        }
+
+        .main-category-header{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            margin-bottom:15px;
+        }
+
+        .main-category-info{
+            display:flex;
+            align-items:center;
+            gap:10px;
+        }
+
+        .main-category-info i{
+            font-size:24px;
+        }
+
+        .main-category-name{
+            font-size:1.1em;
+            font-weight:bold;
+            color:var(--text-light);
+        }
+
+        .main-category-actions .btn{
+            padding:6px 10px;
+            font-size:14px;
+            border-radius:8px;
+            cursor:pointer;
+            margin-left:8px;
+            transition:background-color 0.2s;
+        }
+
+        .btn-primary{
+            background: var(--neon-blue);
+            color: var(--bg-dark);
+            border:none;
+        }
+
+        .btn-primary:hover{
+            filter:brightness(1.2);
+        }
+
+        .btn-danger{
+            background: var(--neon-red);
+            color: var(--bg-dark);
+            border:none;
+        }
+
+        .btn-danger:hover{
+            filter:brightness(1.2);
+        }
+
+        .sub-category-list{
+            margin-top:10px;
+            padding-top:10px;
+            border-top:1px dashed var(--text-dark);
+        }
+
+        .sub-category-item{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:8px 0;
+            font-size:0.95em;
+            color:var(--text-dark);
+            border-bottom:1px dotted rgba(255,255,255,0.1);
+        }
+
+        .sub-category-item:last-child{
+            border-bottom:none;
+        }
+
+        .sub-category-item i{
+            margin-right:5px;
+            font-size:16px;
+        }
+
+        .sub-category-item .btn-group{
+            display:flex;
+            gap:5px;
+        }
+
+        .sub-category-item .btn-group button{
+            padding:3px 8px;
+            font-size:12px;
+            border-radius:6px;
+            border:none;
+            cursor:pointer;
+            background:rgba(255,255,255,0.1);
+            color:var(--text-light);
+            transition:background 0.2s;
+        }
+
+        .sub-category-item .btn-group button:hover{
+            background:rgba(255,255,255,0.2);
+        }
+
+        .btn-secondary{
+            background:var(--bg-dark);
+            color:var(--text-light);
+            border:1px solid var(--text-dark);
+            padding:8px 12px;
+            border-radius:8px;
+            cursor:pointer;
+            transition:all 0.2s;
+            font-weight:600;
+        }
+
+        .btn-secondary:hover{
+            border-color:var(--neon-yellow);
+            color:var(--neon-yellow);
+            box-shadow:0 0 5px rgba(255,241,166,0.5);
+        }
+
+        .modal-overlay{
+            display:none;
+            position:fixed;
+            top:0;
+            left:0;
+            width:100%;
+            height:100%;
+            background:rgba(0,0,0,0.8);
+            backdrop-filter:blur(5px);
+            z-index:1000;
+            justify-content:center;
+            align-items:center;
+        }
+
+        .modal-content{
+            background:var(--bg-secondary);
+            padding:25px;
+            border-radius:12px;
+            max-width:450px;
+            width:90%;
+            box-shadow:0 0 20px rgba(0,0,0,0.8);
+            animation:fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn{
+            from{
+                opacity:0;
+                transform:translateY(-20px);
+            }
+            to{
+                opacity:1;
+                transform:translateY(0);
+            }
+        }
+
+        .modal-header{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom:20px;
+            padding-bottom:10px;
+            border-bottom:1px solid var(--text-dark);
+        }
+
+        .modal-header h3{
+            margin:0;
+            color:var(--neon-yellow);
+        }
+
+        .modal-close{
+            background:none;
+            border:none;
+            color:var(--text-dark);
+            font-size:20px;
+            cursor:pointer;
+        }
+
+        .form-group{
+            margin-bottom:15px;
+        }
+
+        .form-group label{
+            display:block;
+            margin-bottom:5px;
+            font-weight:bold;
+            color:var(--text-light);
+        }
+
+        .form-group input[type="text"]{
+            width:100%;
+            max-width:350px;   /* 🔹 限制最大寬度 */
+            padding:10px;
+            border:1px solid var(--text-dark);
+            border-radius:8px;
+            background:var(--bg-dark);
+            color:var(--text-light);
+            font-size:16px;
+            transition:border-color 0.3s;
+        }
+
+        .form-group input[type="text"]:focus{
+            outline:none;
+            border-color:var(--neon-blue);
+            box-shadow:0 0 5px var(--neon-blue);
+        }
+
+        #colorSelector{
+            display:flex;
+            flex-wrap:wrap;
+            gap:10px;
+            margin-top:10px;
+            margin-left:12px;
+            padding-top:6px;
+        }
+
+        .color-option{
+            width:30px;
+            height:30px;
+            border-radius:50%;
+            cursor:pointer;
+            border:2px solid var(--bg-secondary);
+            transition:transform 0.2s, box-shadow 0.2s;
+        }
+
+        .color-option.selected{
+            transform:scale(1.2);
+            box-shadow:0 0 10px var(--neon-yellow);
+            border-color:var(--text-light);
+        }
+
+        #iconSelector{
+            margin-top:10px;
+            max-height:300px;
+            overflow-y:auto;
+            padding:10px;
+            background:var(--bg-dark);
+            border-radius:8px;
+            border:1px solid var(--text-dark);
+            scrollbar-width:none;
+            -ms-overflow-style:none;
+        }
+
+        #iconSelector::-webkit-scrollbar{
+            display:none;
+        }
+
+        .icon-category-header{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:5px 0;
+            cursor:pointer;
+            color:var(--neon-blue);
+            font-weight:bold;
+            border-bottom:1px dotted var(--text-dark);
+            margin-bottom:5px;
+        }
+
+        .icon-category-content{
+            display:grid;
+            grid-template-columns:repeat(auto-fill,minmax(40px,1fr));
+            gap:5px;
+            padding:5px 0;
+        }
+
+        .icon-header{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+        }
+
+        .icon-toggle-btn{
+            background:var(--neon-pink);
+            color:var(--bg-dark);
+            border:none;
+            border-radius:6px;
+            padding:4px 10px;
+            font-size:12px;
+            cursor:pointer;
+            font-weight:600;
+        }
+
+        .icon-toggle-btn:hover{
+            filter:brightness(1.1);
+        }
+
+
+        .icon-option{
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            width:40px;
+            height:40px;
+            border-radius:8px;
+            background:var(--bg-secondary);
+            cursor:pointer;
+            font-size:20px;
+            color:var(--text-dark);
+            transition:all 0.2s;
+            border:2px solid transparent;
+        }
+
+        .icon-option.selected{
+            background:var(--neon-green);
+            color:var(--bg-dark);
+            box-shadow:0 0 8px var(--neon-green);
+            border-color:var(--bg-dark);
+        }
+
+        .modal-actions{
+            display:flex;
+            justify-content:flex-end;
+            gap:10px;
+            margin-top:20px;
+        }
+
+        .btn-confirm{
+            background:linear-gradient(135deg,var(--neon-green),#6ee7b7);
+            color:var(--bg-dark);
+            padding:8px 18px;
+            border-radius:999px;
+        }
+
+        .btn-cancel{
+            background:rgba(255,255,255,.15);
+            color:var(--text-light);
+            padding:8px 16px;
+            border-radius:999px;
+        }
+
+
+        .modal-actions button{
+            padding:10px 15px;
+            font-weight:bold;
+            border:none;
+            border-radius:8px;
+            cursor:pointer;
+            transition:all 0.2s;
+        }
+
+        .modal-content{
+            max-width:380px;          /* 🔹 整體變小 */
+            max-height:80vh;          /* 🔹 不超過視窗 */
+            display:flex;
+            flex-direction:column;
+        }
+
+        .modal-header{
+            flex-shrink:0;
+        }
+
+        #categoryForm{
+            flex:1;
+            overflow-y:auto;
+            padding-right:6px;        /* 預防被裁 */
+        }
+
+        /* 隱藏滾動條但可滾 */
+        #categoryForm::-webkit-scrollbar{
+            width:0;
+        }
+        #categoryForm{
+            scrollbar-width:none;
+        }
+
+
+        .btn{
+            border:none;
+            border-radius:999px;
+            padding:6px 14px;
+            font-size:13px;
+            font-weight:600;
+            cursor:pointer;
+            display:inline-flex;
+            align-items:center;
+            gap:6px;
+            transition:all .2s ease;
+            white-space:nowrap;
+        }
+
+        .btn i{
+            font-size:13px;
+        }
+
+        .btn-primary{
+            background:linear-gradient(135deg,var(--neon-blue),#7bbcff);
+            color:var(--bg-dark);
+        }
+
+        .btn-danger{
+            background:linear-gradient(135deg,var(--neon-red),#ff5f5f);
+            color:var(--bg-dark);
+        }
+
+        .btn-secondary{
+            background:rgba(255,255,255,.08);
+            color:var(--text-light);
+            border:1px solid rgba(255,255,255,.15);
+        }
+
+        .btn:hover{
+            transform:translateY(-1px);
+            box-shadow:0 4px 12px rgba(0,0,0,.4);
+        }
+
+
+        .btn-confirm{
+            background:var(--neon-green);
+            color:var(--bg-dark);
+            box-shadow:0 0 5px var(--neon-green);
+        }
+
+        .btn-confirm:hover{
+            filter:brightness(1.1);
+        }
+
+        .btn-cancel{
+            background:var(--text-dark);
+            color:var(--bg-dark);
+        }
+
+        .btn-cancel:hover{
+            color:var(--text-light);
+        }
+
+        #addNewMainBtn{
+            margin-bottom:20px;
+            width:100%;
+            padding:15px;
+            background:var(--neon-yellow);
+            color:var(--bg-dark);
+            font-size:16px;
+            font-weight:bold;
+            border-radius:12px;
+            border:none;
+            cursor:pointer;
+            box-shadow:0 0 10px rgba(255,241,166,0.5);
+            transition:all 0.3s;
+        }
+
+        #addNewMainBtn:hover{
+            transform:translateY(-2px);
+            box-shadow:0 0 15px var(--neon-yellow);
+        }
+
+        .dragging {
+            opacity: 0.4;
+        }
+
+        .drag-over {
+            outline: 2px dashed var(--neon-yellow);
+            outline-offset: 4px;
+        }
+
+        .sub-drag-over {
+            background: rgba(255,255,255,.08);
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2><i class="fas fa-tags"></i> 分類管理中心</h2>
+        <div class="type-switch">
+            <button id="switchExpense" class="active expense" onclick="switchType('expense')"><i class="fas fa-money-bill-wave"></i> 支出分類</button>
+            <button id="switchIncome" class="income" onclick="switchType('income')"><i class="fas fa-hand-holding-usd"></i> 收入分類</button>
+        </div>
+        <button id="addNewMainBtn" onclick="openModal('addMain')"><i class="fas fa-plus"></i> 新增主分類</button>
+        <div id="categoryList"></div>
+    </div>
+
+    <div id="categoryModal" class="modal-overlay">
+        <div class="modal-content">
+
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h3 id="modalTitle">新增分類</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+
+            <!-- Modal Body -->
+            <form id="categoryForm">
+
+                <div class="form-group">
+                    <label for="categoryName">分類名稱</label>
+                    <input type="text" id="categoryName" required>
+                </div>
+
+                <div class="form-group" id="colorGroup">
+                    <label>選擇顏色</label>
+                    <div id="colorSelector"></div>
+                    <input type="hidden" id="selectedColorValue">
+                </div>
+
+                <div class="form-group">
+                    <div class="icon-header">
+                        <label>選擇圖示</label>
+                        <button
+                            type="button"
+                            id="toggleAllBtn"
+                            onclick="toggleAllIcons()"
+                            class="icon-toggle-btn">
+                            展開
+                        </button>
+                    </div>
+                    <div id="iconSelector"></div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal()">取消</button>
+                    <button type="submit" id="modalSaveBtn" class="btn-confirm">確認</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+
+</body>
+
+    <script>
+
+        function getCategories(type='expense') {
+            const raw = localStorage.getItem('categoryData');
+            if(!raw) {
+                localStorage.setItem('categoryData', JSON.stringify(DEFAULT_CATEGORIES));
+                return JSON.parse(JSON.stringify(DEFAULT_CATEGORIES[type]));
+            }
+            try {
+                const data = JSON.parse(raw);
+                return data[type] || [];
+            } catch {
+                return [];
+            }
+        }
+
+        function saveCategories(type, list) {
+            const data = JSON.parse(localStorage.getItem('categoryData') || '{}');
+            data[type] = list;
+            localStorage.setItem('categoryData', JSON.stringify(data));
+        }
+
+
+        function addCategory(type, name, color, icon) {
+            const list = getCategories(type);
+            const id = Date.now();
+            list.push({ id, name, color, icon, sub: [] });
+            saveCategories(type, list);
+        }
+
+        function editCategory(type, id, newData) {
+            const list = getCategories(type);
+            const index = list.findIndex(c => c.id === id);
+            if(index !== -1){
+                list[index] = { ...list[index], ...newData };
+                saveCategories(type, list);
+            }
+        }
+
+        function deleteCategory(type, id) {
+            const list = getCategories(type);
+            const newList = list.filter(c => c.id !== id);
+            saveCategories(type, newList);
+        }
+
+        const DEFAULT_CATEGORIES = {
+            expense: [
+                { id: 1, name: '餐飲', icon: 'fas fa-utensils', color: 'var(--cat-red)', colorRgb: '255,127,127', sub: [{ id: 101, name: '早餐', icon: 'fas fa-coffee' }, { id: 102, name: '午餐', icon: 'fas fa-drumstick-bite' }, { id: 103, name: '晚餐', icon: 'fas fa-hamburger' }] },
+                { id: 2, name: '交通', icon: 'fas fa-bus', color: 'var(--cat-blue)', colorRgb: '127,191,255', sub: [{ id: 201, name: '大眾運輸', icon: 'fas fa-subway' }, { id: 202, name: '計程車', icon: 'fas fa-taxi' }] },
+                { id: 3, name: '購物', icon: 'fas fa-shopping-bag', color: 'var(--cat-purple)', colorRgb: '191,127,255', sub: [] },
+                { id: 4, name: '娛樂', icon: 'fas fa-film', color: 'var(--cat-yellow)', colorRgb: '255,255,127', sub: [] }
+            ],
+            income: [
+                { id: 11, name: '薪資', icon: 'fas fa-money-check-alt', color: 'var(--cat-green)', colorRgb: '127,255,127', sub: [] },
+                { id: 12, name: '兼職', icon: 'fas fa-briefcase', color: 'var(--cat-orange)', colorRgb: '255,191,127', sub: [] }
+            ]
+        };
+
+
+        const CATEGORY_COLORS = ['var(--cat-1)','var(--cat-2)','var(--cat-3)','var(--cat-4)','var(--cat-5)','var(--cat-6)','var(--cat-7)','var(--cat-8)','var(--cat-9)','var(--cat-10)','var(--cat-11)','var(--cat-12)','var(--cat-13)','var(--cat-14)','var(--cat-15)','var(--cat-16)','var(--cat-17)','var(--cat-18)','var(--cat-19)','var(--cat-20)'];
+        // ICON 分類設定（可自由增加分類與 icon）
+        const ICON_CATEGORIES = {
+        '常用': [
+            'fas fa-utensils','fas fa-car','fas fa-home','fas fa-wallet','fas fa-money-bill-wave',
+            'fas fa-coins','fas fa-credit-card','fas fa-gift','fas fa-chart-line','fas fa-hand-holding-usd',
+            'fas fa-shopping-bag','fas fa-graduation-cap','fas fa-stethoscope','fas fa-plane','fas fa-receipt',
+            'fas fa-bell','fas fa-calendar','fas fa-envelope','fas fa-globe','fas fa-phone'
+        ],
+        '食物': [
+            'fas fa-drumstick-bite','fas fa-coffee','fas fa-ice-cream','fas fa-pizza-slice','fas fa-bread-slice',
+            'fas fa-hamburger','fas fa-carrot','fas fa-cocktail','fas fa-cheese','fas fa-apple-alt',
+            'fas fa-hotdog','fas fa-bacon','fas fa-wine-glass','fas fa-beer','fas fa-fish',
+            'fas fa-seedling','fas fa-lemon','fas fa-egg','fas fa-pepper-hot','fas fa-cookie-bite'
+        ],
+        '生活': [
+            'fas fa-house-user','fas fa-plug','fas fa-wifi','fas fa-couch','fas fa-bath','fas fa-tint',
+            'fas fa-toolbox','fas fa-tshirt','fas fa-broom','fas fa-lightbulb','fas fa-door-closed',
+            'fas fa-key','fas fa-sink','fas fa-shower','fas fa-soap','fas fa-fan', 'fas fa-tv','fas fa-blender'
+        ],
+        '交通': [
+            'fas fa-gas-pump','fas fa-bus','fas fa-train','fas fa-subway','fas fa-taxi','fas fa-bicycle',
+            'fas fa-shuttle-van','fas fa-truck','fas fa-motorcycle','fas fa-car-side','fas fa-ship',
+            'fas fa-helicopter','fas fa-plane','fas fa-trailer','fas fa-rocket','fas fa-traffic-light',
+            'fas fa-road','fas fa-map','fas fa-location-arrow'
+        ],
+        '娛樂': [
+            'fas fa-gamepad','fas fa-film','fas fa-users','fas fa-music','fas fa-camera','fas fa-theater-masks',
+            'fas fa-tv','fas fa-dice','fas fa-puzzle-piece','fas fa-book-open','fas fa-microphone','fas fa-guitar',
+            'fas fa-headphones','fas fa-basketball-ball','fas fa-volleyball-ball','fas fa-futbol','fas fa-baseball-ball',
+            'fas fa-bowling-ball','fas fa-chess','fas fa-paint-brush'
+        ],
+        '金融': [
+            'fas fa-credit-card','fas fa-chart-line','fas fa-piggy-bank','fas fa-file-invoice-dollar','fas fa-money-check-alt',
+            'fas fa-exchange-alt','fas fa-coins','fas fa-wallet','fas fa-calculator','fas fa-receipt',
+            'fas fa-landmark','fas fa-hand-holding-usd','fas fa-dollar-sign','fas fa-chart-pie','fas fa-university',
+            'fas fa-chart-bar','fas fa-wallet','fas fa-balance-scale','fas fa-cash-register','fas fa-sort-amount-up'
+        ],
+        '健康': [
+            'fas fa-heartbeat','fas fa-stethoscope','fas fa-pills','fas fa-syringe','fas fa-hospital',
+            'fas fa-first-aid','fas fa-dumbbell','fas fa-running','fas fa-biking',
+            'fas fa-clinic-medical','fas fa-notes-medical','fas fa-tooth','fas fa-procedures','fas fa-hand-holding-medical',
+            'fas fa-allergies','fas fa-prescription-bottle','fas fa-x-ray','fas fa-vial','fas fa-brain'
+        ],
+        '寵物': [
+            'fas fa-dog','fas fa-cat','fas fa-fish','fas fa-paw','fas fa-horse','fas fa-frog',
+            'fas fa-spider','fas fa-dove','fas fa-dragon','fas fa-hippo','fas fa-fish-fins','fas fa-feather',
+            'fas fa-bone','fas fa-bug','fas fa-otter','fas fa-crow','fas fa-kiwi-bird','fas fa-hat-cowboy','fas fa-kiwi-bird','fas fa-dragon'
+        ],
+        '旅行': [
+            'fas fa-plane','fas fa-ship','fas fa-car','fas fa-bicycle','fas fa-hiking','fas fa-map-marked-alt',
+            'fas fa-compass','fas fa-mountain','fas fa-campground','fas fa-route','fas fa-suitcase','fas fa-passport',
+            'fas fa-globe','fas fa-anchor','fas fa-sailboat','fas fa-bus','fas fa-train','fas fa-subway','fas fa-taxi','fas fa-motorcycle'
+        ],
+        '科技': [
+            'fas fa-laptop','fas fa-mobile-alt','fas fa-tablet-alt','fas fa-microchip','fas fa-server','fas fa-cogs',
+            'fas fa-robot','fas fa-keyboard','fas fa-mouse','fas fa-headset','fas fa-tv','fas fa-camera','fas fa-cloud',
+            'fas fa-wifi','fas fa-broadcast-tower','fas fa-satellite','fas fa-battery-full','fas fa-lightbulb','fas fa-rocket','fas fa-hdd'
+        ]
+        };
+
+
+        // 渲染 icon modal
+        function renderIcons() {
+            iconSelector.innerHTML = '';
+
+            for (const catName in ICON_CATEGORIES) {
+                const icons = ICON_CATEGORIES[catName];
+                const contentId = `iconCat-${catName.replace(/\s/g, '')}`;
+
+                // 每個 icon
+                const iconOptionsHtml = icons.map(icon => `
+                    <div class="icon-option ${icon === selectedIcon ? 'selected' : ''}" onclick="selectIcon('${icon}', this)">
+                        <i class="${icon}"></i>
+                    </div>
+                `).join('');
+
+                iconSelector.innerHTML += `
+                    <div id="${contentId}">
+                        <div class="icon-category-header" onclick="toggleIconCategory('${contentId}')">
+                            <span>${catName}</span>
+                            <i class="fas fa-chevron-down toggle-icon"></i>
+                        </div>
+                        <div class="icon-category-content" style="display: none;">
+                            ${iconOptionsHtml}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 第一個分類預設展開
+            const firstCat = Object.keys(ICON_CATEGORIES)[0];
+            const firstContent = document.querySelector(`#iconCat-${firstCat.replace(/\s/g, '')} .icon-category-content`);
+            const firstToggle = document.querySelector(`#iconCat-${firstCat.replace(/\s/g, '')} .toggle-icon`);
+            if(firstContent && firstToggle){
+                firstContent.style.display = 'grid';
+                firstToggle.classList.replace('fa-chevron-down','fa-chevron-up');
+            }
+        }
+
+        // 選取 icon
+        function selectIcon(icon, element) {
+            selectedIcon = icon;
+            document.querySelectorAll('.icon-option').forEach(el => el.classList.remove('selected'));
+            if (element) element.classList.add('selected');
+        }
+
+        // 收合/展開 icon 分類
+        function toggleIconCategory(id){
+            const content = document.querySelector(`#${id} .icon-category-content`);
+            const icon = document.querySelector(`#${id} .toggle-icon`);
+            if(content.style.display === 'none'){
+                content.style.display = 'grid';
+                icon.classList.replace('fa-chevron-down','fa-chevron-up');
+            } else {
+                content.style.display = 'none';
+                icon.classList.replace('fa-chevron-up','fa-chevron-down');
+            }
+        }
+
+        let currentType = 'expense', modalAction = 'addMain', targetMainIndex = null, targetSubIndex = null;
+        let selectedColor = CATEGORY_COLORS[0], selectedIcon = 'fas fa-utensils';
+
+        const modal = document.getElementById('categoryModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const categoryForm = document.getElementById('categoryForm');
+        const categoryNameInput = document.getElementById('categoryName');
+        const colorGroup = document.getElementById('colorGroup');
+        const colorSelector = document.getElementById('colorSelector');
+        const iconSelector = document.getElementById('iconSelector');
+        const selectedColorValueInput = document.getElementById('selectedColorValue');
+        const categoryListEl = document.getElementById('categoryList');
+        const modalSaveBtn = document.getElementById('modalSaveBtn');
+        const switchExpenseBtn = document.getElementById('switchExpense');
+        const switchIncomeBtn = document.getElementById('switchIncome');
+
+        // 讀取/儲存資料
+        function getCategoryData() {
+            let data = JSON.parse(localStorage.getItem('categoryData'));
+            if(!data) data = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+            if(!data.expense) data.expense = DEFAULT_CATEGORIES.expense;
+            if(!data.income) data.income = DEFAULT_CATEGORIES.income;
+            data.expense.forEach(c=>{if(!c.sub) c.sub=[]});
+            data.income.forEach(c=>{if(!c.sub) c.sub=[]});
+            return data;
+        }
+        function saveCategoryData(data) { localStorage.setItem('categoryData', JSON.stringify(data)); }
+
+        // 切換分類
+        function switchType(type){
+            currentType = type;
+            renderCategoryManager();
+            switchExpenseBtn.classList.toggle('active', currentType === 'expense');
+            switchIncomeBtn.classList.toggle('active', currentType === 'income');
+        }
+
+        // Modal
+        function openModal(action, mainIndex=null, subIndex=null){
+            modalAction = action; targetMainIndex = mainIndex; targetSubIndex = subIndex;
+            const data = getCategoryData();
+            categoryNameInput.value = '';
+            selectedColor = CATEGORY_COLORS[0]; selectedIcon = 'fas fa-utensils';
+            colorGroup.style.display = 'block';
+
+            if(action==='addMain'){ modalTitle.textContent='新增主分類'; modalSaveBtn.textContent='確認新增'; }
+            if(action==='editMain'){ 
+                const main = data[currentType][mainIndex];
+                modalTitle.textContent=`修改主分類：${main.name}`; modalSaveBtn.textContent='確認修改';
+                categoryNameInput.value=main.name; selectedColor=main.color; selectedIcon=main.icon;
+            }
+            if(action==='addSub'){
+                const main = data[currentType][mainIndex];
+                modalTitle.textContent=`新增子分類（隸屬：${main.name}）`; modalSaveBtn.textContent='確認新增';
+                colorGroup.style.display='none';
+            }
+            if(action==='editSub'){
+                const sub = data[currentType][mainIndex].sub[subIndex];
+                modalTitle.textContent=`修改子分類：${sub.name}`; modalSaveBtn.textContent='確認修改';
+                categoryNameInput.value=sub.name; selectedIcon=sub.icon;
+                colorGroup.style.display='none';
+            }
+
+            renderColors();
+            renderIcons();
+            modal.style.display='flex';
+
+            allIconsExpanded = true;
+            toggleAllIcons();
+        }
+        function closeModal(){ modal.style.display='none'; }
+
+        function renderColors(){
+            colorSelector.innerHTML=''; 
+            CATEGORY_COLORS.forEach(color=>{
+                const div=document.createElement('div');
+                div.className='color-option'+(color===selectedColor?' selected':'');
+                div.style.backgroundColor=color; div.onclick=()=>{selectedColor=color; renderColors();};
+                colorSelector.appendChild(div);
+            });
+            selectedColorValueInput.value=selectedColor;
+        }
+
+        function renderIcons(){
+            iconSelector.innerHTML='';
+            for(const cat in ICON_CATEGORIES){
+                const icons=ICON_CATEGORIES[cat];
+                const contentId='iconCat-'+cat.replace(/\s/g,'');
+                const iconHtml=icons.map(icon=>`<div class="icon-option ${icon===selectedIcon?'selected':''}" onclick="selectIcon('${icon}', this)"><i class="${icon}"></i></div>`).join('');
+                iconSelector.innerHTML+=`<div id="${contentId}"><div class="icon-category-header" onclick="toggleIconCategory('${contentId}')"><span>${cat}</span><i class="fas fa-chevron-down toggle-icon"></i></div><div class="icon-category-content" style="display:none;">${iconHtml}</div></div>`;
+            }
+            const first=Object.keys(ICON_CATEGORIES)[0];
+            const firstContent=document.querySelector(`#iconCat-${first.replace(/\s/g,'')} .icon-category-content`);
+            const firstToggle=document.querySelector(`#iconCat-${first.replace(/\s/g,'')} .toggle-icon`);
+            if(firstContent && firstToggle){ firstContent.style.display='grid'; firstToggle.classList.replace('fa-chevron-down','fa-chevron-up'); }
+        }
+        function renderCategoryManager(){
+            const data = getCategoryData();
+            categoryListEl.innerHTML = '';
+
+            data[currentType].forEach((main, i) => {
+                const card = document.createElement('div');
+                card.className = 'category-card';
+                card.style.borderLeft = `5px solid ${main.color}`;
+
+                card.innerHTML = `
+                    <div class="main-category-header">
+                        <div class="main-category-info">
+                            <i class="${main.icon}"></i>
+                            <span class="main-category-name">${main.name}</span>
+                        </div>
+                        <div class="main-category-actions btn-group">
+                            <button class="btn btn-primary" onclick="openModal('editMain', ${i})"><i class="fas fa-edit"></i> 編輯</button>
+                            <button class="btn btn-danger" onclick="deleteMainCategory(${i})"><i class="fas fa-trash"></i> 刪除</button>
+                        </div>
+                    </div>
+                    <div class="sub-category-list">
+                        ${main.sub.map((sub,j)=>`
+                            <div class="sub-category-item">
+                                <div><i class="${sub.icon}"></i> ${sub.name}</div>
+                                <div class="btn-group">
+                                    <button onclick="openModal('editSub', ${i}, ${j})"><i class="fas fa-edit"></i></button>
+                                    <button onclick="deleteSubCategory(${i}, ${j})"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                        `).join('')}
+                        <button class="btn btn-secondary" style="margin-top:5px; width:100%;" onclick="openModal('addSub', ${i})"><i class="fas fa-plus"></i> 新增子分類</button>
+                    </div>
+                `;
+                categoryListEl.appendChild(card);
+            });
+
+            // 更新 type switch 按鈕樣式
+            switchExpenseBtn.classList.toggle('active', currentType === 'expense');
+            switchIncomeBtn.classList.toggle('active', currentType === 'income');
+
+            // 🔹 每次渲染後都重新啟用拖拉
+            enableMainDrag();
+            enableSubDrag();
+        }
+
+        function enableMainDrag() {
+            const cards = document.querySelectorAll('.category-card');
+            let dragIndex = null;
+
+            cards.forEach((card, index) => {
+                card.draggable = true;
+
+                card.addEventListener('dragstart', () => {
+                    dragIndex = index;
+                    card.classList.add('dragging');
+                });
+
+                card.addEventListener('dragend', () => {
+                    card.classList.remove('dragging');
+                    dragIndex = null;
+                });
+
+                card.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    card.classList.add('drag-over');
+                });
+
+                card.addEventListener('dragleave', () => {
+                    card.classList.remove('drag-over');
+                });
+
+                card.addEventListener('drop', () => {
+                    card.classList.remove('drag-over');
+                    if (dragIndex === null || dragIndex === index) return;
+
+                    const data = getCategoryData();
+                    const moved = data[currentType].splice(dragIndex, 1)[0];
+                    data[currentType].splice(index, 0, moved);
+
+                    saveCategoryData(data);
+                    renderCategoryManager();
+                });
+            });
+        }
+
+        function enableSubDrag() {
+            document.querySelectorAll('.sub-category-list').forEach((list, mainIndex) => {
+                const items = list.querySelectorAll('.sub-category-item');
+                let dragSubIndex = null;
+
+                items.forEach((item, subIndex) => {
+                    item.draggable = true;
+
+                    item.addEventListener('dragstart', () => {
+                        dragSubIndex = subIndex;
+                        item.classList.add('dragging');
+                    });
+
+                    item.addEventListener('dragend', () => {
+                        item.classList.remove('dragging');
+                        dragSubIndex = null;
+                    });
+
+                    item.addEventListener('dragover', e => {
+                        e.preventDefault();
+                        item.classList.add('sub-drag-over');
+                    });
+
+                    item.addEventListener('dragleave', () => {
+                        item.classList.remove('sub-drag-over');
+                    });
+
+                    item.addEventListener('drop', () => {
+                        item.classList.remove('sub-drag-over');
+                        if (dragSubIndex === null || dragSubIndex === subIndex) return;
+
+                        const data = getCategoryData();
+                        const subList = data[currentType][mainIndex].sub;
+
+                        const moved = subList.splice(dragSubIndex, 1)[0];
+                        subList.splice(subIndex, 0, moved);
+
+                        saveCategoryData(data);
+                        renderCategoryManager();
+                    });
+                });
+            });
+        }
+
+        // 🟢 儲存拖拉後排序
+        function saveCategoryOrder() {
+            const data = getCategoryData();
+            const newOrder = [];
+            document.querySelectorAll('.category-card').forEach(card => {
+                const name = card.querySelector('.main-category-name').textContent;
+                const main = data[currentType].find(c => c.name === name);
+                // 更新子分類順序
+                const subListEl = card.querySelector('.sub-category-list');
+                const subItems = Array.from(subListEl.querySelectorAll('.sub-category-item')).map(subEl => {
+                    const subName = subEl.textContent.trim();
+                    return main.sub.find(s => subName.includes(s.name));
+                });
+                main.sub = subItems.filter(Boolean);
+                newOrder.push(main);
+            });
+            data[currentType] = newOrder;
+            saveCategoryData(data);
+        }
+
+        let allIconsExpanded = false;
+
+        function toggleAllIcons() {
+            const contents = document.querySelectorAll('.icon-category-content');
+            const toggles = document.querySelectorAll('.toggle-icon');
+            const btn = document.getElementById('toggleAllBtn');
+
+            allIconsExpanded = !allIconsExpanded;
+
+            contents.forEach(c => {
+                c.style.display = allIconsExpanded ? 'grid' : 'none';
+            });
+
+            toggles.forEach(t => {
+                t.classList.remove('fa-chevron-up','fa-chevron-down');
+                t.classList.add(allIconsExpanded ? 'fa-chevron-up' : 'fa-chevron-down');
+            });
+
+            btn.textContent = allIconsExpanded ? '收合' : '展開';
+        }
+
+        // Form submit
+        categoryForm.onsubmit=function(e){
+            e.preventDefault();
+            const data=getCategoryData(); const name=categoryNameInput.value.trim();
+            if(!name) return;
+            if(modalAction==='addMain'){ data[currentType].push({name, icon:selectedIcon, color:selectedColor, sub:[]}); }
+            else if(modalAction==='editMain' && targetMainIndex!==null){ const main=data[currentType][targetMainIndex]; main.name=name; main.icon=selectedIcon; main.color=selectedColor; }
+            else if(modalAction==='addSub' && targetMainIndex!==null){
+                const subId = Date.now(); // 或自增
+                data[currentType][targetMainIndex].sub.push({id: subId, name, icon:selectedIcon});
+            }
+
+            else if(modalAction==='editSub' && targetMainIndex!==null && targetSubIndex!==null){
+                const subList = data[currentType][targetMainIndex].sub || [];
+                const sub = subList[targetSubIndex];
+                if(sub){
+                    sub.name = name;
+                    sub.icon = selectedIcon;
+                }
+            }
+
+            saveCategoryData(data); renderCategoryManager(); closeModal();
+        };
+
+        // Delete
+        function deleteMainCategory(index){ 
+            const data=getCategoryData();
+            if(confirm(`確定刪除主分類「${data[currentType][index].name}」及其所有子分類嗎？`)){ 
+                data[currentType].splice(index,1); saveCategoryData(data); renderCategoryManager(); 
+            } 
+        }
+        
+        function deleteSubCategory(mainIndex, subIndex){
+            const data=getCategoryData();
+            if(confirm(`確定刪除子分類「${data[currentType][mainIndex].sub[subIndex].name}」嗎？`)){
+                data[currentType][mainIndex].sub.splice(subIndex,1); saveCategoryData(data); renderCategoryManager();
+            }
+        }
+
+        // 初始渲染
+        renderCategoryManager();
+        enableMainDrag();
+        enableSubDrag();
+
+    </script>
+
+</html>

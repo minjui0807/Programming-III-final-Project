@@ -238,12 +238,18 @@
                 
                 // 根據 URL 判斷要點亮哪一個導覽列項目 (data-page)
                 if (url.includes('recordpage')) {
-                    targetPageName = 'record'; // 目標是 recordpage.html
+                    targetPageName = 'record';
                 } else if (url.includes('transaction')) {
-                    targetPageName = 'list';   // 目標是 transaction.html
+                    targetPageName = 'list';
+                } else if (url.includes('report')) { // <-- 新增
+                    targetPageName = 'report';
+                } else if (url.includes('budget')) { // <-- 新增
+                    targetPageName = 'budget';
+                } else if (url.includes('settings')) { // <-- 新增
+                    targetPageName = 'settings';
                 }
                 
-                const navItem = document.querySelector(`.nav-item[data-page="${targetPageName}"]`);
+                const navItem = document.querySelector(`.nav-item[data-page=\"${targetPageName}\"]`);
                 if (navItem) {
                     navItem.classList.add('active');
                 }

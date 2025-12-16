@@ -18,13 +18,26 @@
         --text-light: #e9f7ff;                   /* 文字淺色 */
         --text-dark: #c4d9ee;                    /* 文字深色 */
 
-        /* ⭐️ 分類顏色變數 */
-        --cat-red: #ff7f7f;
-        --cat-blue: #7fbfff;
-        --cat-green: #7fff7f;
-        --cat-yellow: #ffff7f;
-        --cat-purple: #bf7fff;
-        --cat-orange: #ffbf7f;
+        --cat-1: #ff7f7f;
+        --cat-2: #ffcc66;
+        --cat-3: #a8f0c6;
+        --cat-4: #a7d7ff;
+        --cat-5: #ffb3cf;
+        --cat-6: #cf9cff;
+        --cat-7: #66ffcc;
+        --cat-8: #ff9c66;
+        --cat-9: #99ccff;
+        --cat-10: #d4d4d4;
+        --cat-11: #ffd1dc;
+        --cat-12: #ffe066;
+        --cat-13: #8affc1;
+        --cat-14: #8ed1ff;
+        --cat-15: #c9a7ff;
+        --cat-16: #ffb380;
+        --cat-17: #b3ffb3;
+        --cat-18: #b3d9ff;
+        --cat-19: #ffe6b3;
+        --cat-20: #ffadad;
     }
 
     * {
@@ -1239,117 +1252,141 @@
 </body>
 
     <script>
+        
         (function() {
             // ---------- Keys ----------
             const TRANSACTIONS_KEY = 'transactions';
             const CATEGORY_KEY = 'categoryData';
 
-            // ---------- Default categories (initial seed) ----------
+            const CATEGORY_COLORS = [
+                '#ff7f7f','#ffcc66','#a8f0c6','#a7d7ff','#ffb3cf',
+                '#cf9cff','#66ffcc','#ff9c66','#99ccff','#d4d4d4',
+                '#ffd1dc','#ffe066','#8affc1','#8ed1ff','#c9a7ff',
+                '#ffb380','#b3ffb3','#b3d9ff','#ffe6b3','#ffadad'
+            ];
+
             const DEFAULT_CATEGORY_DATA = {
                 expense: [
-                    { id: 1, name: '餐飲', icon: 'fas fa-utensils', color: 'var(--cat-red)', colorRgb: '255,127,127', subs: [{ id: 101, name: '早餐' }, { id: 102, name: '午餐' }, { id: 103, name: '晚餐' }] },
-                    { id: 2, name: '交通', icon: 'fas fa-bus', color: 'var(--cat-blue)', colorRgb: '127,191,255', subs: [{ id: 201, name: '大眾運輸' }, { id: 202, name: '計程車' }] },
-                    { id: 3, name: '購物', icon: 'fas fa-shopping-bag', color: 'var(--cat-purple)', colorRgb: '191,127,255', subs: [] },
-                    { id: 4, name: '娛樂', icon: 'fas fa-film', color: 'var(--cat-yellow)', colorRgb: '255,255,127', subs: [] }
+                    { id: 1, name: "餐飲", icon: "fas fa-utensils", color: "var(--cat-1)", sub: [
+                        { id: 101, name: "外食", icon: "fas fa-burger", color: "var(--cat-1)" },
+                        { id: 102, name: "飲品", icon: "fas fa-coffee", color: "var(--cat-1)" },
+                        { id: 103, name: "零食", icon: "fas fa-cookie-bite", color: "var(--cat-1)" },
+                    ]},
+                    { id: 2, name: "交通", icon: "fas fa-bus", color: "var(--cat-2)", sub: [
+                        { id: 201, name: "油資/充電", icon: "fas fa-gas-pump", color: "var(--cat-2)" },
+                        { id: 202, name: "公車/捷運", icon: "fas fa-subway", color: "var(--cat-2)" },
+                        { id: 203, name: "計程車", icon: "fas fa-taxi", color: "var(--cat-2)" },
+                    ]},
+                    { id: 3, name: "購物", icon: "fas fa-shopping-bag", color: "var(--cat-3)", sub: [
+                        { id: 301, name: "服飾", icon: "fas fa-shirt", color: "var(--cat-3)" },
+                        { id: 302, name: "日用品", icon: "fas fa-toilet-paper", color: "var(--cat-3)" },
+                        { id: 303, name: "3C 產品", icon: "fas fa-mobile-screen-button", color: "var(--cat-3)" },
+                    ]},
+                    { id: 4, name: "娛樂", icon: "fas fa-gamepad", color: "var(--cat-4)", sub: [
+                        { id: 401, name: "電影/展覽", icon: "fas fa-ticket", color: "var(--cat-4)" },
+                        { id: 402, name: "遊戲", icon: "fas fa-dice", color: "var(--cat-4)" },
+                        { id: 403, name: "旅遊", icon: "fas fa-plane", color: "var(--cat-4)" },
+                    ]},
+                    { id: 5, name: "居住", icon: "fas fa-home", color: "var(--cat-5)", sub: [
+                        { id: 501, name: "房租/房貸", icon: "fas fa-building-columns", color: "var(--cat-5)" },
+                        { id: 502, name: "水電瓦斯", icon: "fas fa-lightbulb", color: "var(--cat-5)" },
+                        { id: 503, name: "網路/電信", icon: "fas fa-signal", color: "var(--cat-5)" },
+                    ]}
                 ],
                 income: [
-                    { id: 11, name: '薪資', icon: 'fas fa-money-check-alt', color: 'var(--cat-green)', colorRgb: '127,255,127', subs: [] },
-                    { id: 12, name: '兼職', icon: 'fas fa-briefcase', color: 'var(--cat-orange)', colorRgb: '255,191,127', subs: [] }
+                    { id: 6, name: "薪資", icon: "fas fa-money-check-alt", color: "var(--cat-6)", sub: [
+                        { id: 601, name: "月薪", icon: "fas fa-money-bill-wave", color: "var(--cat-6)" },
+                        { id: 602, name: "獎金", icon: "fas fa-hand-holding-dollar", color: "var(--cat-6)" },
+                        { id: 603, name: "兼職", icon: "fas fa-briefcase", color: "var(--cat-6)" },
+                    ]},
+                    { id: 7, name: "投資", icon: "fas fa-chart-line", color: "var(--cat-7)", sub: [
+                        { id: 701, name: "股息", icon: "fas fa-arrow-trend-up", color: "var(--cat-7)" },
+                        { id: 702, name: "基金收益", icon: "fas fa-vault", color: "var(--cat-7)" },
+                        { id: 703, name: "房產租金", icon: "fas fa-house-chimney-crack", color: "var(--cat-7)" },
+                    ]},
+                    { id: 8, name: "禮金", icon: "fas fa-gift", color: "var(--cat-8)", sub: [
+                        { id: 801, name: "紅包", icon: "fas fa-envelope", color: "var(--cat-8)" },
+                        { id: 802, name: "生日禮物", icon: "fas fa-cake-candles", color: "var(--cat-8)" },
+                        { id: 803, name: "贊助", icon: "fas fa-heart", color: "var(--cat-8)" },
+                    ]},
+                    { id: 9, name: "副業", icon: "fas fa-laptop-code", color: "var(--cat-9)", sub: [
+                        { id: 901, name: "稿費", icon: "fas fa-pen-nib", color: "var(--cat-9)" },
+                        { id: 902, name: "銷售", icon: "fas fa-store", color: "var(--cat-9)" },
+                        { id: 903, name: "服務費", icon: "fas fa-handshake", color: "var(--cat-9)" },
+                    ]},
+                    { id: 10, name: "其他", icon: "fas fa-ellipsis-h", color: "var(--cat-10)", sub: [
+                        { id: 1101, name: "退款", icon: "fas fa-undo", color: "var(--cat-10)" },
+                        { id: 1102, name: "意外收入", icon: "fas fa-meteor", color: "var(--cat-10)" },
+                        { id: 1103, name: "利息", icon: "fas fa-percent", color: "var(--cat-10)" },
+                    ]}
                 ]
             };
 
-            // [修改] 讀取並修復分類格式 (防呆核心)
-            function loadCategories() {
-                let cats = JSON.parse(localStorage.getItem('app_categories'));
-                
-                // 如果沒資料，建立預設值
-                if (!cats) {
-                    cats = { expense: {}, income: {} };
-                    DEFAULT_CATEGORIES.expense.forEach(c => cats.expense[c] = []);
-                    DEFAULT_CATEGORIES.income.forEach(c => cats.income[c] = []);
-                    localStorage.setItem('app_categories', JSON.stringify(cats));
-                    return cats;
-                }
 
-                // 格式修復 (如果舊資料是陣列)
-                if (Array.isArray(cats.expense)) {
-                    const newExpense = {};
-                    cats.expense.forEach(c => newExpense[c] = []);
-                    cats.expense = newExpense;
-                }
-                if (Array.isArray(cats.income)) {
-                    const newIncome = {};
-                    cats.income.forEach(c => newIncome[c] = []);
-                    cats.income = newIncome;
-                }
-                return cats;
-            }
+            // ---------- State ----------
+            const today = new Date().toISOString().split('T')[0];
+            let currentReceiptImageKey = '';
 
-            // ---------- Simple DOM helpers ----------
+            // ---------- DOM helpers ----------
             const $ = sel => document.querySelector(sel);
             const $$ = sel => Array.from(document.querySelectorAll(sel));
 
-            // ---------- Exposed storage helpers ----------
-            function loadTransactions() {
-                try {
-                    const raw = localStorage.getItem(TRANSACTIONS_KEY);
-                    return raw ? JSON.parse(raw) : [];
-                } catch (e) {
-                    console.error('loadTransactions error', e);
-                    return [];
+            function getCategoryData() {
+                // 假設你的分類資料是存在 'categoryData' 這個 Key 之下
+                return JSON.parse(localStorage.getItem('categoryData') || '{"income": [], "expense": []}');
+            }
+
+            // ---------- ⭐️ 核心修正 1：統一的分類載入與初始化函數 ----------
+            function loadAndInitializeCategoryData() {
+                let saved = localStorage.getItem('categoryData');
+                if (saved) {
+                    try { return JSON.parse(saved); }
+                    catch(e) { console.error("Category data parse error:", e); }
                 }
+                localStorage.setItem('categoryData', JSON.stringify(DEFAULT_CATEGORY_DATA));
+                return DEFAULT_CATEGORY_DATA;
+            }
+
+            
+            // ---------- Storage - Transactions (不變) ----------
+            function loadTransactions() {
+                try { return JSON.parse(localStorage.getItem(TRANSACTIONS_KEY)) || []; }
+                catch { return []; }
             }
             function saveTransactions(list) {
-                try {
-                    localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(list));
-                } catch (e) {
-                    console.error('saveTransactions error', e);
-                }
+                localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(list));
             }
-            function loadCategoryData() {
-                try {
-                    const raw = localStorage.getItem(CATEGORY_KEY);
-                    return raw ? JSON.parse(raw) : DEFAULT_CATEGORY_DATA;
-                } catch (e) {
-                    console.error('loadCategoryData error', e);
-                    return DEFAULT_CATEGORY_DATA;
-                }
-            }
+
+            // ---------- ⭐️ 核心修正 2：更新 saveCategoryData 以包含通知機制 ----------
             function saveCategoryData(obj) {
-                try {
-                    localStorage.setItem(CATEGORY_KEY, JSON.stringify(obj));
-                } catch (e) {
-                    console.error('saveCategoryData error', e);
-                }
+                localStorage.setItem(CATEGORY_KEY, JSON.stringify(obj));
+                
+                // 通知其他頁面（如 budget.html）數據已變動
+                window.dispatchEvent(new Event('category-updated'));
             }
+
             function getNextId(list) {
                 return list && list.length ? Math.max(...list.map(i => i.id || 0)) + 1 : 1;
             }
-
-            // expose for transaction page
-            window.loadTransactions = loadTransactions;
-            window.saveTransactions = saveTransactions;
-            window.getNextId = getNextId;
-            window.loadCategoryData = loadCategoryData;
-            window.saveCategoryData = saveCategoryData;
-
-            // ---------- State ----------
-            let categoryData = loadCategoryData(); // persisted categories
-            let selectedType = 'expense'; // 'expense' | 'income'
-            let selectedPrimary = null; // full object from categoryData[selectedType]
-            let selectedSub = null;     // sub object or null
-            const today = new Date().toISOString().split('T')[0];
-
-            // ---------- Elements (resolved on DOMContentLoaded) ----------
+            
+            // ---------- State 初始化 (使用新的統一載入函數) ----------
+            let categoryData = loadAndInitializeCategoryData(); // 用於 handleAddCategorySubmit
+            let APP_CATEGORIES = categoryData; // 直接指向已載入/初始化的數據
+            let selectedType = 'expense';
+            let selectedPrimary = null;
+            let selectedSub = null;
+            
+            // ---------- DOM elements ----------
             let recordForm, dateInput, amountInput, descriptionInput;
             let receiptImageInput, fileNameDisplay, imagePreviewContainer, imagePreview, clearImageBtn;
             let primaryCategoryButtons, subCategoryButtons, subCategoryGroup, resultDisplay;
             let typeButtons;
             let addCategoryModal, addCategoryForm, addCategoryNameInput, addCategoryIconInputs, modalCloseBtn;
 
-            // ---------- Init ----------
+            const CATEGORY_STORAGE_KEY = 'categoryData'; // 保持這個變數名稱
+
             document.addEventListener('DOMContentLoaded', () => {
-                // Resolve elements
+                // ---------- Resolve DOM ----------
                 recordForm = $('#recordForm');
                 dateInput = $('#date');
                 amountInput = $('#amount');
@@ -1364,643 +1401,339 @@
                 subCategoryGroup = $('#subCategoryGroup');
                 resultDisplay = $('#resultDisplay');
                 typeButtons = $$('.type-btn');
-                addCategoryModal = $('#addCategoryModal'); // modal container exists in HTML
-                addCategoryForm = $('#addCategoryForm');   // optional (exists in your HTML)
-                addCategoryNameInput = $('#newCategoryName');
-                addCategoryIconInputs = $$('input[name="icon-selector"]');
-                modalCloseBtn = $('#modalCloseBtn');
-
-                // default date
-                if (dateInput) dateInput.value = today;
-
-                // bind type buttons (single listener each)
-                if (typeButtons.length) {
-                    typeButtons.forEach(btn => {
-                        btn.addEventListener('click', () => {
-                            typeButtons.forEach(b => b.classList.remove('active'));
-                            btn.classList.add('active');
-                            selectedType = btn.dataset.type || btn.getAttribute('data-type') || selectedType;
-                            // update hidden input
-                            const hidden = document.querySelector('input[name="transactionType"]');
-                            if (hidden) hidden.value = selectedType;
-                            // render primary categories for this type
-                            renderPrimaryCategories();
-                            // reset sub area
-                            selectedPrimary = null;
-                            selectedSub = null;
-                            if (subCategoryGroup) subCategoryGroup.style.display = 'none';
-                        });
-                    });
-                }
-
-                // image upload
-                bindImageUpload();
-
-                // render categories
-                renderPrimaryCategories();
-
-                // bind form submit once
-                if (recordForm) {
-                    // remove previous listeners defensively (if script re-run)
-                    recordForm.addEventListener('submit', onRecordFormSubmit);
-                }
-
-                // modal form handler (if HTML form present)
-                if (addCategoryForm) {
-                    addCategoryForm.addEventListener('submit', handleAddCategorySubmit);
-                }
-                if (modalCloseBtn) modalCloseBtn.addEventListener('click', () => closeAddCategoryModal());
-
-                // init UI states
-                resetImageInputUI();
-            });
-
-            // ---------- Rendering categories ----------
-            function renderPrimaryCategories() {
-                if (!primaryCategoryButtons) return;
-                primaryCategoryButtons.innerHTML = '';
-                const list = (categoryData[selectedType] || []);
-                list.forEach(cat => {
-                    const el = document.createElement('div');
-                    el.className = 'cat-btn';
-                    el.dataset.id = cat.id;
-                    if (cat.color) el.style.setProperty('--cat-color', cat.color);
-                    if (cat.colorRgb) el.style.setProperty('--cat-color-rgb', cat.colorRgb);
-                    el.innerHTML = `<i class="${cat.icon} cat-icon" aria-hidden="true"></i> ${escapeHtml(cat.name)}`;
-                    el.addEventListener('click', () => {
-                        selectPrimaryById(cat.id);
-                    });
-                    primaryCategoryButtons.appendChild(el);
-                });
-
-                // add button to add primary (opens modal)
-                const addBtn = document.createElement('div');
-                addBtn.className = 'cat-btn add-cat-btn';
-                addBtn.innerHTML = `<i class="fas fa-plus"></i> 新增`;
-                addBtn.addEventListener('click', () => openAddCategoryModal({ kind: 'primary', type: selectedType }));
-                primaryCategoryButtons.appendChild(addBtn);
-            }
-
-            function renderSubCategoriesForSelected() {
-                if (!subCategoryButtons || !subCategoryGroup) return;
-                    subCategoryButtons.innerHTML = '';
-                if (!selectedPrimary || !selectedPrimary.subs || selectedPrimary.subs.length === 0) {
-                    subCategoryGroup.style.display = 'flex';
-                    const addBtn = document.createElement('div');
-                    addBtn.className = 'cat-btn add-cat-btn';
-                    addBtn.innerHTML = `<i class="fas fa-plus"></i> 新增子分類`;
-                    addBtn.addEventListener('click', () => openAddCategoryModal({ kind: 'sub', type: selectedType, primaryId: selectedPrimary.id }));
-                    subCategoryButtons.appendChild(addBtn);
-                    return;
-                }
-                subCategoryGroup.style.display = 'flex';
-                selectedPrimary.subs.forEach(sub => {
-                    const el = document.createElement('div');
-                    el.className = 'cat-btn';
-                    el.dataset.id = sub.id;
-
-                    el.style.setProperty('--cat-color', sub.color || selectedPrimary.color);
-                    el.style.setProperty('--cat-color-rgb', sub.colorRgb || selectedPrimary.colorRgb);
-
-                    el.innerHTML = `
-                        <i class="${sub.icon || selectedPrimary.icon} cat-icon"></i>
-                        ${escapeHtml(sub.name)}
-                    `;
-                    el.addEventListener('click', () => selectSubById(sub.id));
-                    subCategoryButtons.appendChild(el);
-                });
-                // add new sub button
-                const addBtn = document.createElement('div');
-                addBtn.className = 'cat-btn add-cat-btn';
-                addBtn.innerHTML = `<i class="fas fa-plus"></i> 新增`;
-                addBtn.addEventListener('click', () => openAddCategoryModal({ kind: 'sub', type: selectedType, primaryId: selectedPrimary.id }));
-                subCategoryButtons.appendChild(addBtn);
-            }
-
-            // ---------- Select handlers ----------
-            function selectPrimaryById(id) {
-                const arr = categoryData[selectedType] || [];
-                const cat = arr.find(c => Number(c.id) === Number(id));
-                if (!cat) return;
-                // remove active
-                primaryCategoryButtons.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-                // mark this active (find the element rendered)
-                const btn = primaryCategoryButtons.querySelector(`.cat-btn[data-id="${cat.id}"]`);
-                if (btn) btn.classList.add('active');
-                selectedPrimary = cat;
-                selectedSub = null;
-                renderSubCategoriesForSelected();
-            }
-            function selectSubById(id) {
-                if (!selectedPrimary) return;
-                const s = (selectedPrimary.subs || []).find(x => Number(x.id) === Number(id));
-                if (!s) return;
-                // clear active
-                subCategoryButtons.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-                const btn = subCategoryButtons.querySelector(`.cat-btn[data-id="${s.id}"]`);
-                if (btn) btn.classList.add('active');
-                selectedSub = s;
-            }
-
-            // ---------- Image upload ----------
-            function bindImageUpload() {
-                if (!receiptImageInput) return;
-                receiptImageInput.addEventListener('change', (e) => {
-                    const f = e.target.files && e.target.files[0];
-                    if (f) {
-                        fileNameDisplay.textContent = `已選擇檔案: ${f.name}`;
-                        fileNameDisplay.style.color = 'var(--neon-yellow)';
-                        clearImageBtn.style.display = 'inline-block';
-                        const reader = new FileReader();
-                        reader.onload = ev => {
-                            imagePreview.src = ev.target.result;
-                            imagePreviewContainer.style.display = 'block';
-                        };
-                        reader.readAsDataURL(f);
-                    } else {
-                        resetImageInputUI();
-                    }
-                });
-                if (clearImageBtn) clearImageBtn.addEventListener('click', resetImageInputUI);
-            }
-            function resetImageInputUI() {
-                if (!receiptImageInput) return;
-                receiptImageInput.value = '';
-                fileNameDisplay.textContent = '未選擇檔案';
-                fileNameDisplay.style.color = 'var(--text-dark)';
-                imagePreview.src = '#';
-                if (imagePreviewContainer) imagePreviewContainer.style.display = 'none';
-                if (clearImageBtn) clearImageBtn.style.display = 'none';
-            }
-
-            // ---------- Modal: add category (primary or sub) ----------
-            // 單一、整合版的 modal 控制函式（取代原本分散/重複的版本）
-            let pendingModalContext = null; // {kind:'primary'|'sub', type, primaryId?}
-
-            function ensureModalElements() {
-                // 取得常用元素（如不存在就嘗試建立 minimal fallback）
                 addCategoryModal = $('#addCategoryModal');
                 addCategoryForm = $('#addCategoryForm');
                 addCategoryNameInput = $('#newCategoryName');
                 addCategoryIconInputs = $$('input[name="icon-selector"]');
                 modalCloseBtn = $('#modalCloseBtn');
 
-                // 若 modal main container 不存在，建立 minimal fallback
-                if (!addCategoryModal) {
-                    buildMinimalAddCategoryModal();
-                    addCategoryModal = $('#addCategoryModal');
-                    addCategoryForm = $('#addCategoryForm');
-                    addCategoryNameInput = $('#newCategoryName');
-                    addCategoryIconInputs = $$('input[name="icon-selector"]');
-                    modalCloseBtn = $('#modalCloseBtn');
-                }
+                // default date
+                if(dateInput) dateInput.value = today;
 
-                // safety: if still missing, abort
-                if (!addCategoryModal) {
-                    console.error('無法取得或建立 addCategoryModal');
-                    return false;
-                }
-
-                // 監聽關閉按鈕（單一綁定）
-                if (modalCloseBtn && !modalCloseBtn._boundClose) {
-                    modalCloseBtn.addEventListener('click', closeAddCategoryModal);
-                    modalCloseBtn._boundClose = true;
-                }
-
-                // 綁定表單送出（若尚未綁）
-                if (addCategoryForm && !addCategoryForm._boundSubmit) {
-                    addCategoryForm.addEventListener('submit', handleAddCategorySubmit);
-                    addCategoryForm._boundSubmit = true;
-                }
-
-                return true;
-            }
-
-            function openAddCategoryModal(ctx = { kind: 'primary', type: selectedType, primaryId: null }) {
-                // 確保元素存在（或建立 fallback）
-                ensureModalElements();
-
-                // 設上下文，讓 handleAddCategorySubmit 能使用
-                pendingModalContext = ctx;
-
-                // Modal title 元件（使用頁面上的 h2 或 id='modalTitle'）
-                const titleEl = addCategoryModal.querySelector('h2') || document.getElementById('modalTitle');
-                if (titleEl) {
-                    titleEl.textContent = ctx.kind === 'primary' ? `新增 ${ctx.type === 'expense' ? '支出' : '收入'} 主分類` : `新增子分類`;
-                }
-
-                // 顏色區塊與預覽（盡量找存在的欄位）
-                const categoryColorGroup = document.getElementById('categoryColorGroup');
-                const selectedColorValueInput = document.getElementById('selectedColorValue');
-                const colorSwatches = categoryColorGroup ? categoryColorGroup.querySelectorAll('.color-swatch') : [];
-
-                if (ctx.kind === 'sub' && ctx.primaryId != null) {
-                    // 子分類：隱藏顏色選擇並繼承主分類顏色（使用 categoryData）
-                    if (categoryColorGroup) categoryColorGroup.style.display = 'none';
-
-                    // 從 categoryData 找主分類（盡量找對應 type）
-                    const arr = categoryData && categoryData[ctx.type] ? categoryData[ctx.type] : [];
-                    const primaryCat = arr.find(c => Number(c.id) === Number(ctx.primaryId));
-                    const inherited = primaryCat && (primaryCat.color || primaryCat.colorHex) ? (primaryCat.color || primaryCat.colorHex) : null;
-
-                    if (inherited && selectedColorValueInput) {
-                        selectedColorValueInput.value = inherited;
-                    }
-
-                    // 若頁面有 preview 更新函式，呼叫它（安全檢查）
-                    if (typeof updatePreviewColor === 'function' && inherited) {
-                        updatePreviewColor(inherited);
-                    }
-                    // clear color swatch active states
-                    if (colorSwatches && colorSwatches.forEach) colorSwatches.forEach(s => s.classList.remove('active'));
-                } else {
-                    // 主分類：顯示顏色區塊並重置為預設
-                    if (categoryColorGroup) categoryColorGroup.style.display = 'block';
-                    const defaultColor = '#ff7f7f';
-                    if (selectedColorValueInput) selectedColorValueInput.value = defaultColor;
-                    if (typeof updatePreviewColor === 'function') updatePreviewColor(defaultColor);
-                    if (colorSwatches && colorSwatches.forEach) {
-                        colorSwatches.forEach(s => s.classList.remove('active'));
-                        const defaultSwatch = categoryColorGroup ? categoryColorGroup.querySelector(`.color-swatch[data-color="${defaultColor}"]`) : null;
-                        if (defaultSwatch) defaultSwatch.classList.add('active');
-                    }
-                }
-
-                // 顯示 modal
-                addCategoryModal.style.display = 'block';
-
-                // focus 在名稱輸入（如果存在）
-                if (addCategoryNameInput) {
-                    setTimeout(() => addCategoryNameInput.focus(), 150);
-                }
-            }
-
-            function closeAddCategoryModal() {
-                // hide modal and clear pending context
-                if (!addCategoryModal) {
-                    // try to get it
-                    addCategoryModal = $('#addCategoryModal');
-                }
-                if (addCategoryModal) addCategoryModal.style.display = 'none';
-                pendingModalContext = null;
-
-                // optional: reset preview and form fields (if present)
-                if (addCategoryForm) addCategoryForm.reset();
-                const previewName = document.getElementById('previewNameText');
-                const previewIcon = document.getElementById('previewIcon');
-                if (previewName) previewName.textContent = '分類名稱';
-                if (previewIcon) previewIcon.className = 'fas fa-utensils';
-            }
-
-            // fallback builder: minimal modal (只在頁面完全沒有 modal 時使用)
-            function buildMinimalAddCategoryModal() {
-                if (document.getElementById('addCategoryModal')) return;
-                const modal = document.createElement('div');
-                modal.id = 'addCategoryModal';
-                modal.className = 'modal';
-                modal.innerHTML = `
-                    <div class="modal-content" style="max-width:480px; margin:5% auto;">
-                        <h2>新增分類</h2>
-                        <span class="close-btn" id="modalCloseBtn">&times;</span>
-                        <form id="addCategoryForm" style="display:flex;flex-direction:column;gap:12px;">
-                            <label>分類名稱</label>
-                            <input id="newCategoryName" required />
-                            <div>
-                            <label><input type="radio" name="icon-selector" value="fas fa-utensils" checked> 餐飲</label>
-                            <label><input type="radio" name="icon-selector" value="fas fa-bus"> 交通</label>
-                            </div>
-                            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px;">
-                                <button type="button" id="modalCancelBtn" class="submit-btn">取消</button>
-                                <button type="submit" class="submit-btn">新增</button>
-                            </div>
-                        </form>
-                    </div>
-                `;
-                document.body.appendChild(modal);
-
-                // bind fallback close/cancel events
-                const modalCloseBtn_f = document.getElementById('modalCloseBtn');
-                const modalCancelBtn = document.getElementById('modalCancelBtn');
-                if (modalCloseBtn_f) modalCloseBtn_f.addEventListener('click', closeAddCategoryModal);
-                if (modalCancelBtn) modalCancelBtn.addEventListener('click', closeAddCategoryModal);
-            }
-
-
-            // ---------- Color selection ----------
-            const colorSwatches = document.querySelectorAll('.color-swatch');
-            const colorInput = document.getElementById('customColorPicker');
-            const selectedColorValue = document.getElementById('selectedColorValue');
-
-            // 點選推薦色
-            colorSwatches.forEach(s => {
-                s.addEventListener('click', () => {
-                    colorSwatches.forEach(x => x.classList.remove('active'));
-                    s.classList.add('active');
-                    selectedColorValue.value = s.dataset.color;
-                    colorInput.value = s.dataset.color;
+                // ---------- Type switch ----------
+                typeButtons.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        typeButtons.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        selectedType = btn.dataset.type || selectedType;
+                        renderPrimaryCategories();
+                        selectedPrimary = null;
+                        selectedSub = null;
+                        if(subCategoryGroup) subCategoryGroup.style.display = 'none';
+                    });
                 });
+
+                // ---------- 監聽資料同步 ----------
+                function reloadAndRenderCategories() {
+                    try {
+                        const saved = JSON.parse(localStorage.getItem(CATEGORY_KEY)) || {};
+                        // 安全合併：保持原本收入/支出分類
+                        APP_CATEGORIES.expense = saved.expense || APP_CATEGORIES.expense;
+                        APP_CATEGORIES.income = saved.income || APP_CATEGORIES.income;
+                        categoryData = APP_CATEGORIES;
+                    } catch(e) {
+                        console.error('Failed to parse categoryData:', e);
+                    }
+                    selectedPrimary = null;
+                    selectedSub = null;
+                    renderPrimaryCategories();
+                    if(subCategoryGroup) subCategoryGroup.style.display = 'none';
+                }
+
+                
+                // 1. 監聽 Storage 事件 (接收來自其他分頁的變更，如 category.html)
+                window.addEventListener('storage', (e) => {
+                    if (e.key === 'categoryData') reloadAndRenderCategories();
+                });
+
+                window.addEventListener('category-updated', () => {
+                    reloadAndRenderCategories();
+                });
+
+                bindImageUpload();
+                renderPrimaryCategories();
+                bindPreviewEvents();
+                checkURLTypeAndSetDefault();
+
+                if(recordForm) recordForm.addEventListener('submit', onRecordFormSubmit);
+                if(addCategoryForm) addCategoryForm.addEventListener('submit', handleAddCategorySubmit);
+                if(modalCloseBtn) modalCloseBtn.addEventListener('click', closeAddCategoryModal);
+
             });
 
-            // 選擇自訂顏色
-            colorInput.addEventListener('input', () => {
-                colorSwatches.forEach(x => x.classList.remove('active'));
-                selectedColorValue.value = colorInput.value;
-            });
+            // ---------- Categories ----------
+            function renderPrimaryCategories() {
+                primaryCategoryButtons.innerHTML = '';
+                const mainCats = APP_CATEGORIES[selectedType] || [];
+                mainCats.forEach(cat => {
+                    const btn = document.createElement('div');
+                    btn.className = 'cat-btn';
+                    btn.dataset.id = cat.id;
+                    btn.style.setProperty('--cat-color', cat.color);
+                    btn.innerHTML = `<i class="${cat.icon} cat-icon"></i> ${escapeHtml(cat.name)}`;
+                    btn.addEventListener('click', () => selectPrimaryById(cat.id));
+                    primaryCategoryButtons.appendChild(btn);
+                });
 
-            function handleAddCategorySubmit(e) {
+                // 新增按鈕
+                const addBtn = document.createElement('div');
+                addBtn.className = 'cat-btn add-cat-btn';
+                addBtn.innerHTML = `<i class="fas fa-plus"></i> 新增`;
+                addBtn.addEventListener('click', ()=>openAddCategoryModal({kind:'primary', type:selectedType}));
+                primaryCategoryButtons.appendChild(addBtn);
+            }
+
+            function renderSubCategoriesForSelected() {
+                subCategoryButtons.innerHTML = '';
+                if (!selectedPrimary) { subCategoryGroup.style.display='none'; return; }
+                subCategoryGroup.style.display='flex';
+
+                // 確保選中的主分類是最新的數據（從 APP_CATEGORIES 重新查找）
+                const latestPrimary = APP_CATEGORIES[selectedType].find(c => c.id === selectedPrimary.id);
+                if (!latestPrimary) { subCategoryGroup.style.display='none'; return; } // 如果主分類被刪除
+                selectedPrimary = latestPrimary; // 更新 selectedPrimary
+                
+                const subs = selectedPrimary.sub || [];
+                if(subs.length === 0){
+                    const addBtn = document.createElement('div');
+                    addBtn.className='cat-btn add-cat-btn';
+                    addBtn.innerHTML=`<i class="fas fa-plus"></i> 新增子分類`;
+                    addBtn.addEventListener('click', ()=>openAddCategoryModal({kind:'sub', type:selectedType, primaryId:selectedPrimary.id}));
+                    subCategoryButtons.appendChild(addBtn);
+                    return;
+                }
+
+                subs.forEach(sub => {
+                    const btn = document.createElement('div');
+                    btn.className = 'cat-btn';
+                    btn.dataset.id = sub.id;
+                    btn.style.setProperty('--cat-color', sub.color || selectedPrimary.color);
+                    const colorToUse = selectedPrimary.color;
+                    btn.style.setProperty('--cat-color', colorToUse);
+                    btn.innerHTML = `<i class="${sub.icon || selectedPrimary.icon} cat-icon"></i> ${escapeHtml(sub.name)}`;
+                    btn.addEventListener('click', ()=>selectSubById(sub.id));
+                    subCategoryButtons.appendChild(btn);
+                });
+
+                // 新增子分類按鈕
+                const addBtn = document.createElement('div');
+                addBtn.className='cat-btn add-cat-btn';
+                addBtn.innerHTML=`<i class="fas fa-plus"></i> 新增`;
+                addBtn.addEventListener('click', ()=>openAddCategoryModal({kind:'sub', type:selectedType, primaryId:selectedPrimary.id}));
+                subCategoryButtons.appendChild(addBtn);
+            }
+
+            function selectPrimaryById(id){
+                const cat = APP_CATEGORIES[selectedType].find(c=>c.id==id);
+                if(!cat) return;
+                selectedPrimary = cat;
+                selectedSub = null;
+                primaryCategoryButtons.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+                const btn = primaryCategoryButtons.querySelector(`.cat-btn[data-id="${id}"]`);
+                if(btn) btn.classList.add('active');
+                renderSubCategoriesForSelected();
+            }
+
+            function selectSubById(id) {
+                if (!selectedPrimary) return;
+                const sub = (selectedPrimary.sub || []).find(s => s.id == id);
+                if (!sub) return;
+
+                selectedSub = sub;
+                subCategoryButtons
+                    .querySelectorAll('.cat-btn')
+                    .forEach(b => b.classList.remove('active'));
+
+                const btn = subCategoryButtons.querySelector(`.cat-btn[data-id="${id}"]`);
+                if (btn) btn.classList.add('active');
+            }
+
+
+            // ---------- Image (不變) ----------
+            function bindImageUpload(){
+                if(!receiptImageInput) return;
+                receiptImageInput.addEventListener('change', e=>{
+                    const f=e.target.files?.[0];
+                    if(f){
+                        fileNameDisplay.textContent=`已選擇檔案: ${f.name}`;
+                        fileNameDisplay.style.color='var(--neon-yellow)';
+                        clearImageBtn.style.display='inline-block';
+                        const reader=new FileReader();
+
+                        reader.onload = ev => {
+                            const base64 = ev.target.result;
+
+                            // ✅ 存 base64 → 換 key
+                            currentReceiptImageKey = saveReceiptImage(base64);
+
+                            // 預覽還是用 base64（不用 key）
+                            imagePreview.src = base64;
+                            imagePreviewContainer.style.display = 'block';
+                        };
+
+
+                        reader.readAsDataURL(f);
+                    } else resetImageInputUI();
+                });
+                if(clearImageBtn) clearImageBtn.addEventListener('click', resetImageInputUI);
+            }
+            function resetImageInputUI(){
+                if(!receiptImageInput) return;
+                receiptImageInput.value='';
+                fileNameDisplay.textContent='未選擇檔案';
+                fileNameDisplay.style.color='var(--text-dark)';
+                imagePreview.src='#';
+                if(imagePreviewContainer) imagePreviewContainer.style.display='none';
+                if(clearImageBtn) clearImageBtn.style.display='none';
+                currentReceiptImageKey = '';
+            }
+
+            // ---------- Modal (修正了 loadCategoryData() 的呼叫) ----------
+            let pendingModalContext=null;
+            function openAddCategoryModal(ctx){ 
+                pendingModalContext=ctx;
+                addCategoryModal.style.display='block';
+                if(addCategoryNameInput) addCategoryNameInput.focus();
+            }
+            function closeAddCategoryModal(){
+                if(addCategoryModal) addCategoryModal.style.display='none';
+                pendingModalContext=null;
+                if(addCategoryForm) addCategoryForm.reset();
+            }
+            function handleAddCategorySubmit(e){
                 e.preventDefault();
-                const name = (addCategoryNameInput && addCategoryNameInput.value || '').trim();
-                const icon = (document.querySelector('input[name="icon-selector"]:checked') || {}).value || 'fas fa-folder';
-                if (!name) { alert('請輸入分類名稱'); return; }
-                if (!pendingModalContext) { alert('Modal context error'); return; }
+                if(!pendingModalContext) return alert('Modal context error');
+                const name=(addCategoryNameInput?.value||'').trim();
+                const icon=(document.querySelector('input[name="icon-selector"]:checked')||{}).value||'fas fa-folder';
+                if(!name) return alert('請輸入分類名稱');
 
-                categoryData = loadCategoryData(); // reload fresh
-                if (pendingModalContext.kind === 'primary') {
-                    const arr = categoryData[pendingModalContext.type] || [];
-                    const nid = getNextId(arr);
-                    const colorHex = selectedColorValue.value;
-                    const rgb = hexToRgb(colorHex);
-
-                    const newPrimary = {
-                        id: nid,
+                categoryData=loadAndInitializeCategoryData(); // 確保使用最新的數據
+                if(pendingModalContext.kind==='primary'){
+                    const arr=categoryData[pendingModalContext.type]||[];
+                    if(arr.find(c=>c.name===name)) return alert('分類已存在！');
+                    const newId=getNextId(arr);
+                    const colorHex='#ff7f7f';
+                    const rgb=hexToRgb(colorHex);
+                    arr.push({id:newId,name,icon,color:colorHex,colorRgb:`${rgb.r},${rgb.g},${rgb.b}`,sub:[]});
+                    categoryData[pendingModalContext.type]=arr;
+                    saveCategoryData(categoryData);
+                    APP_CATEGORIES = categoryData; // 更新全局變數
+                    renderPrimaryCategories();
+                    selectPrimaryById(newId);
+                } else if(pendingModalContext.kind==='sub'){
+                    const arr=categoryData[pendingModalContext.type]||[];
+                    const prim=arr.find(p=>p.id==pendingModalContext.primaryId);
+                    if(!prim) return alert('找不到主分類');
+                    const newId = prim.sub.length ? Math.max(...prim.sub.map(s=>s.id))+1:prim.id*100+1;
+                    
+                    // 檢查子分類是否已存在
+                    if(prim.sub.find(s=>s.name===name)) return alert('子分類已存在！');
+                    
+                    prim.sub = prim.sub || [];
+                    prim.sub.push({
+                        id: newId,
                         name,
                         icon,
-                        color: colorHex,
-                        colorRgb: `${rgb.r},${rgb.g},${rgb.b}`,
-                        subs: []
-                    };
-
-                    arr.push(newPrimary);
-                    categoryData[pendingModalContext.type] = arr;
-                    saveCategoryData(categoryData);
-                    renderPrimaryCategories();
-                    // auto-select it
-                    selectPrimaryById(nid);
-                } else if (pendingModalContext.kind === 'sub') {
-                    const arr = categoryData[pendingModalContext.type] || [];
-                    const prim = arr.find(p => Number(p.id) === Number(pendingModalContext.primaryId));
-                    if (!prim) { alert('找不到主分類'); closeAddCategoryModal(); return; }
-                    const newSubId = prim.subs && prim.subs.length ? Math.max(...prim.subs.map(s => s.id || 0)) + 1 : (prim.id * 100 + 1);
-                    prim.subs = prim.subs || [];
-                    prim.subs.push({
-                        id: newSubId,
-                        name,
-                        icon,                          // 使用 modal 選的 icon
-                        color: prim.color,             // 跟主分類一樣
-                        colorRgb: prim.colorRgb        // 一樣
+                        color: prim.color
                     });
+
                     saveCategoryData(categoryData);
-                    // refresh selectedPrimary and render sub
-                    selectedPrimary = prim;
+                    
+                    // APP_CATEGORIES 已經是 categoryData 的引用，不用再重新載入
+                    selectedPrimary=prim;
                     renderSubCategoriesForSelected();
-                    selectSubById(newSubId);
+                    selectSubById(newId);
                 }
                 closeAddCategoryModal();
             }
 
-            // ---------- Form submit ----------
-            function onRecordFormSubmit(e) {
+            // ---------- Form submit (不變) ----------
+            function onRecordFormSubmit(e){
                 e.preventDefault();
+                const amount=Number(amountInput?.value||0);
+                if(!amount||amount<=0) return alert('請輸入有效金額！');
+                if(!selectedPrimary) return alert('請選擇主分類！');
 
-                // validations
-                // ⭐ 修正 1 確認：amount 已經透過 Number() 轉換，確保儲存的是純數字 (例如 500 或 500.5)，不會有 .00 尾數。
-                const amount = Number((amountInput && amountInput.value) || 0);
-                if (!amount || amount <= 0) { alert('請輸入有效金額！'); return; }
-                if (!selectedPrimary) { alert('請選擇主分類！'); return; }
-
-                // ⭐ 修正 2 核心：確定要儲存的 Icon，如果是子分類，優先使用子分類的 Icon (如果它有)，否則用主分類的 Icon。
-                // （你新增的子分類會帶 icon，但預設的子分類可能沒有，因此需要這個 fallback 邏輯）
-                const categoryIconToUse = selectedSub
-                    ? (selectedSub.icon || selectedPrimary.icon) // 有子分類時：用子分類 icon，若無則用主分類 icon
-                    : selectedPrimary.icon; // 無子分類時：用主分類 icon
-
-
-                // compose category
-                const categoryObject = {
-                    primary: { 
-                        id: selectedPrimary.id, 
-                        name: selectedPrimary.name, 
-                        icon: selectedPrimary.icon, 
-                        color: selectedPrimary.color 
-                    },
-                    // ⭐️ 修正 2 核心：確保儲存的 sub-category object 包含 icon 屬性，以供列表頁面顯示。
-                    sub: selectedSub ? { 
-                        id: selectedSub.id, 
-                        name: selectedSub.name,
-                        icon: categoryIconToUse 
-                    } : null
+                const categoryIconToUse=selectedSub?(selectedSub.icon||selectedPrimary.icon):selectedPrimary.icon;
+                const categoryObject={
+                    primary:{id:selectedPrimary.id,name:selectedPrimary.name,icon:selectedPrimary.icon,color:selectedPrimary.color},
+                    sub:selectedSub?{id:selectedSub.id,name:selectedSub.name,icon:categoryIconToUse}:null
                 };
-                const categoryText = selectedSub ? `${selectedPrimary.name} / ${selectedSub.name}` : selectedPrimary.name;
-
-                // description default
-                const description = (descriptionInput && descriptionInput.value && descriptionInput.value.trim()) ? descriptionInput.value.trim() : '無備註';
-
-                // image file name
-                const receiptImage = (receiptImageInput && receiptImageInput.files && receiptImageInput.files[0]) ? receiptImageInput.files[0].name : '無';
-
-                // prepare transaction
-                const transactions = loadTransactions();
-                const newId = getNextId(transactions);
+                const categoryText=selectedSub?`${selectedPrimary.name} / ${selectedSub.name}`:selectedPrimary.name;
+                const description=(descriptionInput?.value?.trim())||'無備註';
+                const transactions=loadTransactions();
+                const newId=getNextId(transactions);
                 const newTransaction = {
                     id: newId,
                     type: selectedType,
                     amount,
-                    date: (dateInput && dateInput.value) || today,
+                    date: dateInput?.value || today,
                     categoryText,
                     categoryObject,
                     description,
-                    receiptImage,
-                    icon: categoryIconToUse || '' // 儲存正確的 icon 字串到頂層屬性，方便顯示
+                    receiptImageKey: currentReceiptImageKey || '',
+                    icon: categoryIconToUse
                 };
 
-                // save
                 transactions.unshift(newTransaction);
                 saveTransactions(transactions);
-
-                // 🔴🔴🔴 關鍵：通知其他頁面「交易更新了」
                 localStorage.setItem('lastTransactionUpdate', Date.now());
 
-                // show small non-blocking success
-                if (resultDisplay) {
-                    resultDisplay.innerHTML = `<h3>🎉 新增成功</h3> 分類: ${escapeHtml(categoryText)} 金額: ${amount}`;
-                    resultDisplay.style.display = 'block';
-                    setTimeout(() => { resultDisplay.style.display = 'none'; }, 1200);
+                if(resultDisplay){
+                    resultDisplay.innerHTML=`<h3>🎉 新增成功</h3> 分類: ${escapeHtml(categoryText)} 金額: ${amount}`;
+                    resultDisplay.style.display='block';
+                    setTimeout(()=>{resultDisplay.style.display='none'},1200);
                 }
 
-                // reset UI
                 recordForm.reset();
-                if (dateInput) dateInput.value = today;
+                if(dateInput) dateInput.value=today;
                 resetImageInputUI();
-                selectedPrimary = null;
-                selectedSub = null;
-                primaryCategoryButtons.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-                if (subCategoryButtons) subCategoryButtons.innerHTML = '';
-                if (subCategoryGroup) subCategoryGroup.style.display = 'none';
+                selectedPrimary=null;
+                selectedSub=null;
+                primaryCategoryButtons.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+                if(subCategoryButtons) subCategoryButtons.innerHTML='';
+                if(subCategoryGroup) subCategoryGroup.style.display='none';
 
-                // jump back
-                if (window.parent && typeof window.parent.switchPage === 'function') {
-                    window.parent.switchPage(null, 'transaction.html');
-                } else {
-                    // fallback
-                    window.location.href = 'transaction.html';
+                if(window.parent?.switchPage) window.parent.switchPage(null,'transaction.html');
+                else window.location.href='transaction.html';
+            }
+
+            // ---------- Helpers (不變) ----------
+            function escapeHtml(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+            function hexToRgb(hex){const bigint=parseInt(hex.replace('#',''),16);return {r:(bigint>>16)&255,g:(bigint>>8)&255,b:bigint&255};}
+
+            // ---------- Preview bind (不變) ----------
+            function bindPreviewEvents(){
+                const nameInput=$('#newCategoryName'), previewName=$('#previewNameText'), previewIcon=$('#previewIcon'), previewCard=$('#categoryPreviewCard');
+                const colorSwatches=$$('.color-swatch'), colorPicker=$('#customColorPicker'), colorHiddenInput=$('#selectedColorValue'), iconRadios=$$('input[name="icon-selector"]');
+                if(!nameInput||!previewCard) return;
+                nameInput.addEventListener('input',e=>{previewName.textContent=e.target.value.trim()||'分類名稱';});
+                function updatePreviewColor(color){previewCard.style.borderLeftColor=color;if(colorHiddenInput) colorHiddenInput.value=color;if(colorPicker) colorPicker.value=color;}
+                colorSwatches.forEach(s=>s.addEventListener('click',()=>{colorSwatches.forEach(x=>x.classList.remove('active'));s.classList.add('active');updatePreviewColor(s.dataset.color);})); 
+                if(colorPicker) colorPicker.addEventListener('input',e=>{colorSwatches.forEach(x=>x.classList.remove('active'));updatePreviewColor(e.target.value);});
+                iconRadios.forEach(r=>r.addEventListener('change',e=>{if(e.target.checked) previewIcon.className=e.target.value;}));
+                updatePreviewColor('#ff7f7f');
+            }
+
+            // ---------- URL type (不變) ----------
+            function checkURLTypeAndSetDefault(){
+                const urlParams=new URLSearchParams(window.location.search);
+                const type=urlParams.get('type');
+                if(type==='income'||type==='expense'){
+                    const btn=document.querySelector(`.type-btn[data-type="${type}"]`);
+                    if(btn&&!btn.classList.contains('active')) btn.click();
                 }
             }
-
-            // ---------- Helpers ----------
-            function escapeHtml(s='') {
-                return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-            }
-
-            function hexToRgb(hex) {
-                const bigint = parseInt(hex.replace('#',''), 16);
-                return {
-                    r: (bigint >> 16) & 255,
-                    g: (bigint >> 8) & 255,
-                    b: bigint & 255
-                };
-            }
-
-            // ---------- Icon Category Toggle ----------
-            function toggleIconCategory(categoryId) {
-                const category = document.getElementById(categoryId);
-                
-                if (category) {
-                    // 核心邏輯：切換 collapsed class
-                    category.classList.toggle('collapsed');
-                }
-            }
-
-            // Expose toggle function globally (讓 HTML 裡的 onclick 可以使用)
-            window.toggleIconCategory = toggleIconCategory;
-
-            // ---------- 即時預覽連動邏輯 (請確保這個函式存在，它是上次步驟的內容) ----------
-            function bindPreviewEvents() {
-                const nameInput = document.getElementById('newCategoryName');
-                const previewName = document.getElementById('previewNameText');
-                const previewIcon = document.getElementById('previewIcon');
-                const previewCard = document.getElementById('categoryPreviewCard');
-                const colorSwatches = document.querySelectorAll('.color-swatch');
-                const colorPicker = document.getElementById('customColorPicker');
-                const colorHiddenInput = document.getElementById('selectedColorValue');
-                const iconRadios = document.querySelectorAll('input[name="icon-selector"]');
-
-                if (!nameInput || !previewCard) return; 
-
-                // 1. 名稱連動
-                nameInput.addEventListener('input', (e) => {
-                    previewName.textContent = e.target.value.trim() || '分類名稱';
-                });
-
-                // 2. 顏色連動
-                function updatePreviewColor(color) {
-                    previewCard.style.borderLeftColor = color;
-                    if(colorHiddenInput) colorHiddenInput.value = color;
-                    if(colorPicker) colorPicker.value = color;
-                }
-
-                colorSwatches.forEach(swatch => {
-                    swatch.addEventListener('click', () => {
-                        colorSwatches.forEach(s => s.classList.remove('active'));
-                        swatch.classList.add('active');
-                        
-                        const color = swatch.getAttribute('data-color');
-                        updatePreviewColor(color);
-                    });
-                });
-
-                if (colorPicker) {
-                    colorPicker.addEventListener('input', (e) => {
-                        colorSwatches.forEach(s => s.classList.remove('active'));
-                        updatePreviewColor(e.target.value);
-                    });
-                }
-
-                // 3. Icon 連動
-                iconRadios.forEach(radio => {
-                    radio.addEventListener('change', (e) => {
-                        if(e.target.checked) {
-                            previewIcon.className = e.target.value; 
-                        }
-                    });
-                });
-                
-                // 初始化狀態
-                updatePreviewColor('#ff7f7f'); 
-                
-                // 乖乖~~~確保一開始全部展開 (預設就是沒有 collapsed class，所以不用額外操作)
-            }
-
-            // --------------------------- New: 檢查 URL 參數設定預設類型 ---------------------------
-            function checkURLTypeAndSetDefault() {
-                const urlParams = new URLSearchParams(window.location.search);
-                const type = urlParams.get('type');
-                
-                if (type === 'income' || type === 'expense') {
-                    // 尋找對應 data-type 屬性的類型按鈕
-                    const targetButton = document.querySelector(`.type-btn[data-type="${type}"]`);
-                    
-                    // 如果找到按鈕且它不是已經選中的狀態，就模擬點擊來觸發類型切換邏輯
-                    if (targetButton && !targetButton.classList.contains('active')) {
-                        // 執行點擊來觸發原本綁定的切換邏輯
-                        targetButton.click(); 
-                        console.log(`Setting default type from URL to: ${type}`);
-                    }
-                }
-            }
-            // --------------------------- End: 檢查 URL 參數設定預設類型 ---------------------------
-
-            // ⭐️ [修改] 新增自訂分類 (並立刻同步存檔)
-            function addNewCategory() {
-                const newCat = prompt("請輸入新分類名稱 (例如: 養貓、遊戲)：");
-                
-                if (newCat && newCat.trim() !== "") {
-                    const catName = newCat.trim();
-
-                    // 重新讀取確保資料最新
-                    APP_CATEGORIES = loadCategories();
-                    
-                    // 1. 更新 APP_CATEGORIES (如果還沒有這個分類)
-                    if (!APP_CATEGORIES[currentType][catName]) {
-                        APP_CATEGORIES[currentType][catName] = []; // 初始化
-                        
-                        // 🔴 關鍵在這行：立刻存入 localStorage，這樣預算頁面才看得到！
-                        localStorage.setItem('app_categories', JSON.stringify(APP_CATEGORIES));
-                        
-                        // 2. 自動選中新分類
-                        selectedCategory = catName;
-                        
-                        // 3. 重新渲染畫面
-                        renderCategories();
-                        
-                        showToast(`已新增分類：${catName}`);
-                    } else {
-                        alert("這個分類已經存在囉！");
-                    }
-                }
-            }
-
-            // [修改] 渲染分類網格
-            function renderCategories() {
-                // ⭐️ 關鍵修改：每次渲染前，重新讀取一次最新資料
-                APP_CATEGORIES = loadCategories();
-                
-                const grid = document.getElementById('categoryGrid');
-                // ...
-            }
-
-            // ⭐ 請確保在 DOMContentLoaded 中呼叫 bindPreviewEvents()
-            document.addEventListener('DOMContentLoaded', () => {
-                // ... (你原本的 DOMContentLoaded 內容)
-
-                // 新增這行：
-                bindPreviewEvents();
-
-                // 新增這行：根據 URL 參數設定預設類型
-                checkURLTypeAndSetDefault(); // <-- 新增
-            });
 
         })();
-    </script>
 
+        function saveReceiptImage(base64) {
+            const key = 'receipt_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+            const map = JSON.parse(localStorage.getItem('receiptImages') || '{}');
+            map[key] = base64;
+            localStorage.setItem('receiptImages', JSON.stringify(map));
+            return key;
+        }
+    </script>
 
 </html>

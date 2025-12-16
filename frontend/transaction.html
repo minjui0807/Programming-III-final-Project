@@ -189,6 +189,19 @@
             color: var(--text-light);
         }
 
+        /* ⭐️ 新增：圖片的樣式 */
+        .icon-section .category-image {
+            /* 確保圖片填滿 icon-section 容器 */
+            width: 100%;       
+            height: 100%;      
+            
+            /* 讓圖片顯示為圓形 (如果這是您的設計目標) */
+            border-radius: 50%; 
+            
+            /* 確保圖片不變形且填滿，多餘部分會被裁切 */
+            object-fit: cover; 
+        }
+
         .info-section {
             display: flex;
             justify-content: space-between;
@@ -1086,6 +1099,14 @@
     <script>
 
         const CATEGORY_KEY = 'categoryData';
+        const IMGS = 'RECEIPT_IMAGES';
+
+        let receiptImages = {}; 
+
+        function loadReceiptImages() {
+            const imgsStr = localStorage.getItem(IMGS);
+            receiptImages = imgsStr ? JSON.parse(imgsStr) : {};
+        }
 
         function loadCategoryData() {
             return JSON.parse(localStorage.getItem(CATEGORY_KEY) || '{}');
@@ -1147,19 +1168,22 @@
             const categoryData = loadCategoryData();
             const list = categoryData[type] || [];
 
-            // 找主分類
             const main = list.find(c => c.name === mainCat);
-            if (!main) return 'fas fa-folder'; // fallback
+            if (!main) return 'fas fa-folder';
 
-            // 如果有子分類 → 優先用子分類 icon
-            if (subCat && main.subs && main.subs.length > 0) {
-                const sub = main.subs.find(s => s.name === subCat);
-                if (sub && sub.icon) return sub.icon;
+            const subs = main.sub || main.subs || [];
+
+            if (subCat && subs.length > 0) {
+                const sub = subs.find(s => s.name === subCat);
+                if (sub?.icon) return sub.icon;
             }
 
-            // 沒子分類 or 找不到 → 用主分類 icon
-            return main.icon || 'fas fa-folder';
+            // return main.icon || 'fas fa-folder';
+
+            return main.icon || CATEGORY_ICON_MAP[mainCat] || 'fas fa-folder';
+
         }
+
 
 
         // [JS] 確保有這個圖示對照表，不然存檔會報錯！
@@ -1200,6 +1224,12 @@
                     t.icon = CATEGORY_ICON_MAP[iconMapKey] || 'fas fa-question';
                     isDataModified = true;
                 }
+
+                if (!('receiptImageKey' in t)) {
+                    t.receiptImageKey = '';
+                    isDataModified = true;
+                }
+
                 return t;
             });
 
@@ -1267,17 +1297,36 @@
             }
         }
 
-        let currentPhotoBase64 = '';
+        let currentReceiptImageKey = '';
 
         document.getElementById('photoInput').addEventListener('change', async function () {
             const file = this.files[0];
             if (!file) return;
 
-            currentPhotoBase64 = await resizeImageKeepRatio(file);
+            const base64 = await resizeImageKeepRatio(file);
+            const key = 'receipt_' + Date.now();
 
-            document.getElementById('photoPreview').innerHTML =
-                `<img src="${currentPhotoBase64}">`;
+            const receiptMap = JSON.parse(localStorage.getItem('receiptImages') || '{}');
+            receiptMap[key] = base64;
+            localStorage.setItem('receiptImages', JSON.stringify(receiptMap));
+
+            currentReceiptImageKey = key;
+            
+            // 如果是編輯中，直接更新交易物件
+            const modalId = parseInt(document.getElementById('modal_id').value);
+            if(modalId > 0){
+                const t = TRANSACTIONS.find(tx => tx.id === modalId);
+                if(t){
+                    t.receiptImageKey = key;
+                    saveToLocalStorage();
+                    renderTransactionList();
+                }
+            }
+
+            document.getElementById('photoPreview').innerHTML = `<img src="${base64}">`;
         });
+
+
 
         function resizeImageKeepRatio(file, maxEdge = 1200, quality = 0.8) {
             return new Promise(resolve => {
@@ -1309,13 +1358,6 @@
             });
         }
 
-
-        /**
-         * [修改] 根據類型更新 Modal 內的主分類與子分類
-         * @param {string} type - 'expense' 或 'income'
-         * @param {string} selectedMain - 當前選中的主分類
-         * @param {string} selectedSub - 當前選中的子分類
-         */
         function updateModalCategories(type, selectedMain, selectedSub) {
             const mainSelect = document.getElementById('modal_main_category');
             const subSelect = document.getElementById('modal_sub_category');
@@ -1347,7 +1389,7 @@
             const updateSubOptions = (mainCat) => {
                 subSelect.innerHTML = '';
                 // 取得該主分類下的子分類列表，若無則給一個預設空選項
-                const subCategories = DEFAULT_SUB_CATEGORIES[mainCat] || ['一般'];
+                const subCategories = DEFAULT_SUB_CATEGORIES[mainCat] || ['無子分類'];
                 
                 subCategories.forEach(sub => {
                     const option = document.createElement('option');
@@ -1477,23 +1519,60 @@
             }
 
             const preview = document.getElementById('photoPreview');
-            currentPhotoBase64 = transaction.photo || '';
+                const receiptImageKey = transaction.receiptImageKey; // 讀取儲存在交易紀錄中的圖片索引鍵
+                
+                let base64Image = '';
 
-            if (currentPhotoBase64) {
-                preview.innerHTML = `<img src="${currentPhotoBase64}">`;
-            } else {
-                preview.innerHTML = `
-                    <i class="fas fa-camera"></i>
-                    <p>尚未上傳照片</p>
-                `;
-            }
-
+                if (receiptImageKey) {
+                    // 使用輔助函式從 localStorage 取得 Base64 資料
+                    base64Image = getReceiptImage(receiptImageKey); 
+                }
+                
+                // 如果有 Base64 圖片資料，就顯示
+                if (base64Image && base64Image.startsWith('data:image')) {
+                    preview.innerHTML = `<img src="${base64Image}">`;
+                    // 🔹 讓你的 Modal 圖片上傳區域知道目前有圖片
+                    // 為了讓使用者在 Modal 裡可以替換圖片，必須把 key 存起來
+                    currentReceiptImageKey = receiptImageKey; 
+                } else {
+                    // 否則顯示預設的 "尚未上傳照片"
+                    preview.innerHTML = `
+                        <i class="fas fa-camera"></i>
+                        <p>尚未上傳照片</p>
+                    `;
+                }
 
             // 5. 顯示視窗
             const modal = document.getElementById('editTransactionModal');
             modal.style.display = 'flex';
         }
-        
+
+        function importTransactions(importedList) {
+            // 讀取現有的 receiptImages
+            const receiptMap = JSON.parse(localStorage.getItem('receiptImages') || '{}');
+
+            importedList.forEach(t => {
+                // 生成唯一 id
+                if (!t.id) t.id = Date.now() + Math.floor(Math.random() * 1000);
+
+                // 如果有 Base64 圖片欄位
+                if (t.receiptImageBase64) {
+                    const key = 'receipt_' + t.id;
+                    receiptMap[key] = t.receiptImageBase64;
+                    t.receiptImageKey = key;
+                    delete t.receiptImageBase64;
+                }
+
+                // 新增到交易列表
+                TRANSACTIONS.push(t);
+            });
+
+            // 存回 localStorage
+            localStorage.setItem('transactions', JSON.stringify(TRANSACTIONS));
+            localStorage.setItem('receiptImages', JSON.stringify(receiptMap));
+
+            renderTransactionList();
+        }
 
         /**
          * [JS] 刪除交易 (純邏輯，不跳窗)
@@ -1506,8 +1585,6 @@
             closeModal();
             console.log('刪除成功！');
         }
-
-
 
         function updateModalCategoriesFromCategoryData(type, selectedMain, selectedSub) {
             const mainSelect = document.getElementById('modal_main_category');
@@ -1530,16 +1607,22 @@
 
             const selectedPrimary = primaryList.find(p => p.name === mainSelect.value);
 
-            // 子分類
-            subSelect.innerHTML = '<option value="">-- 無 --</option>';
-            if (selectedPrimary && selectedPrimary.subs) {
-                selectedPrimary.subs.forEach(s => {
+            const subs = selectedPrimary?.sub || selectedPrimary?.subs || [];
+            if (subs.length) {
+                subs.forEach(s => {
                     const opt = document.createElement('option');
                     opt.value = s.name;
                     opt.textContent = s.name;
                     if (s.name === selectedSub) opt.selected = true;
                     subSelect.appendChild(opt);
                 });
+            } else {
+                // 無子分類時顯示一個固定選項
+                const opt = document.createElement('option');
+                opt.value = '';
+                opt.textContent = '無子分類';
+                opt.selected = true;
+                subSelect.appendChild(opt);
             }
 
             mainSelect.onchange = () => {
@@ -1586,6 +1669,10 @@
 
             // 3. 組合字串
             let finalCategory = mainCat;
+
+            if (subCat === '無子分類') {
+                subCat = '';
+            }
             
             // 防呆：如果主分類還是抓不到，給預設值
             if (!finalCategory || finalCategory.trim() === '') {
@@ -1612,7 +1699,7 @@
                 amount: amount,
                 description: description,
                 icon: newIcon,
-                photo: currentPhotoBase64
+                receiptImageKey: currentReceiptImageKey
             };
 
             // 7. 寫入陣列
@@ -1646,6 +1733,32 @@
         });
 
         // --------------------------- 渲染邏輯 ---------------------------
+
+        // 取得收據圖片 Base64 資料的輔助函式
+        function getReceiptImage(key) {
+            if (!key) return null;
+            const map = JSON.parse(localStorage.getItem('receiptImages') || '{}');
+            return map[key] || null;
+        }
+
+        // ============== 新增：Base64 圖片查詢函數 ==============
+        function getReceiptImageBase64(key) {
+            if (!key) return null;
+            try {
+                const receiptImages = JSON.parse(localStorage.getItem('receiptImages') || '{}');
+                const base64String = receiptImages[key];
+                if (base64String) {
+                    if (base64String.startsWith('data:')) return base64String;
+                    return 'data:image/jpeg;base64,' + base64String;
+                }
+                return null;
+            } catch (e) {
+                console.error('Error retrieving receipt image:', e);
+                return null;
+            }
+        }
+
+        // ======================================================
 
         /**
         * [JS] 渲染交易列表 (終極整合版)
@@ -1794,23 +1907,35 @@
                         displayCategory = t.categoryText || '未分類';
                     }
 
+                    const iconOrImageHtml = `<i class="${t.icon || 'fas fa-folder'}"></i>`;
+
+                    
+                    // ===========================================
+                    // ⭐️ 核心修正：圖片/圖示邏輯結束
+                    // ===========================================
+
                     card.className = `transaction-card ${isExp ? 'expense-border' : 'income-border'}`;
+
                     card.innerHTML = `
-                        <div class="card-content">
-                            <div class="icon-section"><i class="${t.icon || 'fas fa-folder'}"></i></div>
-                            <div class="info-section">
-                                <div class="category-and-desc">
-                                    <span class="category-tag ${categoryClass}">
-                                        ${displayCategory}
-                                    </span>
-                                    <span class="description">${t.description || '無備註'}</span>
-                                </div>
+                    <div class="card-content">
+                        <div class="icon-section">${iconOrImageHtml}</div>
+
+                        <div class="info-section">
+                            <div class="category-and-desc">
+                                <span class="category-tag ${categoryClass}">
+                                ${displayCategory}
+                                </span>
+                                <span class="description">${t.description || '無備註'}</span>
                             </div>
-                            <div class="amount-section ${amountClass}">
-                                ${isExp ? '-' : '+'} $${parseFloat(t.amount).toLocaleString()}
-                            </div>
+
                         </div>
+
+                        <div class="amount-section ${amountClass}">
+                        ${isExp ? '-' : '+'} $${parseFloat(t.amount).toLocaleString()}
+                        </div>
+                    </div>
                     `;
+
                     dailyContainer.appendChild(card);
                 });
             });
@@ -1930,6 +2055,7 @@
                 });
             });
 
+            loadReceiptImages();
             // 頁面載入時先渲染一次列表
             renderTransactionList();
         });

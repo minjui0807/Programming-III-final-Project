@@ -629,6 +629,131 @@
 
     <script>
 
+        /* ========= 預設分類（只初始化一次） ========= */
+        const CATEGORY_COLORS = [
+            'var(--cat-1)','var(--cat-2)','var(--cat-3)','var(--cat-4)','var(--cat-5)',
+            'var(--cat-6)','var(--cat-7)','var(--cat-8)','var(--cat-9)','var(--cat-10)',
+            'var(--cat-11)','var(--cat-12)','var(--cat-13)','var(--cat-14)','var(--cat-15)'
+            ,'var(--cat-16)','var(--cat-17)','var(--cat-18)','var(--cat-19)','var(--cat-20)'
+        ];
+        // ICON 分類設定（可自由增加分類與 icon）
+        const ICON_CATEGORIES = {
+            '常用': [
+                'fas fa-utensils','fas fa-car','fas fa-home','fas fa-wallet','fas fa-money-bill-wave',
+                'fas fa-coins','fas fa-credit-card','fas fa-gift','fas fa-chart-line','fas fa-hand-holding-usd',
+                'fas fa-shopping-bag','fas fa-graduation-cap','fas fa-stethoscope','fas fa-plane','fas fa-receipt',
+                'fas fa-bell','fas fa-calendar','fas fa-envelope','fas fa-globe','fas fa-phone'
+            ],
+            '食物': [
+                'fas fa-drumstick-bite','fas fa-coffee','fas fa-ice-cream','fas fa-pizza-slice','fas fa-bread-slice',
+                'fas fa-hamburger','fas fa-carrot','fas fa-cocktail','fas fa-cheese','fas fa-apple-alt',
+                'fas fa-hotdog','fas fa-bacon','fas fa-wine-glass','fas fa-beer','fas fa-fish',
+                'fas fa-seedling','fas fa-lemon','fas fa-egg','fas fa-pepper-hot','fas fa-cookie-bite'
+            ],
+            '生活': [
+                'fas fa-house-user','fas fa-plug','fas fa-wifi','fas fa-couch','fas fa-bath','fas fa-tint',
+                'fas fa-toolbox','fas fa-tshirt','fas fa-broom','fas fa-lightbulb','fas fa-door-closed',
+                'fas fa-key','fas fa-sink','fas fa-shower','fas fa-soap','fas fa-fan', 'fas fa-tv','fas fa-blender'
+            ],
+            '交通': [
+                'fas fa-gas-pump','fas fa-bus','fas fa-train','fas fa-subway','fas fa-taxi','fas fa-bicycle',
+                'fas fa-shuttle-van','fas fa-truck','fas fa-motorcycle','fas fa-car-side','fas fa-ship',
+                'fas fa-helicopter','fas fa-plane','fas fa-trailer','fas fa-rocket','fas fa-traffic-light',
+                'fas fa-road','fas fa-map','fas fa-location-arrow'
+            ],
+            '娛樂': [
+                'fas fa-gamepad','fas fa-film','fas fa-users','fas fa-music','fas fa-camera','fas fa-theater-masks',
+                'fas fa-tv','fas fa-dice','fas fa-puzzle-piece','fas fa-book-open','fas fa-microphone','fas fa-guitar',
+                'fas fa-headphones','fas fa-basketball-ball','fas fa-volleyball-ball','fas fa-futbol','fas fa-baseball-ball',
+                'fas fa-bowling-ball','fas fa-chess','fas fa-paint-brush'
+            ],
+            '金融': [
+                'fas fa-credit-card','fas fa-chart-line','fas fa-piggy-bank','fas fa-file-invoice-dollar','fas fa-money-check-alt',
+                'fas fa-exchange-alt','fas fa-coins','fas fa-wallet','fas fa-calculator','fas fa-receipt',
+                'fas fa-landmark','fas fa-hand-holding-usd','fas fa-dollar-sign','fas fa-chart-pie','fas fa-university',
+                'fas fa-chart-bar','fas fa-wallet','fas fa-balance-scale','fas fa-cash-register','fas fa-sort-amount-up'
+            ],
+            '健康': [
+                'fas fa-heartbeat','fas fa-stethoscope','fas fa-pills','fas fa-syringe','fas fa-hospital',
+                'fas fa-first-aid','fas fa-dumbbell','fas fa-running','fas fa-biking',
+                'fas fa-clinic-medical','fas fa-notes-medical','fas fa-tooth','fas fa-procedures','fas fa-hand-holding-medical',
+                'fas fa-allergies','fas fa-prescription-bottle','fas fa-x-ray','fas fa-vial','fas fa-brain'
+            ],
+            '寵物': [
+                'fas fa-dog','fas fa-cat','fas fa-fish','fas fa-paw','fas fa-horse','fas fa-frog',
+                'fas fa-spider','fas fa-dove','fas fa-dragon','fas fa-hippo','fas fa-fish-fins','fas fa-feather',
+                'fas fa-bone','fas fa-bug','fas fa-otter','fas fa-crow','fas fa-kiwi-bird','fas fa-hat-cowboy','fas fa-kiwi-bird','fas fa-dragon'
+            ],
+            '旅行': [
+                'fas fa-plane','fas fa-ship','fas fa-car','fas fa-bicycle','fas fa-hiking','fas fa-map-marked-alt',
+                'fas fa-compass','fas fa-mountain','fas fa-campground','fas fa-route','fas fa-suitcase','fas fa-passport',
+                'fas fa-globe','fas fa-anchor','fas fa-sailboat','fas fa-bus','fas fa-train','fas fa-subway','fas fa-taxi','fas fa-motorcycle'
+            ],
+            '科技': [
+                'fas fa-laptop','fas fa-mobile-alt','fas fa-tablet-alt','fas fa-microchip','fas fa-server','fas fa-cogs',
+                'fas fa-robot','fas fa-keyboard','fas fa-mouse','fas fa-headset','fas fa-tv','fas fa-camera','fas fa-cloud',
+                'fas fa-wifi','fas fa-broadcast-tower','fas fa-satellite','fas fa-battery-full','fas fa-lightbulb','fas fa-rocket','fas fa-hdd'
+            ]
+        };
+
+
+        const DEFAULT_CATEGORIES = {
+            expense: [
+                { id: 1, name: "餐飲", icon: "fas fa-utensils", color: "var(--cat-1)", sub: [
+                    { id: 101, name: "外食", icon: "fas fa-burger", color: "var(--cat-1)" },
+                    { id: 102, name: "飲品", icon: "fas fa-coffee", color: "var(--cat-1)" },
+                    { id: 103, name: "零食", icon: "fas fa-cookie-bite", color: "var(--cat-1)" },
+                ]},
+                { id: 2, name: "交通", icon: "fas fa-bus", color: "var(--cat-2)", sub: [
+                    { id: 201, name: "油資/充電", icon: "fas fa-gas-pump", color: "var(--cat-2)" },
+                    { id: 202, name: "公車/捷運", icon: "fas fa-subway", color: "var(--cat-2)" },
+                    { id: 203, name: "計程車", icon: "fas fa-taxi", color: "var(--cat-2)" },
+                ]},
+                { id: 3, name: "購物", icon: "fas fa-shopping-bag", color: "var(--cat-3)", sub: [
+                    { id: 301, name: "服飾", icon: "fas fa-shirt", color: "var(--cat-3)" },
+                    { id: 302, name: "日用品", icon: "fas fa-toilet-paper", color: "var(--cat-3)" },
+                    { id: 303, name: "3C 產品", icon: "fas fa-mobile-screen-button", color: "var(--cat-3)" },
+                ]},
+                { id: 4, name: "娛樂", icon: "fas fa-gamepad", color: "var(--cat-4)", sub: [
+                    { id: 401, name: "電影/展覽", icon: "fas fa-ticket", color: "var(--cat-4)" },
+                    { id: 402, name: "遊戲", icon: "fas fa-dice", color: "var(--cat-4)" },
+                    { id: 403, name: "旅遊", icon: "fas fa-plane", color: "var(--cat-4)" },
+                ]},
+                { id: 5, name: "居住", icon: "fas fa-home", color: "var(--cat-5)", sub: [
+                    { id: 501, name: "房租/房貸", icon: "fas fa-building-columns", color: "var(--cat-5)" },
+                    { id: 502, name: "水電瓦斯", icon: "fas fa-lightbulb", color: "var(--cat-5)" },
+                    { id: 503, name: "網路/電信", icon: "fas fa-signal", color: "var(--cat-5)" },
+                ]}
+            ],
+            income: [
+                { id: 6, name: "薪資", icon: "fas fa-money-check-alt", color: "var(--cat-6)", sub: [
+                    { id: 601, name: "月薪", icon: "fas fa-money-bill-wave", color: "var(--cat-6)" },
+                    { id: 602, name: "獎金", icon: "fas fa-hand-holding-dollar", color: "var(--cat-6)" },
+                    { id: 603, name: "兼職", icon: "fas fa-briefcase", color: "var(--cat-6)" },
+                ]},
+                { id: 7, name: "投資", icon: "fas fa-chart-line", color: "var(--cat-7)", sub: [
+                    { id: 701, name: "股息", icon: "fas fa-arrow-trend-up", color: "var(--cat-7)" },
+                    { id: 702, name: "基金收益", icon: "fas fa-vault", color: "var(--cat-7)" },
+                    { id: 703, name: "房產租金", icon: "fas fa-house-chimney-crack", color: "var(--cat-7)" },
+                ]},
+                { id: 8, name: "禮金", icon: "fas fa-gift", color: "var(--cat-8)", sub: [
+                    { id: 801, name: "紅包", icon: "fas fa-envelope", color: "var(--cat-8)" },
+                    { id: 802, name: "生日禮物", icon: "fas fa-cake-candles", color: "var(--cat-8)" },
+                    { id: 803, name: "贊助", icon: "fas fa-heart", color: "var(--cat-8)" },
+                ]},
+                { id: 9, name: "副業", icon: "fas fa-laptop-code", color: "var(--cat-9)", sub: [
+                    { id: 901, name: "稿費", icon: "fas fa-pen-nib", color: "var(--cat-9)" },
+                    { id: 902, name: "銷售", icon: "fas fa-store", color: "var(--cat-9)" },
+                    { id: 903, name: "服務費", icon: "fas fa-handshake", color: "var(--cat-9)" },
+                ]},
+                { id: 10, name: "其他", icon: "fas fa-ellipsis-h", color: "var(--cat-10)", sub: [
+                    { id: 1101, name: "退款", icon: "fas fa-undo", color: "var(--cat-10)" },
+                    { id: 1102, name: "意外收入", icon: "fas fa-meteor", color: "var(--cat-10)" },
+                    { id: 1103, name: "利息", icon: "fas fa-percent", color: "var(--cat-10)" },
+                ]}
+            ]
+        };
+
         function getCategories(type='expense') {
             const raw = localStorage.getItem('categoryData');
             if(!raw) {
@@ -671,82 +796,6 @@
             const newList = list.filter(c => c.id !== id);
             saveCategories(type, newList);
         }
-
-        const DEFAULT_CATEGORIES = {
-            expense: [
-                { id: 1, name: '餐飲', icon: 'fas fa-utensils', color: 'var(--cat-red)', colorRgb: '255,127,127', sub: [{ id: 101, name: '早餐', icon: 'fas fa-coffee' }, { id: 102, name: '午餐', icon: 'fas fa-drumstick-bite' }, { id: 103, name: '晚餐', icon: 'fas fa-hamburger' }] },
-                { id: 2, name: '交通', icon: 'fas fa-bus', color: 'var(--cat-blue)', colorRgb: '127,191,255', sub: [{ id: 201, name: '大眾運輸', icon: 'fas fa-subway' }, { id: 202, name: '計程車', icon: 'fas fa-taxi' }] },
-                { id: 3, name: '購物', icon: 'fas fa-shopping-bag', color: 'var(--cat-purple)', colorRgb: '191,127,255', sub: [] },
-                { id: 4, name: '娛樂', icon: 'fas fa-film', color: 'var(--cat-yellow)', colorRgb: '255,255,127', sub: [] }
-            ],
-            income: [
-                { id: 11, name: '薪資', icon: 'fas fa-money-check-alt', color: 'var(--cat-green)', colorRgb: '127,255,127', sub: [] },
-                { id: 12, name: '兼職', icon: 'fas fa-briefcase', color: 'var(--cat-orange)', colorRgb: '255,191,127', sub: [] }
-            ]
-        };
-
-
-        const CATEGORY_COLORS = ['var(--cat-1)','var(--cat-2)','var(--cat-3)','var(--cat-4)','var(--cat-5)','var(--cat-6)','var(--cat-7)','var(--cat-8)','var(--cat-9)','var(--cat-10)','var(--cat-11)','var(--cat-12)','var(--cat-13)','var(--cat-14)','var(--cat-15)','var(--cat-16)','var(--cat-17)','var(--cat-18)','var(--cat-19)','var(--cat-20)'];
-        // ICON 分類設定（可自由增加分類與 icon）
-        const ICON_CATEGORIES = {
-        '常用': [
-            'fas fa-utensils','fas fa-car','fas fa-home','fas fa-wallet','fas fa-money-bill-wave',
-            'fas fa-coins','fas fa-credit-card','fas fa-gift','fas fa-chart-line','fas fa-hand-holding-usd',
-            'fas fa-shopping-bag','fas fa-graduation-cap','fas fa-stethoscope','fas fa-plane','fas fa-receipt',
-            'fas fa-bell','fas fa-calendar','fas fa-envelope','fas fa-globe','fas fa-phone'
-        ],
-        '食物': [
-            'fas fa-drumstick-bite','fas fa-coffee','fas fa-ice-cream','fas fa-pizza-slice','fas fa-bread-slice',
-            'fas fa-hamburger','fas fa-carrot','fas fa-cocktail','fas fa-cheese','fas fa-apple-alt',
-            'fas fa-hotdog','fas fa-bacon','fas fa-wine-glass','fas fa-beer','fas fa-fish',
-            'fas fa-seedling','fas fa-lemon','fas fa-egg','fas fa-pepper-hot','fas fa-cookie-bite'
-        ],
-        '生活': [
-            'fas fa-house-user','fas fa-plug','fas fa-wifi','fas fa-couch','fas fa-bath','fas fa-tint',
-            'fas fa-toolbox','fas fa-tshirt','fas fa-broom','fas fa-lightbulb','fas fa-door-closed',
-            'fas fa-key','fas fa-sink','fas fa-shower','fas fa-soap','fas fa-fan', 'fas fa-tv','fas fa-blender'
-        ],
-        '交通': [
-            'fas fa-gas-pump','fas fa-bus','fas fa-train','fas fa-subway','fas fa-taxi','fas fa-bicycle',
-            'fas fa-shuttle-van','fas fa-truck','fas fa-motorcycle','fas fa-car-side','fas fa-ship',
-            'fas fa-helicopter','fas fa-plane','fas fa-trailer','fas fa-rocket','fas fa-traffic-light',
-            'fas fa-road','fas fa-map','fas fa-location-arrow'
-        ],
-        '娛樂': [
-            'fas fa-gamepad','fas fa-film','fas fa-users','fas fa-music','fas fa-camera','fas fa-theater-masks',
-            'fas fa-tv','fas fa-dice','fas fa-puzzle-piece','fas fa-book-open','fas fa-microphone','fas fa-guitar',
-            'fas fa-headphones','fas fa-basketball-ball','fas fa-volleyball-ball','fas fa-futbol','fas fa-baseball-ball',
-            'fas fa-bowling-ball','fas fa-chess','fas fa-paint-brush'
-        ],
-        '金融': [
-            'fas fa-credit-card','fas fa-chart-line','fas fa-piggy-bank','fas fa-file-invoice-dollar','fas fa-money-check-alt',
-            'fas fa-exchange-alt','fas fa-coins','fas fa-wallet','fas fa-calculator','fas fa-receipt',
-            'fas fa-landmark','fas fa-hand-holding-usd','fas fa-dollar-sign','fas fa-chart-pie','fas fa-university',
-            'fas fa-chart-bar','fas fa-wallet','fas fa-balance-scale','fas fa-cash-register','fas fa-sort-amount-up'
-        ],
-        '健康': [
-            'fas fa-heartbeat','fas fa-stethoscope','fas fa-pills','fas fa-syringe','fas fa-hospital',
-            'fas fa-first-aid','fas fa-dumbbell','fas fa-running','fas fa-biking',
-            'fas fa-clinic-medical','fas fa-notes-medical','fas fa-tooth','fas fa-procedures','fas fa-hand-holding-medical',
-            'fas fa-allergies','fas fa-prescription-bottle','fas fa-x-ray','fas fa-vial','fas fa-brain'
-        ],
-        '寵物': [
-            'fas fa-dog','fas fa-cat','fas fa-fish','fas fa-paw','fas fa-horse','fas fa-frog',
-            'fas fa-spider','fas fa-dove','fas fa-dragon','fas fa-hippo','fas fa-fish-fins','fas fa-feather',
-            'fas fa-bone','fas fa-bug','fas fa-otter','fas fa-crow','fas fa-kiwi-bird','fas fa-hat-cowboy','fas fa-kiwi-bird','fas fa-dragon'
-        ],
-        '旅行': [
-            'fas fa-plane','fas fa-ship','fas fa-car','fas fa-bicycle','fas fa-hiking','fas fa-map-marked-alt',
-            'fas fa-compass','fas fa-mountain','fas fa-campground','fas fa-route','fas fa-suitcase','fas fa-passport',
-            'fas fa-globe','fas fa-anchor','fas fa-sailboat','fas fa-bus','fas fa-train','fas fa-subway','fas fa-taxi','fas fa-motorcycle'
-        ],
-        '科技': [
-            'fas fa-laptop','fas fa-mobile-alt','fas fa-tablet-alt','fas fa-microchip','fas fa-server','fas fa-cogs',
-            'fas fa-robot','fas fa-keyboard','fas fa-mouse','fas fa-headset','fas fa-tv','fas fa-camera','fas fa-cloud',
-            'fas fa-wifi','fas fa-broadcast-tower','fas fa-satellite','fas fa-battery-full','fas fa-lightbulb','fas fa-rocket','fas fa-hdd'
-        ]
-        };
-
 
         // 渲染 icon modal
         function renderIcons() {
@@ -1071,19 +1120,40 @@
             btn.textContent = allIconsExpanded ? '收合' : '展開';
         }
 
-        // Form submit
-        categoryForm.onsubmit=function(e){
+        categoryForm.onsubmit = function(e) {
             e.preventDefault();
-            const data=getCategoryData(); const name=categoryNameInput.value.trim();
+            const data = getCategoryData();
+            const name = categoryNameInput.value.trim();
             if(!name) return;
-            if(modalAction==='addMain'){ data[currentType].push({name, icon:selectedIcon, color:selectedColor, sub:[]}); }
-            else if(modalAction==='editMain' && targetMainIndex!==null){ const main=data[currentType][targetMainIndex]; main.name=name; main.icon=selectedIcon; main.color=selectedColor; }
-            else if(modalAction==='addSub' && targetMainIndex!==null){
-                const subId = Date.now(); // 或自增
-                data[currentType][targetMainIndex].sub.push({id: subId, name, icon:selectedIcon});
-            }
 
-            else if(modalAction==='editSub' && targetMainIndex!==null && targetSubIndex!==null){
+            if(modalAction === 'addMain') {
+                const id = Date.now();
+                data[currentType].push({
+                    id,
+                    name,
+                    icon: selectedIcon,
+                    color: selectedColor,
+                    sub: []
+                });
+            } else if(modalAction === 'editMain' && targetMainIndex !== null) {
+                const main = data[currentType][targetMainIndex];
+                main.name = name;
+                main.icon = selectedIcon;
+                main.color = selectedColor;
+                main.sub = main.sub || [];
+                // 🔹 更新子分類顏色
+                main.sub.forEach(sub => sub.color = selectedColor);
+            } else if(modalAction === 'addSub' && targetMainIndex !== null) {
+                const subId = Date.now();
+                const parent = data[currentType][targetMainIndex];
+                parent.sub = parent.sub || [];
+                parent.sub.push({
+                    id: subId,
+                    name,
+                    icon: selectedIcon,
+                    color: parent.color  // 🔹 子分類跟主分類同色
+                });
+            } else if(modalAction === 'editSub' && targetMainIndex !== null && targetSubIndex !== null) {
                 const subList = data[currentType][targetMainIndex].sub || [];
                 const sub = subList[targetSubIndex];
                 if(sub){
@@ -1092,8 +1162,11 @@
                 }
             }
 
-            saveCategoryData(data); renderCategoryManager(); closeModal();
+            saveCategoryData(data);
+            renderCategoryManager();
+            closeModal();
         };
+
 
         // Delete
         function deleteMainCategory(index){ 

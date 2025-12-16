@@ -15,6 +15,27 @@
     --neon-red:#ff7f7f;
     --text-light:#e6e6e6;
     --text-dark:#b8b8b8;
+
+    --cat-1: #ff7f7f;
+    --cat-2: #ffcc66;
+    --cat-3: #a8f0c6;
+    --cat-4: #a7d7ff;
+    --cat-5: #ffb3cf;
+    --cat-6: #cf9cff;
+    --cat-7: #66ffcc;
+    --cat-8: #ff9c66;
+    --cat-9: #99ccff;
+    --cat-10: #d4d4d4;
+    --cat-11: #ffd1dc;
+    --cat-12: #ffe066;
+    --cat-13: #8affc1;
+    --cat-14: #8ed1ff;
+    --cat-15: #c9a7ff;
+    --cat-16: #ffb380;
+    --cat-17: #b3ffb3;
+    --cat-18: #b3d9ff;
+    --cat-19: #ffe6b3;
+    --cat-20: #ffadad;
 }
 
 body{
@@ -58,6 +79,7 @@ h2{
     height:100%;
     width:0%;
     transition:.5s;
+    /* 這裡不再使用 status-safe/warning/danger 類，而是直接在 JS 中設定背景色 */
 }
 .progress-text{
     display:flex;
@@ -121,7 +143,8 @@ h2{
 .card-stats{
     display:flex;
     justify-content:space-between;
-    margin-bottom:6px;
+    margin-top:8px; /* 調整為 card-stats，因為進度條後原本有 progress-text */
+    color:var(--text-dark);
 }
 
 .toast{
@@ -136,6 +159,7 @@ h2{
     font-weight:bold;
     opacity:0;
     transition:.3s;
+    z-index: 1000;
 }
 </style>
 </head>
@@ -148,7 +172,7 @@ h2{
     <div class="total-title">本月總預算剩餘</div>
     <div class="total-amount" id="totalRemaining">$0</div>
     <div class="progress-container">
-        <div class="progress-fill status-safe" id="totalBar"></div>
+        <div class="progress-fill" id="totalBar"></div> 
     </div>
     <div class="progress-text">
         <span id="totalSpentText">已花 $0</span>
@@ -157,183 +181,295 @@ h2{
 </div>
 
 <div class="budget-list" id="budgetList"></div>
+
+<div id="noBudgetMsg" style="text-align: center; color: var(--text-dark); padding: 50px 0; display: none;">
+    <i class="fas fa-hand-pointer fa-3x" style="color: var(--neon-pink); margin-bottom: 15px;"></i>
+    <h3>沒有預算或交易紀錄</h3>
+    <p>請到 <a href="#" onclick="if (window.parent && typeof window.parent.switchPage === 'function') { window.parent.switchPage(null, 'settings.html'); }">設定頁面</a> 或 <a href="#" onclick="if (window.parent && typeof window.parent.switchPage === 'function') { window.parent.switchPage(null, 'recordpage.html'); }">記帳頁面</a> 設定分類後，直接在下方分類設定預算。</p>
+</div>
+
+
 </div>
 
 <div class="toast" id="toast">已更新預算</div>
 
 </body>
 
-    <script>
-        function getExpenseCategories(){
-        let raw = localStorage.getItem('categoryData');
-        if(!raw){
-            const DEFAULT_CATEGORY_DATA = {
-                expense: [
-                    { id: 1, name: '餐飲', icon:'fas fa-utensils', color:'#ff7f7f', colorRgb:'255,127,127', subs:[] },
-                    { id: 2, name: '交通', icon:'fas fa-bus', color:'#7fbfff', colorRgb:'127,191,255', subs:[] },
-                    { id: 3, name: '購物', icon:'fas fa-shopping-bag', color:'#bf7fff', colorRgb:'191,127,255', subs:[] },
-                    { id: 4, name: '娛樂', icon:'fas fa-film', color:'#ffff7f', colorRgb:'255,255,127', subs:[] }
-                ],
-                income: []
+<script>
+/* ===============================
+Budget Page - JS
+=============================== */
+
+const TRANSACTION_STORAGE_KEY = 'transactions';
+const BUDGET_STORAGE_KEY = 'budget_settings';
+const CATEGORY_STORAGE_KEY = 'categoryData';
+
+// ---------- 預設分類（僅本頁初始化用） ----------
+function getDefaultCategoriesForBudget() {
+    return {
+        expense: [
+            { id: 1, name: "餐飲", icon: "fas fa-utensils", color: "#ff7f7f", sub: [] },
+            { id: 2, name: "交通", icon: "fas fa-bus", color: "#ffcc66", sub: [] },
+            { id: 3, name: "購物", icon: "fas fa-shopping-bag", color: "#a8f0c6", sub: [] },
+            { id: 4, name: "娛樂", icon: "fas fa-gamepad", color: "#a7d7ff", sub: [] },
+            { id: 5, name: "居住", icon: "fas fa-home", color: "#ffb3cf", sub: [] }
+        ],
+        income: []
+    };
+}
+
+// ---------- Storage Helpers ----------
+function getTransactions() {
+    return JSON.parse(localStorage.getItem(TRANSACTION_STORAGE_KEY) || '[]');
+}
+function getBudgetSettings() {
+    return JSON.parse(localStorage.getItem(BUDGET_STORAGE_KEY) || '{}');
+}
+function getCategoryData() {
+    let data = JSON.parse(localStorage.getItem(CATEGORY_STORAGE_KEY) || '{"expense":[],"income":[]}');
+    // 如果 localStorage 沒有支出分類，使用預設分類（不改 localStorage）
+    if(!data.expense || data.expense.length === 0) data = getDefaultCategoriesForBudget();
+    return data;
+}
+function saveBudgetSettings(settings) {
+    localStorage.setItem(BUDGET_STORAGE_KEY, JSON.stringify(settings));
+}
+
+// ---------- Render Budget ----------
+function renderBudget() {
+    const TRANSACTIONS = getTransactions();
+    const BUDGET_SETTINGS = getBudgetSettings();
+    const CATEGORY_DATA = getCategoryData();
+
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    const expenseCategories = CATEGORY_DATA.expense || [];
+
+    // 篩選本月支出
+    const monthlyTransactions = TRANSACTIONS.filter(t => {
+        const date = new Date(t.date);
+        return date.getMonth() === currentMonth && date.getFullYear() === currentYear && t.type === 'expense';
+    });
+
+    // 計算已花費金額（按主分類）
+    const actualExpense = monthlyTransactions.reduce((acc, t) => {
+        let mainCatName = t.categoryObject?.primary?.name || t.categoryText?.split(' / ')[0] || '未分類';
+        const amount = parseFloat(t.amount) || 0;
+        acc[mainCatName] = (acc[mainCatName] || 0) + amount;
+        return acc;
+    }, {});
+
+    // 準備顯示資料
+    let displayCategories = {};
+    let totalBudget = 0;
+    let totalSpent = 0;
+
+    expenseCategories.forEach(mainCat => {
+        const name = mainCat.name;
+        if(displayCategories[name]) {
+            renderCard(name, displayCategories[name]);
+        }
+        displayCategories[name] = {
+            spent: actualExpense[name] || 0,
+            budget: BUDGET_SETTINGS[name] || 0,
+            icon: mainCat.icon || 'fas fa-tag',
+            color: mainCat.color || '#ffb3cf'
+        };
+    });
+
+    // 加入已設定預算但分類不在 expenseCategories 的主分類
+    Object.keys(BUDGET_SETTINGS).forEach(cat => {
+        if (!displayCategories[cat]) {
+            displayCategories[cat] = {
+                spent: actualExpense[cat] || 0,
+                budget: BUDGET_SETTINGS[cat],
+                icon: 'fas fa-tag',
+                color: 'var(--neon-yellow)'
             };
-            localStorage.setItem('categoryData', JSON.stringify(DEFAULT_CATEGORY_DATA));
-            raw = JSON.stringify(DEFAULT_CATEGORY_DATA);
         }
+    });
 
-        try {
-            const data = JSON.parse(raw);
-            // ⭐ 返回完整資料
-            return (data.expense || []).map(c => ({
-                id: c.id,
-                name: c.name,
-                icon: c.icon || 'fas fa-tag',
-                color: c.color || '#ff7f7f',
-                colorRgb: c.colorRgb || '255,127,127',
-                subs: c.subs || []
-            }));
-        } catch {
-            return [];
-        }
-    }
+    const activeCategories = Object.keys(displayCategories).filter(cat => {
+        const item = displayCategories[cat];
+        // 只篩掉完全沒有預算也沒有交易的
+        return item.budget !== undefined; // 或 item.budget>=0
+    });
 
-        /* ========= 計算花費 ========= */
-        function calculateSpending(){
-            const trans = JSON.parse(localStorage.getItem('transactions')) || [];
-            const map = {};
+    const container = document.getElementById('budgetList');
+    const noData = document.getElementById('noBudgetMsg');
 
-            trans.forEach(t=>{
-                if(t.type === 'expense'){
-                    let catName = '';
-                    if (t.categoryObject && t.categoryObject.primary) {
-                        catName = t.categoryObject.primary.name;
-                    } else if (t.categoryText) {
-                        catName = t.categoryText.split(' / ')[0];
-                    } else if (t.category) {
-                        catName = t.category.split(' / ')[0];
-                    }
-                    if (catName) {
-                        map[catName] = (map[catName] || 0) + Number(t.amount);
-                    }
-                }
-            });
+    if (!container) return;
 
-            return map;
-        }
-
-        /* ========= 主渲染 ========= */
-        function renderBudget(){
-            const cats = getExpenseCategories();
-            const spendMap = calculateSpending();
-            const settings = JSON.parse(localStorage.getItem('budget_settings'))||{};
-            const list = document.getElementById('budgetList');
-            if(!list) return;
-            list.innerHTML='';
-
-            let totalBudget=0,totalSpent=0;
-
-            cats.forEach(c=>{
-                const spent = spendMap[c.name]||0;
-                const budget = settings[c.name] ?? 0;
-                totalSpent += spent;
-                totalBudget += budget;
-
-                const percent = budget ? (spent / budget * 100) : 0;
-                let status='safe';
-                if(percent >= 100) status='danger';
-                else if(percent >= 80) status='warning';
-                else if(budget === 0 && spent > 0) status='warning';
-
-                const card=document.createElement('div');
-                card.className='budget-card';
-                card.innerHTML = `
+    if (activeCategories.length === 0) {
+        container.innerHTML = expenseCategories.length > 0 ? expenseCategories.map(mainCat => {
+            const name = mainCat.name;
+            const color = mainCat.color || '#ffb3cf';
+            const icon = mainCat.icon || 'fas fa-tag';
+            return `
+                <div class="budget-card">
                     <div class="card-header">
                         <div class="cat-info">
-                            <div class="cat-icon text-${status}"><i class="${c.icon}"></i></div>
-                            <div class="cat-name">${c.name}</div>
+                            <span class="cat-icon" style="color: ${color};"><i class="${icon}"></i></span>
+                            <span class="cat-name" style="color: ${color};">${name}</span>
                         </div>
                         <div class="budget-setter" onclick="editBudget(this)">
-                            <div class="budget-label">目標預算</div>
-                            <div class="budget-display">
-                                ${settings[c.name] !== undefined ? `$${budget}` : '未設定'}
+                            <div class="budget-label">本月預算</div>
+                            <div class="budget-display" style="color: var(--text-dark)">
+                                $設定預算
                             </div>
-                            <input class="budget-input" type="number"
-                                value="${settings[c.name] !== undefined ? budget : ''}"
-                                onblur="saveBudget(this,'${c.name}')">
+                            <input type="number" class="budget-input" placeholder="輸入金額"
+                                onblur="saveBudget(this, '${name}')"
+                                onkeydown="if(event.key==='Enter') saveBudget(this, '${name}')">
                         </div>
                     </div>
-                    <div class="card-stats">
-                        <span class="text-${status}">已花 $${spent}</span>
-                        <span>${percent.toFixed(0)}%</span>
-                    </div>
                     <div class="progress-container">
-                        <div class="progress-fill status-${status}" style="width:${Math.min(percent,100)}%"></div>
-                    </div>`;
-                list.appendChild(card);
-            });
+                        <div class="progress-fill status-safe" style="width:0%;background-color:${color};"></div>
+                    </div>
+                    <div class="card-stats">
+                        <span class="spent-amount">已花 $0</span>
+                        <span class="spent-percent">0%</span>
+                    </div>
+                </div>
+            `;
+        }).join('') : '';
+        if(noData) noData.style.display = expenseCategories.length > 0 ? 'none' : 'block';
+        updateTotal(0,0);
+        return;
+    }
 
-            updateTotal(totalBudget,totalSpent);
+    noData && (noData.style.display='none');
+    container.innerHTML = '';
+    totalBudget = 0;
+    totalSpent = 0;
+
+    activeCategories.forEach(catName => {
+        const item = displayCategories[catName];
+        const budget = item.budget || 0;
+        const spent = item.spent || 0;
+        const color = item.color || '#ffb3cf';
+        const icon = item.icon || 'fas fa-tag';
+
+        totalBudget += budget;
+        totalSpent += spent;
+
+        let progress = 0;
+        let statusClass = 'status-safe';
+        let progressColor = color;
+        if(budget>0){
+            progress = Math.min(100,(spent/budget)*100);
+            if(progress>=100) {statusClass='status-danger'; progressColor='var(--neon-red)';}
+            else if(progress>80) {statusClass='status-warning'; progressColor='var(--neon-yellow)';}
+        } else if(spent>0){
+            progress = 100;
+            statusClass='status-danger';
+            progressColor='var(--neon-red)';
         }
 
-        /* ========= 總覽 ========= */
-        function updateTotal(budget,spent){
-            const spentEl = document.getElementById('totalSpentText');
-            const budgetEl = document.getElementById('totalBudgetText');
-            const remainEl = document.getElementById('totalRemaining');
-            const bar = document.getElementById('totalBar');
-            if(spentEl) spentEl.textContent=`已花 $${spent}`;
-            if(budgetEl) budgetEl.textContent=`總預算 $${budget}`;
-            if(remainEl) remainEl.textContent=`$${budget - spent}`;
-            if(bar) bar.style.width = budget ? `${Math.min(spent/budget*100,100)}%` : '0%';
-        }
+        const currentBudget = budget>0 ? budget.toLocaleString() : '設定預算';
 
-        /* ========= 編輯預算 ========= */
-        function editBudget(el){
-            el.querySelector('.budget-display').style.display='none';
-            const input=el.querySelector('.budget-input');
-            input.style.display='block';
-            input.focus();
-        }
+        const listItemHtml = `
+            <div class="budget-card">
+                <div class="card-header">
+                    <div class="cat-info">
+                        <span class="cat-icon" style="color: ${color};"><i class="${icon}"></i></span>
+                        <span class="cat-name" style="color: ${color};">${catName}</span>
+                    </div>
+                    <div class="budget-setter" onclick="editBudget(this)">
+                        <div class="budget-label">本月預算</div>
+                        <div class="budget-display" style="color: ${budget>0?'var(--neon-yellow)':'var(--text-dark)'}">
+                            $${currentBudget}
+                        </div>
+                        <input type="number" class="budget-input" value="${budget}" 
+                            placeholder="輸入金額" 
+                            onblur="saveBudget(this, '${catName}')"
+                            onkeydown="if(event.key==='Enter') saveBudget(this,'${catName}')">
+                    </div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-fill ${statusClass}" style="width:${progress}%;background-color:${progressColor};box-shadow:0 0 5px ${progressColor}50;"></div>
+                </div>
+                <div class="card-stats">
+                    <span class="spent-amount">已花 $${spent.toLocaleString()}</span>
+                    <span class="spent-percent">${progress.toFixed(0)}%</span>
+                </div>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', listItemHtml);
+    });
 
-        function saveBudget(input, cat){
-            const cardEl = input.closest('.budget-setter');
-            const settings = JSON.parse(localStorage.getItem('budget_settings'))||{};
-            if(input.value.trim()===''){
-                delete settings[cat];
-            } else {
-                settings[cat] = Number(input.value);
-            }
-            localStorage.setItem('budget_settings',JSON.stringify(settings));
+    updateTotal(totalBudget.toLocaleString(), totalSpent.toLocaleString());
+}
 
-            cardEl.querySelector('.budget-display').style.display='block';
-            cardEl.querySelector('.budget-input').style.display='none';
+// ---------- 更新總覽 ----------
+function updateTotal(budget, spent){
+    const budgetValue = parseFloat(budget.replace(/,/g,''))||0;
+    const spentValue = parseFloat(spent.replace(/,/g,''))||0;
+    const remaining = budgetValue-spentValue;
 
-            showToast();
-            renderBudget();
-        }
+    const remainEl = document.getElementById('totalRemaining');
+    const spentEl = document.getElementById('totalSpentText');
+    const budgetEl = document.getElementById('totalBudgetText');
+    const bar = document.getElementById('totalBar');
 
-        function showToast(){
-            const t=document.getElementById('toast');
-            if(!t) return;
-            t.style.opacity=1;
-            setTimeout(()=>t.style.opacity=0,1200);
-        }
+    spentEl && (spentEl.textContent=`已花 $${spent}`);
+    budgetEl && (budgetEl.textContent=`總預算 $${budget}`);
+    if(remainEl){
+        remainEl.textContent=`$${remaining.toLocaleString()}`;
+        remainEl.style.color = remaining>=0?'var(--neon-green)':'var(--neon-red)';
+    }
 
-        /* ========= 監聽資料變動，立即同步分類 ========= */
-        window.addEventListener('storage', (e)=>{
-            if(e.key === 'categoryData' || e.key==='lastTransactionUpdate'){
-                renderBudget();
-            }
-        });
+    if(bar){
+        let progress = budgetValue>0 ? Math.min(spentValue/budgetValue*100,100) : 0;
+        let color='var(--neon-green)';
+        if(progress>=100) color='var(--neon-red)';
+        else if(progress>80) color='var(--neon-yellow)';
+        bar.style.width=`${progress}%`;
+        bar.style.backgroundColor=color;
+        bar.style.boxShadow=`0 0 10px ${color}50`;
+    }
+}
 
-        document.addEventListener('visibilitychange', ()=>{
-            if(!document.hidden){
-                renderBudget();
-            }
-        });
+// ---------- 編輯/保存預算 ----------
+function editBudget(el){
+    const display = el.querySelector('.budget-display');
+    const input = el.querySelector('.budget-input');
+    display && (display.style.display='none');
+    input && (input.style.display='block', input.focus(), input.select());
+}
+function saveBudget(input, cat){
+    const settings = getBudgetSettings();
+    if(input.value.trim()==='' || Number(input.value)<=0) delete settings[cat];
+    else settings[cat] = Number(input.value);
+    saveBudgetSettings(settings);
 
-        // 初始渲染
-        renderBudget();
-    </script>
+    const display = input.parentElement.querySelector('.budget-display');
+    input.style.display='none';
+    display && (display.style.display='block');
+
+    showToast();
+    renderBudget();
+}
+
+// ---------- Toast ----------
+function showToast(){
+    const t=document.getElementById('toast');
+    if(!t) return;
+    t.style.opacity=1;
+    setTimeout(()=>t.style.opacity=0,1200);
+}
+
+// ---------- 監聽 localStorage / 自訂事件 ----------
+window.addEventListener('storage', (e)=>{
+    if(e.key===CATEGORY_STORAGE_KEY || e.key===TRANSACTION_STORAGE_KEY) renderBudget();
+});
+window.addEventListener('category-updated', ()=>renderBudget());
+
+// ---------- 初始化 ----------
+document.addEventListener('DOMContentLoaded', ()=>{
+    renderBudget();
+});
+</script>
 
 
 </html>

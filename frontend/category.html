@@ -42,12 +42,84 @@
             --card-shadow: 0 4px 12px rgba(0,0,0,0.4);
         }
 
+        /* --------------------------- 全域與霓虹變數 (統一版本) --------------------------- */
+        /* 統一的霓虹樣式 */
+        .neon-text {
+            text-shadow: 0 0 5px var(--neon-blue), 0 0 10px var(--neon-blue);
+            transition: text-shadow 0.3s;
+        }
+        .neon-pink-text {
+            text-shadow: 0 0 5px var(--neon-pink), 0 0 10px var(--neon-pink);
+            transition: text-shadow 0.3s;
+        }
+        .neon-shadow {
+            box-shadow: 0 0 10px rgba(167, 215, 255, 0.3), 0 0 20px rgba(167, 215, 255, 0.1);
+            transition: box-shadow 0.3s;
+        }
+        /* Active 狀態按鈕的霓虹光暈 */
+        .active-neon-glow {
+            box-shadow: 0 0 8px var(--neon-blue), 0 0 15px var(--neon-blue)50;
+            border-color: var(--neon-blue) !important;
+        }
+
+        /* 統一 Font-Awesome 圖標樣式 */
+        .fa, .fas, .far, .fab {
+            margin-right: 5px;
+        }
+
         body{
             margin:0;
             padding:20px;
             background:var(--bg-dark);
             font-family:'Segoe UI','Noto Sans TC',sans-serif;
             color:var(--text-light);
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox (雖然您主要使用的是 Webkit/MS，但統一加上) */
+        }
+
+        /* --------------------------- 隱藏滾動條：Webkit 核心瀏覽器 (Chrome, Safari) --------------------------- */
+        /* 針對整個 body 元素 */
+        body::-webkit-scrollbar {
+            width: 0px;  /* 隱藏垂直滾動條 */
+            height: 0px; /* 隱藏水平滾動條 */
+        }
+
+        body::-webkit-scrollbar,
+        .content-container::-webkit-scrollbar,
+        .category-list-container::-webkit-scrollbar {
+            display: none;
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        /* 1. 針對所有元素（包含 body 和所有 div）隱藏滾動條，但保留滾動功能 */
+        * {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;     /* Firefox */
+        }
+
+        *::-webkit-scrollbar {
+            display: none;             /* Chrome, Safari, Opera */
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        /* 2. 確保 html 和 body 也完全隱藏 */
+        html, body {
+            overflow: -moz-scrollbars-none;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        body::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* 針對需要滾動的特定容器 (如主要的內容區塊) */
+        .content-container::-webkit-scrollbar,
+        .category-list-container::-webkit-scrollbar {
+            width: 0px;
+            height: 0px;
         }
 
         .container{
@@ -64,6 +136,47 @@
             display:flex;
             align-items:center;
             gap:10px;
+        }
+
+        /* category.html: 修正 .page-title */
+        .page-title {
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue);
+            font-size: 1.8em;
+            margin-bottom: 25px;
+            padding-left: 10px;
+        }
+
+        /* category.html: 統一卡片樣式 */
+        .category-manager {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        .cat-item-main > span {
+            font-size: 1.1em; /* 統一主分類文字大小 */
+        }
+        .cat-item-sub > span {
+            font-size: 1em; /* 統一子分類文字大小 */
+        }
+
+        /* 統一按鈕樣式 */
+        .btn {
+            padding: 8px 15px;
+            font-size: 1em;
+            border-radius: 6px;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        .primary-btn {
+            background-color: var(--neon-blue);
+            color: var(--bg-dark);
+            box-shadow: 0 0 10px var(--neon-blue)30;
+        }
+        .primary-btn:hover {
+            box-shadow: 0 0 15px var(--neon-blue)50;
         }
 
         .type-switch{
@@ -569,7 +682,7 @@
 </head>
 <body>
     <div class="container">
-        <h2><i class="fas fa-tags"></i> 分類管理中心</h2>
+        <h1 class="page-title neon-text"><i class="fas fa-cogs"></i> 分類管理中心</h1>
         <div class="type-switch">
             <button id="switchExpense" class="active expense" onclick="switchType('expense')"><i class="fas fa-money-bill-wave"></i> 支出分類</button>
             <button id="switchIncome" class="income" onclick="switchType('income')"><i class="fas fa-hand-holding-usd"></i> 收入分類</button>

@@ -20,8 +20,56 @@
             --text-light: #e6e6e6;
             --text-dark: #b8b8b8;
             --gray-default: #d8d8d8;
-            --sidebar-width: 250px;
+            --sidebar-width: 200px;
             --sidebar-collapsed-width: 72px;
+
+            --border-color: #2a2a2a;                 /* 邊框顏色 */
+
+            /* 分類顏色變數 (可根據您的需求調整) */
+            --cat-1: #ff7f7f;
+            --cat-2: #ffcc66;
+            --cat-3: #a8f0c6;
+            --cat-4: #a7d7ff;
+            --cat-5: #ffb3cf;
+            --cat-6: #cf9cff;
+            --cat-7: #66ffcc;
+            --cat-8: #ff9c66;
+            --cat-9: #99ccff;
+            --cat-10: #d4d4d4;
+            --cat-11: #ffd1dc;
+            --cat-12: #ffe066;
+            --cat-13: #8affc1;
+            --cat-14: #8ed1ff;
+            --cat-15: #c9a7ff;
+            --cat-16: #ffb380;
+            --cat-17: #b3ffb3;
+            --cat-18: #b3d9ff;
+            --cat-19: #ffe6b3;
+            --cat-20: #ffadad;
+        }
+
+        /* 統一的霓虹樣式 */
+        .neon-text {
+            text-shadow: 0 0 5px var(--neon-blue), 0 0 10px var(--neon-blue);
+            transition: text-shadow 0.3s;
+        }
+        .neon-pink-text {
+            text-shadow: 0 0 5px var(--neon-pink), 0 0 10px var(--neon-pink);
+            transition: text-shadow 0.3s;
+        }
+        .neon-shadow {
+            box-shadow: 0 0 10px rgba(167, 215, 255, 0.3), 0 0 20px rgba(167, 215, 255, 0.1);
+            transition: box-shadow 0.3s;
+        }
+        /* Active 狀態按鈕的霓虹光暈 */
+        .active-neon-glow {
+            box-shadow: 0 0 8px var(--neon-blue), 0 0 15px var(--neon-blue)50;
+            border-color: var(--neon-blue) !important;
+        }
+
+        /* 統一 Font-Awesome 圖標樣式 */
+        .fa, .fas, .far, .fab {
+            margin-right: 5px;
         }
 
         /* --------------------------- 基礎版面 --------------------------- */
@@ -34,6 +82,53 @@
             display:flex; /* 啟用 Flexbox */
             min-height: 100vh;
             overflow: hidden; /* 防止主頁面出現滾動條 */
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox (雖然您主要使用的是 Webkit/MS，但統一加上) */
+        }
+
+                /* --------------------------- 隱藏滾動條：Webkit 核心瀏覽器 (Chrome, Safari) --------------------------- */
+        /* 針對整個 body 元素 */
+        body::-webkit-scrollbar {
+            width: 0px;  /* 隱藏垂直滾動條 */
+            height: 0px; /* 隱藏水平滾動條 */
+        }
+
+        body::-webkit-scrollbar,
+        .content-container::-webkit-scrollbar,
+        .category-list-container::-webkit-scrollbar {
+            display: none;
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        /* 1. 針對所有元素（包含 body 和所有 div）隱藏滾動條，但保留滾動功能 */
+        * {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;     /* Firefox */
+        }
+
+        *::-webkit-scrollbar {
+            display: none;             /* Chrome, Safari, Opera */
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        /* 2. 確保 html 和 body 也完全隱藏 */
+        html, body {
+            overflow: -moz-scrollbars-none;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        body::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* 針對需要滾動的特定容器 (如主要的內容區塊) */
+        .content-container::-webkit-scrollbar,
+        .category-list-container::-webkit-scrollbar {
+            width: 0px;
+            height: 0px;
         }
         
         /* --------------------------- 側邊欄 --------------------------- */
@@ -107,25 +202,36 @@
             display:flex;
             align-items:center;
             gap:12px;
-            padding:10px 12px;
             border-radius:10px;
             cursor:pointer;
             border:none;
             background:transparent;
             color:var(--text-light);
-            font-size:0.95rem;
-            transition:.2s;
+
+            padding: 10px 12px; /* 統一間距 */
+            color: var(--text-dark);
+            font-size: 1.05em; /* 統一字體大小 */
+            font-weight: 500;
+            transition: all 0.3s ease;
         }
 
         .nav-item:hover{
             background: rgba(155,228,255,0.05);
             transform: translateX(4px);
+            color: var(--text-light);
         }
 
         .nav-item.active{
             color: var(--neon-blue);
             background: rgba(155,228,255,0.15);
             box-shadow: 0 0 10px rgba(155,228,255,0.3);
+            text-shadow: 0 0 5px var(--neon-blue);
+        }
+
+        /* 統一圖標大小 */
+        .nav-item i {
+            font-size: 1.3em;
+            width: 25px; /* 確保圖標區域一致 */
         }
 
         .nav-icon{

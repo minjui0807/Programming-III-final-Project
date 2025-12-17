@@ -42,6 +42,29 @@
             min-height: 100vh;
         }
 
+        /* 1. 針對所有元素（包含 body 和所有 div）隱藏滾動條，但保留滾動功能 */
+        * {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;     /* Firefox */
+        }
+
+        *::-webkit-scrollbar {
+            display: none;             /* Chrome, Safari, Opera */
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        /* 2. 確保 html 和 body 也完全隱藏 */
+        html, body {
+            overflow: -moz-scrollbars-none;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        body::-webkit-scrollbar {
+            display: none;
+        }
+
         body.modal-open {
             overflow: hidden;
             height: 100vh;
@@ -1041,6 +1064,16 @@
                             <input type="number" id="modal_amount" min="0" step="1" required placeholder="輸入金額">
                         </div>
 
+                        <div class="form-group">
+                            <label>幣別</label>
+                            <select id="modal_currency"></select>
+                        </div>
+
+                        <div class="form-group">
+                            <small id="exchangeHint" style="opacity:0.7"></small>
+                        </div>
+
+
                         <!-- 📸 交易照片 -->
                         <div class="form-group">
                             <label>交易照片</label>
@@ -1070,6 +1103,11 @@
                             <button type="submit" id="modalSaveBtn">
                                 <i class="fas fa-save"></i> 儲存修改
                             </button>
+
+                            <button type="button" id="modalCopyBtn">
+                                <i class="fas fa-copy"></i> 複製交易
+                            </button>
+
                         </div>
                     </form>
 
@@ -1097,6 +1135,39 @@
     
 </body>
     <script>
+
+        // ================= 幣別 / 匯率系統 =================
+        const DEFAULT_CURRENCY_SETTING = {
+            base: 'TWD',
+            symbol: 'NT$'
+        };
+
+        const DEFAULT_RATES = {
+            TWD: 1,
+            USD: 0.031,
+            JPY: 4.6,
+            KRW: 42
+        };
+
+        function getCurrencySetting() {
+            return JSON.parse(localStorage.getItem('app_currency')) || DEFAULT_CURRENCY_SETTING;
+        }
+
+        function getCurrencyRates() {
+            return JSON.parse(localStorage.getItem('currency_rates')) || DEFAULT_RATES;
+        }
+
+        function formatMoney(amount) {
+            const { symbol } = getCurrencySetting();
+            return `${symbol}${Number(amount).toLocaleString()}`;
+        }
+
+        function convertAmount(amount, from, to) {
+            const rates = getCurrencyRates();
+            if (!rates[from] || !rates[to]) return amount;
+            return amount / rates[from] * rates[to];
+        }
+
 
         const CATEGORY_KEY = 'categoryData';
         const IMGS = 'RECEIPT_IMAGES';
@@ -1240,16 +1311,21 @@
             }
         }
 
+        const { base } = getCurrencySetting();
+
+        TRANSACTIONS = TRANSACTIONS.map(t => {
+            if (!t.currency) t.currency = base;
+            if (!t.baseAmount) t.baseAmount = t.amount;
+            return t;
+        });
+
+        
 
         // 確保分類列表存在
         if (!CATEGORY_LISTS) {
             CATEGORY_LISTS = DUMMY_CATEGORY_LISTS;
             localStorage.setItem('categoryLists', JSON.stringify(CATEGORY_LISTS));
         }
-
-        // ⭐️ 新增：確保新 ID 是唯一的，從現有 ID 的最大值 + 1 開始
-        let nextId = TRANSACTIONS.length > 0 ? Math.max(...TRANSACTIONS.map(t => t.id)) + 1 : 1;
-
 
         // --------------------------- 數據操作函式 ---------------------------
 
@@ -1463,6 +1539,10 @@
             document.getElementById('modal_amount').value = transaction.amount;
             document.getElementById('modal_description').value = transaction.description || '';
 
+            renderCurrencySelect(transaction.currency);
+            document.getElementById('modal_currency').value = transaction.currency;
+            updateExchangePreview();
+
             // 2. 解析分類
             let fullCategory = transaction.category || transaction.categoryText || '';
             let mainCat = fullCategory;
@@ -1640,10 +1720,13 @@
             const type = document.getElementById('modal_type').value;
             const amount = parseFloat(document.getElementById('modal_amount').value);
             const description = document.getElementById('modal_description').value || '';
+            const currency = document.getElementById('modal_currency').value;
             
             // 2. ⭐️ 核心修正：取得分類 (直攻選單的文字內容)
             const mainSelect = document.getElementById('modal_main_category');
             const subSelect = document.getElementById('modal_sub_category');
+            const { base } = getCurrencySetting();
+            const baseAmount = convertAmount(amount, currency, base);
             
             let mainCat = '';
             let subCat = '';
@@ -1696,7 +1779,9 @@
                 type: type,
                 category: finalCategory,     // 新版欄位
                 categoryText: finalCategory, // 舊版欄位 (雙重保險)
+                currency: currency,
                 amount: amount,
+                baseAmount: baseAmount,
                 description: description,
                 icon: newIcon,
                 receiptImageKey: currentReceiptImageKey
@@ -1721,16 +1806,6 @@
             closeModal();
         }
 
-
-        /**
-         * 處理 Modal 中的刪除按鈕
-         */
-        document.getElementById('modalDeleteBtn').addEventListener('click', (e) => {
-            const idToDelete = parseInt(e.currentTarget.getAttribute('data-id'));
-            if (confirm(`確定要刪除這筆交易 ID: ${idToDelete} 嗎？此操作無法撤銷。`)) {
-                deleteTransaction(idToDelete);
-            }
-        });
 
         // --------------------------- 渲染邏輯 ---------------------------
 
@@ -1760,58 +1835,70 @@
 
         // ======================================================
 
-        /**
-        * [JS] 渲染交易列表 (終極整合版)
-        * 包含：儀表板更新 + 日期分組 + 分類防呆顯示
-        */
         function renderTransactionList(list = TRANSACTIONS) {
             const listContainer = document.getElementById('transactionList');
-            if (!listContainer) return; // 找不到容器就結束
+            if (!listContainer) return;
 
             // ==========================================
-            // Part 1: 計算總金額並更新儀表板 (Dashboard)
+            // ⭐️ [新增] 讀取系統設定的幣別與匯率表
             // ==========================================
-            let totalIncome = 0;
-            let totalExpense = 0;
+            const settingsJSON = localStorage.getItem('app_currency');
+            const targetCurrencyCode = settingsJSON ? JSON.parse(settingsJSON).base : 'TWD';
+            
+            // 匯率對照表 (需與 recordpage.html 一致)
+            const CURRENCIES = [
+                { code: 'TWD', rate: 1.0 },
+                { code: 'JPY', rate: 4.6 },
+                { code: 'USD', rate: 0.032 }
+            ];
+            const targetCurrency = CURRENCIES.find(c => c.code === targetCurrencyCode) || CURRENCIES[0];
 
-            // 安全檢查：確保 list 是陣列
+            // ==========================================
+            // Part 1: 計算總金額 (以設定幣別顯示)
+            // ==========================================
+            let totalIncomeTWD = 0;
+            let totalExpenseTWD = 0;
+
             const safeList = Array.isArray(list) ? list : [];
 
             if (safeList.length > 0) {
                 safeList.forEach(t => {
-                    const amt = parseFloat(t.amount) || 0;
-                    if (t.type === 'income') totalIncome += amt;
-                    else if (t.type === 'expense') totalExpense += amt;
+                    // 抓取台幣基準值，如果沒有就抓 baseAmount
+                    const amtTWD = parseFloat(t.amountTWD || t.baseAmount) || 0;
+                    if (t.type === 'income') totalIncomeTWD += amtTWD;
+                    else if (t.type === 'expense') totalExpenseTWD += amtTWD;
                 });
             }
-            const totalBalance = totalIncome - totalExpense;
 
-            // 只有當儀表板元素存在時才更新 (防呆)
+            // 將總金額換算成目標幣別
+            const displayTotalIncome = totalIncomeTWD * targetCurrency.rate;
+            const displayTotalExpense = totalExpenseTWD * targetCurrency.rate;
+            const displayTotalBalance = displayTotalIncome - displayTotalExpense;
+
+            // 更新儀表板
             const dashIncome = document.getElementById('dashIncome');
             if (dashIncome) {
-                document.getElementById('dashIncome').textContent = `$${totalIncome.toLocaleString()}`;
-                document.getElementById('dashExpense').textContent = `$${totalExpense.toLocaleString()}`;
-                document.getElementById('dashBalance').textContent = `$${totalBalance.toLocaleString()}`;
+                // 格式化函數：日圓不顯示小數點，其他保留兩位
+                const fmt = (num) => targetCurrencyCode === 'JPY' 
+                    ? Math.round(num).toLocaleString() 
+                    : num.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
-                // 更新進度條視覺效果
+                document.getElementById('dashIncome').textContent = `${targetCurrencyCode} ${fmt(displayTotalIncome)}`;
+                document.getElementById('dashExpense').textContent = `${targetCurrencyCode} ${fmt(displayTotalExpense)}`;
+                document.getElementById('dashBalance').textContent = `${targetCurrencyCode} ${fmt(displayTotalBalance)}`;
+
+                // 進度條邏輯保持不變 (比例一樣)
                 const barIncome = document.getElementById('barIncome');
                 const barExpense = document.getElementById('barExpense');
                 const barBalance = document.getElementById('barBalance');
-
-                if (barIncome) barIncome.style.width = totalIncome > 0 ? '100%' : '0%';
-                
+                if (barIncome) barIncome.style.width = totalIncomeTWD > 0 ? '100%' : '0%';
                 if (barExpense) {
-                    let expensePercent = 0;
-                    if (totalIncome > 0) expensePercent = (totalExpense / totalIncome) * 100;
-                    else if (totalExpense > 0) expensePercent = 100;
-                    if (expensePercent > 100) expensePercent = 100;
-                    barExpense.style.width = `${expensePercent}%`;
+                    let expP = totalIncomeTWD > 0 ? (totalExpenseTWD / totalIncomeTWD) * 100 : (totalExpenseTWD > 0 ? 100 : 0);
+                    barExpense.style.width = `${Math.min(expP, 100)}%`;
                 }
-
                 if (barBalance) {
-                    let balancePercent = 0;
-                    if (totalIncome > 0 && totalBalance > 0) balancePercent = (totalBalance / totalIncome) * 100;
-                    barBalance.style.width = `${balancePercent}%`;
+                    let balP = (totalIncomeTWD > 0 && totalIncomeTWD > totalExpenseTWD) ? ((totalIncomeTWD - totalExpenseTWD) / totalIncomeTWD) * 100 : 0;
+                    barBalance.style.width = `${balP}%`;
                 }
             }
 
@@ -1851,8 +1938,6 @@
             // ==========================================
             // Part 3: 日期分組與渲染列表
             // ==========================================
-            
-            // 3.1 依照日期分組
             const grouped = safeList.reduce((acc, t) => {
                 const date = t.date || '未知日期';
                 if (!acc[date]) acc[date] = [];
@@ -1860,28 +1945,30 @@
                 return acc;
             }, {});
 
-            // 3.2 日期排序 (從最近到最遠)
             const sortedDates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
 
-            // 3.3 遍歷每一天
             sortedDates.forEach(date => {
-                // 計算當日小計
-                let dailyTotal = 0;
-                grouped[date].forEach(t => dailyTotal += (t.type === 'income' ? parseFloat(t.amount) : -parseFloat(t.amount)));
-                
-                // 建立日期區塊
+                // 計算當日小計 (台幣基準)
+                let dailyTotalTWD = 0;
+                grouped[date].forEach(t => {
+                    const val = parseFloat(t.amountTWD || t.baseAmount || 0);
+                    dailyTotalTWD += (t.type === 'income' ? val : -val);
+                });
+
+                // 換算成目標幣別顯示
+                const dailyDisplay = dailyTotalTWD * targetCurrency.rate;
+                const formattedDaily = (dailyDisplay >= 0 ? '+' : '-') + targetCurrencyCode + ' ' + 
+                    (targetCurrencyCode === 'JPY' ? Math.round(Math.abs(dailyDisplay)).toLocaleString() : Math.abs(dailyDisplay).toLocaleString(undefined, {minimumFractionDigits: 2}));
+
                 const dateDiv = document.createElement('div');
                 dateDiv.className = 'date-group';
-                
-                const formattedTotal = (dailyTotal >= 0 ? '+' : '-') + '$' + Math.abs(dailyTotal).toLocaleString();
-                const summaryColor = dailyTotal >= 0 ? 'income-color' : 'expense-color';
+                const summaryColor = dailyTotalTWD >= 0 ? 'income-color' : 'expense-color';
 
-                // 插入日期標題 (Header)
                 dateDiv.innerHTML = `
                     <div class="date-group-header" onclick="toggleDateGroup(this)">
                         <div class="date-text">${date}</div>
                         <div class="date-summary">
-                            <span class="${summaryColor}">${formattedTotal}</span>
+                            <span class="${summaryColor}">${formattedDaily}</span>
                             <i class="fas fa-chevron-down toggle-icon"></i>
                         </div>
                     </div>
@@ -1891,55 +1978,41 @@
                 
                 const dailyContainer = dateDiv.querySelector('.daily-transactions');
                 
-                // 3.4 渲染當日的每一筆交易
                 grouped[date].forEach(t => {
                     const card = document.createElement('div');
-                    // 綁定點擊編輯事件
                     card.onclick = () => editTransaction(t.id);
                     
+                    // 單筆換算
+                    const itemBaseTWD = parseFloat(t.amountTWD || t.baseAmount || 0);
+                    const itemDisplay = itemBaseTWD * targetCurrency.rate;
+
+                    let displayCategory = t.category || t.categoryText || '未分類';
                     const isExp = t.type === 'expense';
-                    const amountClass = isExp ? 'expense-color' : 'income-color';
-                    const categoryClass = isExp ? 'cat-expense' : 'cat-income';
-                    
-                    // ⭐️ [關鍵修正] 同時檢查 category 和 categoryText，確保顯示
-                    let displayCategory = t.category;
-                    if (!displayCategory || displayCategory === 'undefined') {
-                        displayCategory = t.categoryText || '未分類';
-                    }
-
-                    const iconOrImageHtml = `<i class="${t.icon || 'fas fa-folder'}"></i>`;
-
-                    
-                    // ===========================================
-                    // ⭐️ 核心修正：圖片/圖示邏輯結束
-                    // ===========================================
 
                     card.className = `transaction-card ${isExp ? 'expense-border' : 'income-border'}`;
-
                     card.innerHTML = `
-                    <div class="card-content">
-                        <div class="icon-section">${iconOrImageHtml}</div>
-
-                        <div class="info-section">
-                            <div class="category-and-desc">
-                                <span class="category-tag ${categoryClass}">
-                                ${displayCategory}
-                                </span>
-                                <span class="description">${t.description || '無備註'}</span>
+                        <div class="card-content">
+                            <div class="icon-section"><i class="${t.icon || 'fas fa-folder'}"></i></div>
+                            <div class="info-section">
+                                <div class="category-and-desc">
+                                    <span class="category-tag ${isExp ? 'cat-expense' : 'cat-income'}">${displayCategory}</span>
+                                    <span class="description">${t.description || '無備註'}</span>
+                                </div>
                             </div>
-
+                            <div class="amount-section ${isExp ? 'expense-color' : 'income-color'}">
+                                ${isExp ? '-' : '+'} ${targetCurrencyCode} ${
+                                    targetCurrencyCode === 'JPY' 
+                                    ? Math.round(itemDisplay).toLocaleString() 
+                                    : itemDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})
+                                }
+                            </div>
                         </div>
-
-                        <div class="amount-section ${amountClass}">
-                        ${isExp ? '-' : '+'} $${parseFloat(t.amount).toLocaleString()}
-                        </div>
-                    </div>
                     `;
-
                     dailyContainer.appendChild(card);
                 });
             });
         }
+
 
         /**
         * [JS] 點擊日期標題時收合/展開
@@ -1958,47 +2031,50 @@
             }
         }
 
-        // --------------------------- 事件綁定 ---------------------------
+        function renderCurrencySelect(selected) {
+            const select = document.getElementById('modal_currency');
+            const rates = getCurrencyRates();
+            select.innerHTML = '';
 
-        /**
-         * 綁定所有動態生成的 UI 元素的事件
-         */
-        function bindEventHandlers() {
-            // 1. 綁定交易卡片的點擊事件，開啟編輯 Modal
-            document.querySelectorAll('.transaction-card').forEach(card => {
-                card.addEventListener('click', () => {
-                    const idToEdit = parseInt(card.getAttribute('data-id'));
-                    editTransaction(idToEdit);
-                });
-            });
-
-            // 2. 綁定日期群組標題的點擊事件，實現收合功能
-            document.querySelectorAll('.date-group-header').forEach(header => {
-                header.addEventListener('click', () => {
-                    const date = header.getAttribute('data-date-toggle');
-                    const content = document.querySelector(`.daily-transactions[data-date-content="${date}"]`);
-                    if (content) {
-                        // 切換 CSS class 來實現收合/展開效果
-                        header.classList.toggle('collapsed');
-                        content.classList.toggle('collapsed');
-                    }
-                });
-            });
-            
-            // 3. 點擊 Modal 外部時關閉 Modal
-            document.getElementById('editTransactionModal').addEventListener('click', function(e) {
-                if (e.target.id === 'editTransactionModal') {
-                    closeModal();
-                }
-            });
-
-            // 4. 使用 Escape 鍵關閉 Modal
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && document.getElementById('editTransactionModal').style.display === 'block') {
-                    closeModal();
-                }
+            Object.keys(rates).forEach(code => {
+                const opt = document.createElement('option');
+                opt.value = code;
+                opt.textContent = code;
+                if (code === selected) opt.selected = true;
+                select.appendChild(opt);
             });
         }
+
+        function updateExchangePreview() {
+            const amount = parseFloat(document.getElementById('modal_amount').value) || 0;
+            const from = document.getElementById('modal_currency').value;
+            const { base, symbol } = getCurrencySetting();
+
+            const converted = convertAmount(amount, from, base);
+            document.getElementById('exchangeHint').textContent =
+                `≈ ${symbol}${converted.toFixed(2)} (${base})`;
+        }
+
+        document.getElementById('modalCopyBtn').onclick = function () {
+            const id = parseInt(document.getElementById('modal_id').value);
+            const t = getTransactionById(id);
+            if (!t) return;
+
+            const copy = {
+                ...t,
+                id: Date.now(),
+                date: new Date().toISOString().split('T')[0]
+            };
+
+            TRANSACTIONS.unshift(copy);
+            saveToLocalStorage();
+            renderTransactionList();
+            closeModal();
+        };
+
+
+
+        // --------------------------- 事件綁定 ---------------------------
 
         // Hotspot 漸層跟隨滑鼠移動效果 及 事件綁定
         document.addEventListener('DOMContentLoaded', () => {
@@ -2062,7 +2138,6 @@
 
         // 綁定 Modal 按鈕事件 (保留不變)
         document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
-        document.getElementById('editForm').addEventListener('submit', saveModalChanges);
 
         document.getElementById('editForm').addEventListener('submit', saveModalChanges);
 

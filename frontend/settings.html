@@ -10,250 +10,510 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
-<style>
-/* ... (Style 保持不變) ... */
-:root {
-    --bg: #0f1115;
-    --card-bg: #1e1e1e;
-    --text: #e6e6e6;
-    --text-muted: #9ca3af;
-    --primary: #60a5fa;
-    --border: #2a2a2a;
-    --danger: #dc2626;
-    --glass-blur: 8px;
-}
+    <style>
+        /* --------------------------- 全域與霓虹變數 (統一版本) --------------------------- */
+        :root {
+            --bg-dark: #0f1115;                      /* 主要背景色 (最深) */
+            --bg-secondary: #1e1e1e;                 /* 次要背景色 (用於卡片/表單) */
 
-body{
-    margin:0;
-    padding:20px;
-    background:var(--bg);
-    color:var(--text);
-    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-    transition: background 0.3s,color 0.3s;
-}
+            --neon-blue: #a7d7ff;                    /* 霓虹藍 (主要連結/收入) */
+            --neon-pink: #ffb3cf;                    /* 霓虹粉 (支出/副色) */
+            --neon-green: #a8f0c6;                   /* 儲存/預算綠 */
+            --neon-yellow: #fff1a6;                  /* 強調色/警示 */
+            --neon-red: #ff7f7f;                     /* 刪除/危險 */
 
-.container{
-    max-width:720px;
-    margin:auto;
-}
+            --text-light: #e6e6e6;                   /* 文字淺色 */
+            --text-dark: #b8b8b8;                    /* 文字深色 */
+            --border-color: #2a2a2a;                 /* 邊框顏色 */
 
-h1{
-    text-align:center;
-    margin-bottom:30px;
-    color:var(--primary);
-}
+            /* 分類顏色變數 (可根據您的需求調整) */
+            --cat-1: #ff7f7f;
+            --cat-2: #ffcc66;
+            --cat-3: #a8f0c6;
+            --cat-4: #a7d7ff;
+            --cat-5: #ffb3cf;
+            --cat-6: #cf9cff;
+            --cat-7: #66ffcc;
+            --cat-8: #ff9c66;
+            --cat-9: #99ccff;
+            --cat-10: #d4d4d4;
+            --cat-11: #ffd1dc;
+            --cat-12: #ffe066;
+            --cat-13: #8affc1;
+            --cat-14: #8ed1ff;
+            --cat-15: #c9a7ff;
+            --cat-16: #ffb380;
+            --cat-17: #b3ffb3;
+            --cat-18: #b3d9ff;
+            --cat-19: #ffe6b3;
+            --cat-20: #ffadad;
+        }
 
-.card{
-    background:var(--card-bg);
-    border-radius:18px;
-    padding:24px;
-    margin-bottom:22px;
-    border:1px solid rgba(255,255,255,0.06);
-    box-shadow:0 12px 28px rgba(0,0,0,0.55);
-    backdrop-filter: blur(var(--glass-blur));
-    transition: all 0.3s;
-}
+        /* 統一的霓虹樣式 */
+        .neon-text {
+            text-shadow: 0 0 5px var(--neon-blue), 0 0 10px var(--neon-blue);
+            transition: text-shadow 0.3s;
+        }
+        .neon-pink-text {
+            text-shadow: 0 0 5px var(--neon-pink), 0 0 10px var(--neon-pink);
+            transition: text-shadow 0.3s;
+        }
+        .neon-shadow {
+            box-shadow: 0 0 10px rgba(167, 215, 255, 0.3), 0 0 20px rgba(167, 215, 255, 0.1);
+            transition: box-shadow 0.3s;
+        }
+        /* Active 狀態按鈕的霓虹光暈 */
+        .active-neon-glow {
+            box-shadow: 0 0 8px var(--neon-blue), 0 0 15px var(--neon-blue)50;
+            border-color: var(--neon-blue) !important;
+        }
 
-.card-title{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    font-size:1.25rem;
-    font-weight:bold;
-    margin-bottom:8px;
-}
+        /* 統一 Font-Awesome 圖標樣式 */
+        .fa, .fas, .far, .fab {
+            margin-right: 5px;
+        }
 
-.card-desc{
-    font-size:0.95rem;
-    color:var(--text-muted);
-    margin-bottom:16px;
-}
+        body{
+            margin:0;
+            padding:20px;
+            background:var(--bg);
+            color:var(--text-light);
+            font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+            transition: background 0.3s,color 0.3s;
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox (雖然您主要使用的是 Webkit/MS，但統一加上) */
+        }
 
-.btn-group{
-    display:flex;
-    gap:12px;
-    flex-wrap:wrap;
-}
+        /* --------------------------- 隱藏滾動條：Webkit 核心瀏覽器 (Chrome, Safari) --------------------------- */
+        /* 針對整個 body 元素 */
+        body::-webkit-scrollbar {
+            width: 0px;  /* 隱藏垂直滾動條 */
+            height: 0px; /* 隱藏水平滾動條 */
+        }
 
-button{
-    flex:1;
-    padding:10px 14px;
-    border-radius:8px;
-    border:1px solid var(--border);
-    background:transparent;
-    color:var(--text);
-    cursor:pointer;
-    font-weight:600;
-    transition: all 0.25s;
-}
+        body::-webkit-scrollbar,
+        .content-container::-webkit-scrollbar,
+        .category-list-container::-webkit-scrollbar {
+            display: none;
+            width: 0 !important;
+            height: 0 !important;
+        }
 
-button:hover{
-    transform:translateY(-2px);
-    box-shadow:0 8px 20px rgba(59,130,246,0.25);
-}
+        /* 針對需要滾動的特定容器 (如主要的內容區塊) */
+        .content-container::-webkit-scrollbar,
+        .category-list-container::-webkit-scrollbar {
+            width: 0px;
+            height: 0px;
+        }
 
-.danger-card{
-    border:1px solid var(--danger);
-    background:linear-gradient(180deg, rgba(220,38,38,0.15) 0%, rgba(220,38,38,0.05) 100%);
-    box-shadow:0 12px 28px rgba(220,38,38,0.35);
-}
+        /* 1. 針對所有元素（包含 body 和所有 div）隱藏滾動條，但保留滾動功能 */
+        * {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;     /* Firefox */
+        }
 
-.danger-btn{
-    background-color: var(--danger);
-    color:#fff;
-    border-color: var(--danger);
-}
-</style>
+        *::-webkit-scrollbar {
+            display: none;             /* Chrome, Safari, Opera */
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        /* 2. 確保 html 和 body 也完全隱藏 */
+        html, body {
+            overflow: -moz-scrollbars-none;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        body::-webkit-scrollbar {
+            display: none;
+        }
+
+        .container{
+            max-width:720px;
+            margin:auto;
+        }
+
+        h1{
+            text-align:center;
+            margin-bottom:30px;
+            color:var(--primary);
+        }
+
+        /* settings.html: 修正 .page-title */
+        .page-title {
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue);
+            font-size: 1.8em;
+            margin-bottom: 25px;
+            padding-left: 10px;
+        }
+        /* settings.html: 統一 card 樣式 */
+        .card {
+            background-color: var(--card-bg); /* 使用統一的 var(--bg-secondary) */
+            border: 1px solid var(--border); /* 使用統一的 var(--border-color) */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        .card-title {
+            font-size: 1.4em;
+            color: var(--neon-blue);
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        /* 統一設定按鈕組樣式 */
+        #currencyButtons button {
+            font-size: 1em;
+            padding: 10px 15px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        #currencyButtons button.active {
+            color: var(--bg);
+            background-color: var(--primary); /* 使用 var(--neon-blue) */
+            /* 統一霓虹發光 */
+            box-shadow: 0 0 8px var(--primary), 0 0 15px var(--primary)50;
+        }
+
+        .card{
+            background:var(--card-bg);
+            border-radius:18px;
+            padding:24px;
+            margin-bottom:22px;
+            border:1px solid rgba(255,255,255,0.06);
+            box-shadow:0 12px 28px rgba(0,0,0,0.55);
+            backdrop-filter: blur(var(--glass-blur));
+            transition: all 0.3s;
+        }
+
+        .card-title{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            font-size:1.25rem;
+            font-weight:bold;
+            margin-bottom:8px;
+        }
+
+        .card-desc{
+            font-size:0.95rem;
+            color:var(--text-muted);
+            margin-bottom:16px;
+        }
+
+        .btn-group{
+            display:flex;
+            gap:12px;
+            flex-wrap:wrap;
+        }
+
+        button{
+            flex:1;
+            padding:10px 14px;
+            border-radius:8px;
+            border:1px solid var(--border);
+            background:transparent;
+            color:var(--text);
+            cursor:pointer;
+            font-weight:600;
+            transition: all 0.25s;
+        }
+
+        button:hover{
+            transform:translateY(-2px);
+            box-shadow:0 8px 20px rgba(59,130,246,0.25);
+        }
+
+        .danger-card{
+            border:1px solid var(--danger);
+            background:linear-gradient(180deg, rgba(220,38,38,0.15) 0%, rgba(220,38,38,0.05) 100%);
+            box-shadow:0 12px 28px rgba(220,38,38,0.35);
+        }
+
+        .danger-btn{
+            background-color: var(--danger);
+            color:#fff;
+            border-color: var(--danger);
+        }
+
+        #currencyButtons button.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+            box-shadow: 0 0 18px rgba(96,165,250,0.6);
+        }
+    </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>⚙️ 系統設定</h1>
+    <h1 class="page-title neon-text"><i class="fas fa-wrench"></i> 系統設定</h1>
 
         <div class="card action-card">
-        <div class="card-title"><i class="fas fa-tags"></i> 分類管理</div>
-        <div class="card-desc">前往分類管理頁面，新增、編輯支出與收入的主分類與子分類</div>
-        <div class="btn-group">
-            <button class="go-btn" onclick="location.href='category.html'"><i class="fas fa-arrow-right"></i> 前往分類管理</button>
+            <div class="card-title"><i class="fas fa-tags"></i> 分類管理</div>
+            <div class="card-desc">前往分類管理頁面，新增、編輯支出與收入的主分類與子分類</div>
+            <div class="btn-group">
+                <button class="go-btn" onclick="location.href='category.html'"><i class="fas fa-arrow-right"></i> 前往分類管理</button>
+            </div>
         </div>
-    </div>
 
         <div class="card">
-        <div class="card-title"><i class="fas fa-file-export"></i> 資料備份與還原</div>
-        <div class="card-desc">ZIP：完整備份交易、分類、預算及圖片</div>
-        <div class="btn-group">
-            <button onclick="exportZip()"><i class="fas fa-download"></i> 匯出 ZIP</button>
-            <button onclick="document.getElementById('importZipFile').click()"><i class="fas fa-upload"></i> 匯入 ZIP</button>
-            <input type="file" id="importZipFile" style="display:none" accept=".zip" />
+            <div class="card-title">
+                <i class="fas fa-coins"></i> 預設貨幣</div>
+            <div class="card-desc">新增交易時預設顯示的貨幣（可隨時切換）</div>
+
+            <div class="btn-group" id="currencyButtons">
+                <button data-currency="TWD">TWD</button>
+                <button data-currency="USD">USD</button>
+                <button data-currency="JPY">JPY</button>
+                <button data-currency="EUR">EUR</button>
+            </div>
         </div>
-    </div>
+
+
+        <div class="card">
+            <div class="card-title"><i class="fas fa-file-export"></i> 資料備份與還原</div>
+            <div class="card-desc">ZIP：完整備份交易、分類、預算及圖片</div>
+            <div class="btn-group">
+                <button onclick="exportZip()"><i class="fas fa-download"></i> 匯出 ZIP</button>
+                <button onclick="document.getElementById('importZipFile').click()"><i class="fas fa-upload"></i> 匯入 ZIP</button>
+                <input type="file" id="importZipFile" style="display:none" accept=".zip" />
+            </div>
+        </div>
 
         <div class="card danger-card">
-        <div class="card-title"><i class="fas fa-exclamation-triangle"></i> 危險區域</div>
-        <div class="card-desc">這裡的操作無法復原，請小心使用。</div>
-        <div class="btn-group">
-            <button class="danger-btn" onclick="clearAllData()"><i class="fas fa-trash-alt"></i> 清除所有資料</button>
+            <div class="card-title" style="color: var(--neon-red);"><i class="fas fa-exclamation-triangle"></i> 危險區域</div>
+            <div class="card-desc">這裡的操作無法復原，請小心使用。</div>
+            <div class="btn-group">
+                <button class="danger-btn" onclick="clearAllData()"><i class="fas fa-trash-alt"></i> 清除所有資料</button>
+            </div>
         </div>
-    </div>
 
 </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const TX = 'transactions';
-            const CAT = 'categoryData';
-            const BUD = 'budget_settings';
-            const IMG = 'receiptImages';
-            // ⭐️ 關鍵修正 1：定義 transaction.html 讀取的正確 Key
-            const IMGS = 'RECEIPT_IMAGES'; 
 
+            const TX   = 'transactions';
+            const CAT  = 'categoryData';
+            const BUD  = 'budget_settings';
+            const IMGS = 'receiptImages';
+
+            /* ===============================
+            清除全部資料
+            =============================== */
             window.clearAllData = function(){
                 if(!confirm('⚠️ 確定要清除所有資料嗎？')) return;
-                // 確保清除所有可能的圖片鍵
-                [TX,CAT,BUD,IMG,IMGS].forEach(k=>localStorage.removeItem(k)); 
+                [TX, CAT, BUD, IMGS].forEach(k => localStorage.removeItem(k));
                 alert('資料已清除');
                 location.reload();
             };
 
+            /* ===============================
+            匯出 ZIP（完整）
+            =============================== */
             window.exportZip = async function(){
                 const zip = new JSZip();
-                const transactions = JSON.parse(localStorage.getItem(TX) || '[]');
-                const categories   = JSON.parse(localStorage.getItem(CAT) || '{}');
-                const budgets      = JSON.parse(localStorage.getItem(BUD) || '{}');
-                // 匯出時，同時檢查新的 IMGS 鍵和舊的 IMG 鍵
-                const images       = JSON.parse(localStorage.getItem(IMGS) || localStorage.getItem(IMG) || '{}');
 
-                zip.file('data.json', JSON.stringify({transactions, categories, budgets}, null, 2));
+                const payload = {
+                    meta:{
+                        app:'LumiTrack',
+                        version:'1.1',
+                        exportedAt:new Date().toISOString()
+                    },
+                    transactions: JSON.parse(localStorage.getItem(TX) || '[]'),
+                    categories:   JSON.parse(localStorage.getItem(CAT) || '{}'),
+                    budgets:      JSON.parse(localStorage.getItem(BUD) || '{}'),
+                    images:       JSON.parse(localStorage.getItem(IMGS) || '{}')
+                };
 
-                const imgFolder = zip.folder('images');
-                Object.entries(images).forEach(([key,value])=>{
-                    if(value?.startsWith('data:image')){
-                        const base64 = value.split(',')[1];
-                        // 修正：確保圖片副檔名正確
-                        const extMatch = value.match(/^data:image\/(.+?);base64/);
-                        const extension = extMatch ? extMatch[1].replace('jpeg', 'jpg') : 'jpg';
+                function buildCategorySummaryExcel(transactions){
 
-                        // 匯出時，將 key 轉回檔名
-                        let filename = key;
-                        if(key.startsWith('receipt_')){
-                            filename = key.substring(8); // 移除 'receipt_' 前綴
+                    const map = {};
+                    const totalByType = { expense: 0, income: 0 };
+
+                    transactions.forEach(t=>{
+                        if(!t.amount || !t.categoryObject) return;
+
+                        const type = t.type || 'expense';
+                        const p = t.categoryObject.primary?.name || '未分類';
+                        const s = t.categoryObject.sub?.name || '未分類';
+
+                        const key = `${type}|${p}|${s}`;
+
+                        if(!map[key]){
+                            map[key] = {
+                                type,
+                                primary: p,
+                                sub: s,
+                                total: 0,
+                                count: 0
+                            };
                         }
-                        imgFolder.file(filename+'.'+extension, base64,{base64:true});
-                    }
-                });
 
+                        map[key].total += Number(t.baseAmount || 0);
+                        map[key].count += 1;
+                        totalByType[type] += Number(t.amount);
+                    });
+
+                    const rows = [{
+                        類型:'類型',
+                        主分類:'主分類',
+                        子分類:'子分類',
+                        總金額:'總金額',
+                        筆數:'筆數',
+                        佔比:'佔比'
+                    }];
+
+                    Object.values(map).forEach(r=>{
+                        const base = totalByType[r.type] || 1;
+                        rows.push({
+                            類型: r.type === 'income' ? '收入' : '支出',
+                            主分類: r.primary,
+                            子分類: r.sub,
+                            總金額: r.total,
+                            筆數: r.count,
+                            佔比: ((r.total / base) * 100).toFixed(1) + '%'
+                        });
+                    });
+
+                    const ws = XLSX.utils.json_to_sheet(rows, {skipHeader:true});
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, '分類統計');
+
+                    return XLSX.write(wb, {type:'array', bookType:'xlsx'});
+                }
+
+
+                zip.file('data.json', JSON.stringify(payload, null, 2));
+                const excelArray = buildCategorySummaryExcel(payload.transactions);
+                zip.file('summary_by_category.xlsx', excelArray);
                 const content = await zip.generateAsync({type:'blob'});
                 saveAs(content, 'LumiTrack_backup.zip');
+
+
             };
 
-            document.getElementById('importZipFile').addEventListener('change', async e=>{
+            /* ===============================
+            匯入 ZIP（完整）
+            =============================== */
+            document.getElementById('importZipFile')
+            .addEventListener('change', async e => {
+
                 const file = e.target.files[0];
                 if(!file) return;
 
+                if(!confirm('⚠️ 匯入會覆蓋目前資料，確定繼續？')) return;
+
                 const zip = await JSZip.loadAsync(file);
                 const dataFile = zip.file('data.json');
-                if(!dataFile){ alert('ZIP 內缺少 data.json'); return; }
-
-                const dataStr = await dataFile.async('string');
-                const data = JSON.parse(dataStr);
-
-                const importedTransactions = data.transactions || [];
-                const importedCategories = data.categories || {};
-                const importedBudgets = data.budgets || {};
-
-                // 匯入圖片
-                const imgFolder = zip.folder('images');
-                const imgs = {};
-                if(imgFolder){
-                    const files = [];
-                    imgFolder.forEach((relPath,f)=>{
-                        if(!f.dir) files.push(f);
-                    });
-                    for(const f of files){
-                        const base64 = await f.async('base64');
-                        // 修正：使用 f.name 作為 key 的基礎
-                        const filenameWithoutExt = f.name.replace(/\.(jpe?g|png|gif)$/i,'');
-                        const key = 'receipt_'+filenameWithoutExt;
-
-                        // 判斷圖片類型，組合成正確的 Data URI
-                        let mimeType = 'image/jpeg';
-                        if (f.name.match(/\.png$/i)) mimeType = 'image/png';
-                        else if (f.name.match(/\.gif$/i)) mimeType = 'image/gif';
-                        
-                        imgs[key] = `data:${mimeType};base64,`+base64;
-                    }
+                if(!dataFile){
+                    alert('❌ ZIP 內缺少 data.json');
+                    return;
                 }
 
-                importedTransactions.forEach(t => {
-                    // 檢查交易物件中是否有圖片檔名的參考
-                    if (t.receiptImageFile) {
-                        // 依照 settings.html 處理圖片的邏輯，重新組成圖片的 key
-                        // 格式應為： 'receipt_' + 檔案名稱 (不含副檔名)
-                        const filenameWithoutExt = t.receiptImageFile.replace(/\.(jpe?g|png|gif)$/i, '');
-                        const imageKey = 'receipt_' + filenameWithoutExt;
+                const data = JSON.parse(await dataFile.async('string'));
 
-                        // ⭐️ 關鍵修正 2：將舊的檔案名參考改成新的 Key 參考
-                        if (imgs[imageKey]) {
-                            t.receiptImageKey = imageKey;
-                            // 由於已經設定了新的 key，舊的參考欄位可以選擇性刪除，以保持資料乾淨
-                            delete t.receiptImageFile; 
-                        }
-                    }
-                });
+                /* 1️⃣ 圖片（先） */
+                const images =
+                    data.images ||
+                    JSON.parse(localStorage.getItem(IMGS) || '{}');
 
-                // 儲存資料
-                localStorage.setItem(TX, JSON.stringify(importedTransactions));
-                localStorage.setItem(CAT, JSON.stringify(importedCategories));
-                localStorage.setItem(BUD, JSON.stringify(importedBudgets));
-                
-                // ⭐️ 關鍵修正 3：確保圖片資料儲存在 IMGS 鍵中 (transaction.html 需要讀取這個鍵)
-                localStorage.setItem(IMGS, JSON.stringify(imgs));
-                
-                alert('ZIP 還原完成，圖片已修正 key，可直接在 Modal 顯示');
+                localStorage.setItem(IMGS, JSON.stringify(images));
+
+                /* 2️⃣ 交易 */
+                localStorage.setItem(
+                    TX,
+                    JSON.stringify(data.transactions || [])
+                );
+
+                /* 3️⃣ 分類 */
+                localStorage.setItem(
+                    CAT,
+                    JSON.stringify(data.categories || {})
+                );
+
+                /* 4️⃣ 預算 */
+                localStorage.setItem(
+                    BUD,
+                    JSON.stringify(data.budgets || {})
+                );
+
+                alert('✅ 還原完成（交易 / 圖片 / 分類 / 預算）');
                 location.reload();
             });
+
+            const CURRENCY_KEY = 'app_currency';
+
+            const SYMBOL_MAP = {
+                TWD: 'NT$',
+                USD: '$',
+                JPY: '¥',
+                EUR: '€'
+            };
+
+            const currencyButtons = document.querySelectorAll('#currencyButtons button');
+
+            // 讀取目前設定（預設 TWD）
+            function getCurrencySetting() {
+                return JSON.parse(localStorage.getItem(CURRENCY_KEY)) || {
+                    base: 'TWD',
+                    symbol: 'NT$'
+                };
+            }
+
+            // 儲存設定
+            function setCurrencySetting(base) {
+                const setting = {
+                    base,
+                    symbol: SYMBOL_MAP[base] || base
+                };
+                localStorage.setItem(CURRENCY_KEY, JSON.stringify(setting));
+
+                // ⭐️ 主動觸發 storage（同頁也能收到）
+                window.dispatchEvent(
+                    new StorageEvent('storage', {
+                        key: CURRENCY_KEY
+                    })
+                );
+            }
+
+            // 更新 UI 樣式
+            function updateCurrencyUI() {
+                const { base } = getCurrencySetting();
+                currencyButtons.forEach(btn => {
+                    btn.classList.toggle(
+                        'active',
+                        btn.dataset.currency === base
+                    );
+                });
+            }
+
+            // 點擊切換
+            currencyButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const currency = btn.dataset.currency;
+                    setCurrencySetting(currency);
+                    updateCurrencyUI();
+                });
+            });
+
+            // 初始化
+            updateCurrencyUI();
+        });
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'app_currency') {
+                renderTransactionList();
+                renderDashboard?.();
+            }
         });
     </script>
+
 
 </body>
 </html>

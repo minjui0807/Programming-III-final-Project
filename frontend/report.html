@@ -8,16 +8,66 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-        /* --------------------------- 全域設定 --------------------------- */
-        :root{
-            --bg-dark: #0f1115;
-            --bg-secondary: #1e1e1e;
-            --neon-blue: #a7d7ff;
-            --neon-pink: #ffb3cf;
-            --neon-green: #a8f0c6;
-            --neon-yellow: #fff1a6;
-            --text-light: #e6e6e6;
-            --text-dark: #b8b8b8;
+        /* --------------------------- 全域與霓虹變數 (統一版本) --------------------------- */
+        :root {
+            --bg-dark: #0f1115;                      /* 主要背景色 (最深) */
+            --bg-secondary: #1e1e1e;                 /* 次要背景色 (用於卡片/表單) */
+
+            --neon-blue: #a7d7ff;                    /* 霓虹藍 (主要連結/收入) */
+            --neon-pink: #ffb3cf;                    /* 霓虹粉 (支出/副色) */
+            --neon-green: #a8f0c6;                   /* 儲存/預算綠 */
+            --neon-yellow: #fff1a6;                  /* 強調色/警示 */
+            --neon-red: #ff7f7f;                     /* 刪除/危險 */
+
+            --text-light: #e6e6e6;                   /* 文字淺色 */
+            --text-dark: #b8b8b8;                    /* 文字深色 */
+            --border-color: #2a2a2a;                 /* 邊框顏色 */
+
+            /* 分類顏色變數 (可根據您的需求調整) */
+            --cat-1: #ff7f7f;
+            --cat-2: #ffcc66;
+            --cat-3: #a8f0c6;
+            --cat-4: #a7d7ff;
+            --cat-5: #ffb3cf;
+            --cat-6: #cf9cff;
+            --cat-7: #66ffcc;
+            --cat-8: #ff9c66;
+            --cat-9: #99ccff;
+            --cat-10: #d4d4d4;
+            --cat-11: #ffd1dc;
+            --cat-12: #ffe066;
+            --cat-13: #8affc1;
+            --cat-14: #8ed1ff;
+            --cat-15: #c9a7ff;
+            --cat-16: #ffb380;
+            --cat-17: #b3ffb3;
+            --cat-18: #b3d9ff;
+            --cat-19: #ffe6b3;
+            --cat-20: #ffadad;
+        }
+
+        /* 統一的霓虹樣式 */
+        .neon-text {
+            text-shadow: 0 0 5px var(--neon-blue), 0 0 10px var(--neon-blue);
+            transition: text-shadow 0.3s;
+        }
+        .neon-pink-text {
+            text-shadow: 0 0 5px var(--neon-pink), 0 0 10px var(--neon-pink);
+            transition: text-shadow 0.3s;
+        }
+        .neon-shadow {
+            box-shadow: 0 0 10px rgba(167, 215, 255, 0.3), 0 0 20px rgba(167, 215, 255, 0.1);
+            transition: box-shadow 0.3s;
+        }
+        /* Active 狀態按鈕的霓虹光暈 */
+        .active-neon-glow {
+            box-shadow: 0 0 8px var(--neon-blue), 0 0 15px var(--neon-blue)50;
+            border-color: var(--neon-blue) !important;
+        }
+
+        /* 統一 Font-Awesome 圖標樣式 */
+        .fa, .fas, .far, .fab {
+            margin-right: 5px;
         }
 
         body {
@@ -29,6 +79,53 @@
             overflow-x: hidden; 
             box-sizing: border-box;
             font-size: 18px; /* 🔴 基礎字體加大 */
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox (雖然您主要使用的是 Webkit/MS，但統一加上) */
+        }
+
+        /* --------------------------- 隱藏滾動條：Webkit 核心瀏覽器 (Chrome, Safari) --------------------------- */
+        /* 針對整個 body 元素 */
+        body::-webkit-scrollbar {
+            width: 0px;  /* 隱藏垂直滾動條 */
+            height: 0px; /* 隱藏水平滾動條 */
+        }
+
+        body::-webkit-scrollbar,
+        .content-container::-webkit-scrollbar,
+        .category-list-container::-webkit-scrollbar {
+            display: none;
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        /* 1. 針對所有元素（包含 body 和所有 div）隱藏滾動條，但保留滾動功能 */
+        * {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;     /* Firefox */
+        }
+
+        *::-webkit-scrollbar {
+            display: none;             /* Chrome, Safari, Opera */
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        /* 2. 確保 html 和 body 也完全隱藏 */
+        html, body {
+            overflow: -moz-scrollbars-none;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        body::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* 針對需要滾動的特定容器 (如主要的內容區塊) */
+        .content-container::-webkit-scrollbar,
+        .category-list-container::-webkit-scrollbar {
+            width: 0px;
+            height: 0px;
         }
 
         .container {
@@ -48,6 +145,44 @@
             display: flex;
             align-items: center;
             gap: 15px;
+        }
+
+        /* report.html: 修正 .page-title */
+        .page-title {
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue);
+            font-size: 1.8em;
+            margin-bottom: 25px;
+            padding-left: 10px;
+        }
+
+        /* report.html: 統一 card 樣式 */
+        .card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* 統一陰影 */
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        .card-title {
+            font-size: 1.4em; /* 統一卡片標題大小 */
+            color: var(--neon-blue);
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        /* report.html: 統一排名列表樣式 */
+        .rank-list li {
+            font-size: 1em; /* 統一內文大小 */
+        }
+        .rank-name {
+            font-size: 1.05em;
+            color: var(--text-light);
+        }
+        .rank-amount {
+            font-size: 1.1em;
+            font-weight: bold;
         }
 
         /* --------------------------- 分頁切換 (Tabs) --------------------------- */
@@ -195,7 +330,7 @@
 <body>
 
 <div class="container">
-    <h2><i class="fas fa-chart-line"></i> 財務戰情室</h2>
+    <h1 class="page-title neon-text"><i class="fas fa-chart-pie"></i> 財務戰情室</h1>
 
     <div id="noDataMessage" class="empty-data">
         <i class="fas fa-robot"></i>

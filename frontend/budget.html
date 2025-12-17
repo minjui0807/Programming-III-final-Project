@@ -1,197 +1,302 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🛡️ 預算控制中心</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛡️ 預算控制中心</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
-<style>
-:root{
-    --bg-dark:#0f1115;
-    --bg-secondary:#1e1e1e;
-    --neon-green:#a8f0c6;
-    --neon-yellow:#fff1a6;
-    --neon-red:#ff7f7f;
-    --text-light:#e6e6e6;
-    --text-dark:#b8b8b8;
+    <style>
+        /* --------------------------- 全域與霓虹變數 (統一版本) --------------------------- */
+        :root {
+            --bg-dark: #0f1115;                      /* 主要背景色 (最深) */
+            --bg-secondary: #1e1e1e;                 /* 次要背景色 (用於卡片/表單) */
 
-    --cat-1: #ff7f7f;
-    --cat-2: #ffcc66;
-    --cat-3: #a8f0c6;
-    --cat-4: #a7d7ff;
-    --cat-5: #ffb3cf;
-    --cat-6: #cf9cff;
-    --cat-7: #66ffcc;
-    --cat-8: #ff9c66;
-    --cat-9: #99ccff;
-    --cat-10: #d4d4d4;
-    --cat-11: #ffd1dc;
-    --cat-12: #ffe066;
-    --cat-13: #8affc1;
-    --cat-14: #8ed1ff;
-    --cat-15: #c9a7ff;
-    --cat-16: #ffb380;
-    --cat-17: #b3ffb3;
-    --cat-18: #b3d9ff;
-    --cat-19: #ffe6b3;
-    --cat-20: #ffadad;
-}
+            --neon-blue: #a7d7ff;                    /* 霓虹藍 (主要連結/收入) */
+            --neon-pink: #ffb3cf;                    /* 霓虹粉 (支出/副色) */
+            --neon-green: #a8f0c6;                   /* 儲存/預算綠 */
+            --neon-yellow: #fff1a6;                  /* 強調色/警示 */
+            --neon-red: #ff7f7f;                     /* 刪除/危險 */
 
-body{
-    margin:0;
-    padding:20px;
-    background:var(--bg-dark);
-    font-family:'Segoe UI',sans-serif;
-    color:var(--text-light);
-}
+            --text-light: #e6e6e6;                   /* 文字淺色 */
+            --text-dark: #b8b8b8;                    /* 文字深色 */
+            --border-color: #2a2a2a;                 /* 邊框顏色 */
 
-.container{max-width:900px;margin:auto;padding-bottom:80px;}
+            /* 分類顏色變數 (可根據您的需求調整) */
+            --cat-1: #ff7f7f;
+            --cat-2: #ffcc66;
+            --cat-3: #a8f0c6;
+            --cat-4: #a7d7ff;
+            --cat-5: #ffb3cf;
+            --cat-6: #cf9cff;
+            --cat-7: #66ffcc;
+            --cat-8: #ff9c66;
+            --cat-9: #99ccff;
+            --cat-10: #d4d4d4;
+            --cat-11: #ffd1dc;
+            --cat-12: #ffe066;
+            --cat-13: #8affc1;
+            --cat-14: #8ed1ff;
+            --cat-15: #c9a7ff;
+            --cat-16: #ffb380;
+            --cat-17: #b3ffb3;
+            --cat-18: #b3d9ff;
+            --cat-19: #ffe6b3;
+            --cat-20: #ffadad;
+        }
 
-h2{
-    color:var(--neon-green);
-    border-bottom:2px solid var(--bg-secondary);
-    padding-bottom:12px;
-    margin-bottom:25px;
-    display:flex;
-    align-items:center;
-    gap:12px;
-}
+        /* 統一的霓虹樣式 */
+        .neon-text {
+            text-shadow: 0 0 5px var(--neon-blue), 0 0 10px var(--neon-blue);
+            transition: text-shadow 0.3s;
+        }
+        .neon-pink-text {
+            text-shadow: 0 0 5px var(--neon-pink), 0 0 10px var(--neon-pink);
+            transition: text-shadow 0.3s;
+        }
+        .neon-shadow {
+            box-shadow: 0 0 10px rgba(167, 215, 255, 0.3), 0 0 20px rgba(167, 215, 255, 0.1);
+            transition: box-shadow 0.3s;
+        }
+        /* Active 狀態按鈕的霓虹光暈 */
+        .active-neon-glow {
+            box-shadow: 0 0 8px var(--neon-blue), 0 0 15px var(--neon-blue)50;
+            border-color: var(--neon-blue) !important;
+        }
 
-/* -------- 總覽 -------- */
-.total-budget-card{
-    background:linear-gradient(145deg,#1e1e1e,#252525);
-    padding:25px;
-    border-radius:20px;
-    margin-bottom:30px;
-    text-align:center;
-}
-.total-title{color:var(--text-dark);}
-.total-amount{font-size:2.6rem;font-weight:bold;margin:15px 0;}
+        /* 統一 Font-Awesome 圖標樣式 */
+        .fa, .fas, .far, .fab {
+            margin-right: 5px;
+        }
 
-.progress-container{
-    background:rgba(255,255,255,0.1);
-    height:22px;
-    border-radius:11px;
-    overflow:hidden;
-}
-.progress-fill{
-    height:100%;
-    width:0%;
-    transition:.5s;
-    /* 這裡不再使用 status-safe/warning/danger 類，而是直接在 JS 中設定背景色 */
-}
-.progress-text{
-    display:flex;
-    justify-content:space-between;
-    margin-top:8px;
-    color:var(--text-dark);
-}
+        body{
+            margin:0;
+            padding:20px;
+            background:var(--bg-dark);
+            font-family:'Segoe UI',sans-serif;
+            color:var(--text-light);
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox (雖然您主要使用的是 Webkit/MS，但統一加上) */
+        }
 
-/* 狀態 */
-.status-safe{background:var(--neon-green);}
-.status-warning{background:var(--neon-yellow);}
-.status-danger{background:var(--neon-red);}
-.text-safe{color:var(--neon-green);}
-.text-warning{color:var(--neon-yellow);}
-.text-danger{color:var(--neon-red);}
+        /* --------------------------- 隱藏滾動條：Webkit 核心瀏覽器 (Chrome, Safari) --------------------------- */
+        /* 針對整個 body 元素 */
+        body::-webkit-scrollbar {
+            width: 0px;  /* 隱藏垂直滾動條 */
+            height: 0px; /* 隱藏水平滾動條 */
+        }
 
-/* -------- 分類卡片 -------- */
-.budget-list{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
-    gap:20px;
-}
-.budget-card{
-    background:var(--bg-secondary);
-    padding:20px;
-    border-radius:16px;
-}
-.card-header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:12px;
-}
-.cat-info{display:flex;gap:12px;align-items:center;}
-.cat-icon{
-    width:42px;height:42px;
-    border-radius:50%;
-    background:rgba(255,255,255,0.1);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-}
-.cat-name{font-size:1.25rem;font-weight:bold;}
+        body::-webkit-scrollbar,
+        .content-container::-webkit-scrollbar,
+        .category-list-container::-webkit-scrollbar {
+            display: none;
+            width: 0 !important;
+            height: 0 !important;
+        }
 
-.budget-setter{
-    text-align:right;
-    cursor:pointer;
-}
-.budget-label{font-size:.8rem;color:var(--text-dark);}
-.budget-display{font-size:1.1rem;color:var(--neon-yellow);}
-.budget-input{
-    display:none;
-    width:90px;
-    background:#000;
-    color:#fff;
-    border:1px solid #555;
-    padding:4px;
-    text-align:right;
-}
+        /* 1. 針對所有元素（包含 body 和所有 div）隱藏滾動條，但保留滾動功能 */
+        * {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;     /* Firefox */
+        }
 
-.card-stats{
-    display:flex;
-    justify-content:space-between;
-    margin-top:8px; /* 調整為 card-stats，因為進度條後原本有 progress-text */
-    color:var(--text-dark);
-}
+        *::-webkit-scrollbar {
+            display: none;             /* Chrome, Safari, Opera */
+            width: 0 !important;
+            height: 0 !important;
+        }
 
-.toast{
-    position:fixed;
-    bottom:30px;
-    left:50%;
-    transform:translateX(-50%);
-    background:var(--neon-green);
-    color:#000;
-    padding:10px 20px;
-    border-radius:20px;
-    font-weight:bold;
-    opacity:0;
-    transition:.3s;
-    z-index: 1000;
-}
-</style>
+        /* 2. 確保 html 和 body 也完全隱藏 */
+        html, body {
+            overflow: -moz-scrollbars-none;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        body::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* 針對需要滾動的特定容器 (如主要的內容區塊) */
+        .content-container::-webkit-scrollbar,
+        .category-list-container::-webkit-scrollbar {
+            width: 0px;
+            height: 0px;
+        }
+
+        .container{max-width:900px;margin:auto;padding-bottom:80px;}
+
+        h2{
+            color:var(--neon-green);
+            border-bottom:2px solid var(--bg-secondary);
+            padding-bottom:12px;
+            margin-bottom:25px;
+            display:flex;
+            align-items:center;
+            gap:12px;
+        }
+
+        /* budget.html: 修正 .page-title */
+        .page-title {
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue);
+            font-size: 1.8em;
+            margin-bottom: 25px;
+            padding-left: 10px;
+        }
+
+        /* budget.html: 統一 card 樣式 */
+        .budget-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            font-size: 1em; /* 統一卡片內文字體大小 */
+        }
+
+        /* budget.html: 進度條文字大小 */
+        .progress-text {
+            font-size: 0.95em;
+            font-weight: 500;
+        }
+
+        /* -------- 總覽 -------- */
+        .total-budget-card{
+            background:linear-gradient(145deg,#1e1e1e,#252525);
+            padding:25px;
+            border-radius:20px;
+            margin-bottom:30px;
+            text-align:center;
+        }
+        .total-title{color:var(--text-dark);}
+        .total-amount{font-size:2.6rem;font-weight:bold;margin:15px 0;}
+
+        .progress-container{
+            background:rgba(255,255,255,0.1);
+            height:22px;
+            border-radius:11px;
+            overflow:hidden;
+        }
+        .progress-fill{
+            height:100%;
+            width:0%;
+            transition:.5s;
+            /* 這裡不再使用 status-safe/warning/danger 類，而是直接在 JS 中設定背景色 */
+        }
+        .progress-text{
+            display:flex;
+            justify-content:space-between;
+            margin-top:8px;
+            color:var(--text-dark);
+        }
+
+        /* 狀態 */
+        .status-safe{background:var(--neon-green);}
+        .status-warning{background:var(--neon-yellow);}
+        .status-danger{background:var(--neon-red);}
+        .text-safe{color:var(--neon-green);}
+        .text-warning{color:var(--neon-yellow);}
+        .text-danger{color:var(--neon-red);}
+
+        /* -------- 分類卡片 -------- */
+        .budget-list{
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+            gap:20px;
+        }
+        .budget-card{
+            background:var(--bg-secondary);
+            padding:20px;
+            border-radius:16px;
+        }
+        .card-header{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom:12px;
+        }
+        .cat-info{display:flex;gap:12px;align-items:center;}
+        .cat-icon{
+            width:42px;height:42px;
+            border-radius:50%;
+            background:rgba(255,255,255,0.1);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+        }
+        .cat-name{font-size:1.25rem;font-weight:bold;}
+
+        .budget-setter{
+            text-align:right;
+            cursor:pointer;
+        }
+        .budget-label{font-size:.8rem;color:var(--text-dark);}
+        .budget-display{font-size:1.1rem;color:var(--neon-yellow);}
+        .budget-input{
+            display:none;
+            width:90px;
+            background:#000;
+            color:#fff;
+            border:1px solid #555;
+            padding:4px;
+            text-align:right;
+        }
+
+        .card-stats{
+            display:flex;
+            justify-content:space-between;
+            margin-top:8px; /* 調整為 card-stats，因為進度條後原本有 progress-text */
+            color:var(--text-dark);
+        }
+
+        .toast{
+            position:fixed;
+            bottom:30px;
+            left:50%;
+            transform:translateX(-50%);
+            background:var(--neon-green);
+            color:#000;
+            padding:10px 20px;
+            border-radius:20px;
+            font-weight:bold;
+            opacity:0;
+            transition:.3s;
+            z-index: 1000;
+        }
+    </style>
+
 </head>
 
 <body>
-<div class="container">
-<h2><i class="fas fa-shield-alt"></i> 預算控制中心</h2>
+    <div class="container">
+        <h1 class="page-title neon-text"><i class="fas fa-shield-alt"></i> 預算控制中心</h1>
 
-<div class="total-budget-card">
-    <div class="total-title">本月總預算剩餘</div>
-    <div class="total-amount" id="totalRemaining">$0</div>
-    <div class="progress-container">
-        <div class="progress-fill" id="totalBar"></div> 
+        <div class="total-budget-card">
+            <div class="total-title">本月總預算剩餘</div>
+            <div class="total-amount" id="totalRemaining">$0</div>
+            <div class="progress-container">
+                <div class="progress-fill" id="totalBar"></div> 
+            </div>
+            <div class="progress-text">
+                <span id="totalSpentText">已花 $0</span>
+                <span id="totalBudgetText">總預算 $0</span>
+            </div>
+        </div>
+
+        <div class="budget-list" id="budgetList"></div>
+
+        <div id="noBudgetMsg" style="text-align: center; color: var(--text-dark); padding: 50px 0; display: none;">
+            <i class="fas fa-hand-pointer fa-3x" style="color: var(--neon-pink); margin-bottom: 15px;"></i>
+            <h3>沒有預算或交易紀錄</h3>
+            <p>請到 <a href="#" onclick="if (window.parent && typeof window.parent.switchPage === 'function') { window.parent.switchPage(null, 'settings.html'); }">設定頁面</a> 或 <a href="#" onclick="if (window.parent && typeof window.parent.switchPage === 'function') { window.parent.switchPage(null, 'recordpage.html'); }">記帳頁面</a> 設定分類後，直接在下方分類設定預算。</p>
+        </div>
+
+
     </div>
-    <div class="progress-text">
-        <span id="totalSpentText">已花 $0</span>
-        <span id="totalBudgetText">總預算 $0</span>
-    </div>
-</div>
 
-<div class="budget-list" id="budgetList"></div>
-
-<div id="noBudgetMsg" style="text-align: center; color: var(--text-dark); padding: 50px 0; display: none;">
-    <i class="fas fa-hand-pointer fa-3x" style="color: var(--neon-pink); margin-bottom: 15px;"></i>
-    <h3>沒有預算或交易紀錄</h3>
-    <p>請到 <a href="#" onclick="if (window.parent && typeof window.parent.switchPage === 'function') { window.parent.switchPage(null, 'settings.html'); }">設定頁面</a> 或 <a href="#" onclick="if (window.parent && typeof window.parent.switchPage === 'function') { window.parent.switchPage(null, 'recordpage.html'); }">記帳頁面</a> 設定分類後，直接在下方分類設定預算。</p>
-</div>
-
-
-</div>
-
-<div class="toast" id="toast">已更新預算</div>
+    <div class="toast" id="toast">已更新預算</div>
 
 </body>
 

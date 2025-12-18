@@ -265,6 +265,41 @@
             transition:.3s;
             z-index: 1000;
         }
+
+        /* 子分類容器 - 預設隱藏 */
+        .sub-category-container {
+            display: none;
+            margin-left: 15px;
+            padding-left: 10px;
+            border-left: 2px dashed var(--bg-secondary);
+            margin-top: 10px;
+        }
+
+        /* 展開狀態 */
+        .sub-category-container.active {
+            display: block;
+        }
+
+        /* 旋轉箭頭 */
+        .expand-icon {
+            transition: transform 0.3s ease;
+            margin-left: 10px;
+            font-size: 0.8em;
+            cursor: pointer;
+        }
+
+        .expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+
+        /* 讓主分類卡片看起來可以點擊 */
+        .main-budget-card {
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .main-budget-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
     </style>
 
 </head>
@@ -300,281 +335,841 @@
 
 </body>
 
-<script>
-/* ===============================
-Budget Page - JS
-=============================== */
+    <!-- <script>
+        /* ===============================
+        Budget Page - JS
+        =============================== */
 
-const TRANSACTION_STORAGE_KEY = 'transactions';
-const BUDGET_STORAGE_KEY = 'budget_settings';
-const CATEGORY_STORAGE_KEY = 'categoryData';
+        const TRANSACTION_STORAGE_KEY = 'transactions';
+        const BUDGET_STORAGE_KEY = 'budget_settings';
+        const STORAGE_KEY = 'budget_settings'; 
+        // const CATEGORY_STORAGE_KEY = 'app_categories';
+        // ⭐️ 重點 1：確保與 category.html 使用相同的 Key
+        const CATEGORY_STORAGE_KEY = 'categoryData';
 
-// ---------- 預設分類（僅本頁初始化用） ----------
-function getDefaultCategoriesForBudget() {
-    return {
-        expense: [
-            { id: 1, name: "餐飲", icon: "fas fa-utensils", color: "#ff7f7f", sub: [] },
-            { id: 2, name: "交通", icon: "fas fa-bus", color: "#ffcc66", sub: [] },
-            { id: 3, name: "購物", icon: "fas fa-shopping-bag", color: "#a8f0c6", sub: [] },
-            { id: 4, name: "娛樂", icon: "fas fa-gamepad", color: "#a7d7ff", sub: [] },
-            { id: 5, name: "居住", icon: "fas fa-home", color: "#ffb3cf", sub: [] }
-        ],
-        income: []
-    };
-}
-
-// ---------- Storage Helpers ----------
-function getTransactions() {
-    return JSON.parse(localStorage.getItem(TRANSACTION_STORAGE_KEY) || '[]');
-}
-function getBudgetSettings() {
-    return JSON.parse(localStorage.getItem(BUDGET_STORAGE_KEY) || '{}');
-}
-function getCategoryData() {
-    let data = JSON.parse(localStorage.getItem(CATEGORY_STORAGE_KEY) || '{"expense":[],"income":[]}');
-    // 如果 localStorage 沒有支出分類，使用預設分類（不改 localStorage）
-    if(!data.expense || data.expense.length === 0) data = getDefaultCategoriesForBudget();
-    return data;
-}
-function saveBudgetSettings(settings) {
-    localStorage.setItem(BUDGET_STORAGE_KEY, JSON.stringify(settings));
-}
-
-// ---------- Render Budget ----------
-function renderBudget() {
-    const TRANSACTIONS = getTransactions();
-    const BUDGET_SETTINGS = getBudgetSettings();
-    const CATEGORY_DATA = getCategoryData();
-
-    const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-    const expenseCategories = CATEGORY_DATA.expense || [];
-
-    // 篩選本月支出
-    const monthlyTransactions = TRANSACTIONS.filter(t => {
-        const date = new Date(t.date);
-        return date.getMonth() === currentMonth && date.getFullYear() === currentYear && t.type === 'expense';
-    });
-
-    // 計算已花費金額（按主分類）
-    const actualExpense = monthlyTransactions.reduce((acc, t) => {
-        let mainCatName = t.categoryObject?.primary?.name || t.categoryText?.split(' / ')[0] || '未分類';
-        const amount = parseFloat(t.amount) || 0;
-        acc[mainCatName] = (acc[mainCatName] || 0) + amount;
-        return acc;
-    }, {});
-
-    // 準備顯示資料
-    let displayCategories = {};
-    let totalBudget = 0;
-    let totalSpent = 0;
-
-    expenseCategories.forEach(mainCat => {
-        const name = mainCat.name;
-        if(displayCategories[name]) {
-            renderCard(name, displayCategories[name]);
-        }
-        displayCategories[name] = {
-            spent: actualExpense[name] || 0,
-            budget: BUDGET_SETTINGS[name] || 0,
-            icon: mainCat.icon || 'fas fa-tag',
-            color: mainCat.color || '#ffb3cf'
-        };
-    });
-
-    // 加入已設定預算但分類不在 expenseCategories 的主分類
-    Object.keys(BUDGET_SETTINGS).forEach(cat => {
-        if (!displayCategories[cat]) {
-            displayCategories[cat] = {
-                spent: actualExpense[cat] || 0,
-                budget: BUDGET_SETTINGS[cat],
-                icon: 'fas fa-tag',
-                color: 'var(--neon-yellow)'
+        // ---------- 預設分類（僅本頁初始化用） ----------
+        function getDefaultCategoriesForBudget() {
+            return {
+                expense: [
+                    { id: 1, name: "餐飲", icon: "fas fa-utensils", color: "#ff7f7f", sub: [] },
+                    { id: 2, name: "交通", icon: "fas fa-bus", color: "#ffcc66", sub: [] },
+                    { id: 3, name: "購物", icon: "fas fa-shopping-bag", color: "#a8f0c6", sub: [] },
+                    { id: 4, name: "娛樂", icon: "fas fa-gamepad", color: "#a7d7ff", sub: [] },
+                    { id: 5, name: "居住", icon: "fas fa-home", color: "#ffb3cf", sub: [] }
+                ],
+                income: []
             };
         }
-    });
 
-    const activeCategories = Object.keys(displayCategories).filter(cat => {
-        const item = displayCategories[cat];
-        // 只篩掉完全沒有預算也沒有交易的
-        return item.budget !== undefined; // 或 item.budget>=0
-    });
+        // ---------- Storage Helpers ----------
+        function getTransactions() {
+            // ⭐️ 核心修正：改為讀取 'transactions'
+            const stored = localStorage.getItem(TRANSACTION_STORAGE_KEY);
+            try {
+                const list = stored ? JSON.parse(stored) : [];
+                return Array.isArray(list) ? list : [];
+            } catch(e) {
+                return [];
+            }
+        }
+        function getBudgetSettings() {
+            const stored = localStorage.getItem(BUDGET_STORAGE_KEY);
+            return stored ? JSON.parse(stored) : {};
+        }
 
-    const container = document.getElementById('budgetList');
-    const noData = document.getElementById('noBudgetMsg');
+        // ---------- 1. 統一所有金鑰 (Key) ----------
+        function getCategoryData() {
+            const stored = localStorage.getItem(CATEGORY_STORAGE_KEY);
+            if (stored) {
+                try {
+                    return JSON.parse(stored);
+                } catch(e) { 
+                    console.error("分類資料格式錯誤", e); 
+                }
+            }
+            // 預設分類 (當本地完全沒資料時)
+            return {
+                expense: [
+                    { id: 1, name: "餐飲", icon: "fas fa-utensils", color: "#ff7f7f", sub: [] },
+                    { id: 2, name: "交通", icon: "fas fa-bus", color: "#ffcc66", sub: [] },
+                    { id: 3, name: "購物", icon: "fas fa-shopping-bag", color: "#a8f0c6", sub: [] },
+                    { id: 4, name: "娛樂", icon: "fas fa-gamepad", color: "#a7d7ff", sub: [] },
+                    { id: 5, name: "居住", icon: "fas fa-home", color: "#ffb3cf", sub: [] }
+                ],
+                income: []
+            };
+        }
 
-    if (!container) return;
+        function saveBudgetSettings(settings) {
+            localStorage.setItem(BUDGET_STORAGE_KEY, JSON.stringify(settings));
+        }
 
-    if (activeCategories.length === 0) {
-        container.innerHTML = expenseCategories.length > 0 ? expenseCategories.map(mainCat => {
-            const name = mainCat.name;
-            const color = mainCat.color || '#ffb3cf';
-            const icon = mainCat.icon || 'fas fa-tag';
+        // ---------- Render Budget ----------
+        function renderBudget() {
+            const TRANSACTIONS = getTransactions();
+            const BUDGET_SETTINGS = getBudgetSettings();
+            const CATEGORY_DATA = getCategoryData();
+
+            const today = new Date();
+            const currentMonth = today.getMonth();
+            const currentYear = today.getFullYear();
+            const expenseCategories = CATEGORY_DATA.expense || [];
+
+            // 篩選本月支出
+            const monthlyTransactions = TRANSACTIONS.filter(t => {
+                const date = new Date(t.date);
+                return date.getMonth() === currentMonth && date.getFullYear() === currentYear && t.type === 'expense';
+            });
+
+            // 計算已花費金額（按主分類）
+            const actualExpense = monthlyTransactions.reduce((acc, t) => {
+                const fullCatName = t.category || t.categoryText || '未分類'; // 例如 "餐飲 / 早餐"
+                const mainCatName = fullCatName.split(' / ')[0]; // 例如 "餐飲"
+                const amount = parseFloat(t.baseAmount ?? t.amount) || 0;
+                acc[mainCatName] = (acc[mainCatName] || 0) + amount;
+                if (fullCatName.includes(' / ')) {
+                    acc[mainCatName] = (acc[mainCatName] || 0) + amount;
+                }
+                return acc;
+            }, {});
+
+
+            // 準備顯示資料
+            let displayCategories = {};
+            let totalBudget = 0;
+            let totalSpent = 0;
+
+            expenseCategories.forEach(mainCat => {
+                // A. 新增主分類卡片
+                displayCategories[mainCat.name] = {
+                    spent: actualExpense[mainCat.name] || 0,
+                    budget: BUDGET_SETTINGS[mainCat.name] || 0,
+                    icon: mainCat.icon || 'fas fa-tag',
+                    color: mainCat.color || '#ffb3cf',
+                    isSub: false
+                };
+
+                if (mainCat.sub && Array.isArray(mainCat.sub)) {
+                    mainCat.sub.forEach(sub => {
+                        const subFullName = `${mainCat.name} / ${sub.name}`;
+                        displayCategories[subFullName] = {
+                            spent: actualExpense[subFullName] || 0,
+                            budget: BUDGET_SETTINGS[subFullName] || 0,
+                            icon: sub.icon || mainCat.icon,
+                            color: sub.color || mainCat.color,
+                            isSub: true // 標記為子分類
+                        };
+                    });
+                }
+                // const name = mainCat.name;
+                // displayCategories[name] = {
+                //     spent: actualExpense[name] || 0,
+                //     budget: BUDGET_SETTINGS[name] || 0,
+                //     icon: mainCat.icon || 'fas fa-tag',
+                //     color: mainCat.color || '#ffb3cf'
+                // };
+            });
+
+            // 加入已設定預算但分類不在 expenseCategories 的主分類
+            Object.keys(BUDGET_SETTINGS).forEach(cat => {
+                if (!displayCategories[cat]) {
+                    displayCategories[cat] = {
+                        spent: actualExpense[cat] || 0,
+                        budget: BUDGET_SETTINGS[cat],
+                        icon: 'fas fa-tag',
+                        color: 'var(--neon-yellow)'
+                    };
+                }
+            });
+
+            const activeCategories = Object.keys(displayCategories).filter(cat => {
+                const item = displayCategories[cat];
+                // 只篩掉完全沒有預算也沒有交易的
+                return item.budget !== undefined || item.spent > 0; // 或 item.budget>=0
+            });
+
+            const container = document.getElementById('budgetList');
+            const noData = document.getElementById('noBudgetMsg');
+
+            if (!container) return;
+
+
+
+            if (activeCategories.length === 0) {
+                container.innerHTML = expenseCategories.length > 0 ? expenseCategories.map(mainCat => {
+                    const name = mainCat.name;
+                    const color = mainCat.color || '#ffb3cf';
+                    const icon = mainCat.icon || 'fas fa-tag';
+                    return `
+                        <div class="budget-card">
+                            <div class="card-header">
+                                <div class="cat-info">
+                                    <span class="cat-icon" style="color: ${color};"><i class="${icon}"></i></span>
+                                    <span class="cat-name" style="color: ${color};">${name}</span>
+                                </div>
+                                <div class="budget-setter" onclick="editBudget(this)">
+                                    <div class="budget-label">本月預算</div>
+                                    <div class="budget-display" style="color: var(--text-dark)">
+                                        $設定預算
+                                    </div>
+                                    <input type="number" class="budget-input" placeholder="輸入金額"
+                                        onblur="saveBudget(this, '${name}')"
+                                        onkeydown="if(event.key==='Enter') saveBudget(this, '${name}')">
+                                </div>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-fill status-safe" style="width:0%;background-color:${color};"></div>
+                            </div>
+                            <div class="card-stats">
+                                <span class="spent-amount">已花 $0</span>
+                                <span class="spent-percent">0%</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('') : '';
+                if(noData) noData.style.display = expenseCategories.length > 0 ? 'none' : 'block';
+                updateTotal(0,0);
+                return;
+            }
+
+            noData && (noData.style.display='none');
+            container.innerHTML = '';
+            totalBudget = 0;
+            totalSpent = 0;
+
+            activeCategories.forEach(catName => {
+                const item = displayCategories[catName];
+                const budget = item.budget || 0;
+                const spent = item.spent || 0;
+                const color = item.color || '#ffb3cf';
+                const icon = item.icon || 'fas fa-tag';
+
+                totalBudget += budget;
+                totalSpent += spent;
+
+                let progress = 0;
+                let statusClass = 'status-safe';
+                let progressColor = color;
+                if(budget>0){
+                    progress = Math.min(100,(spent/budget)*100);
+                    if(progress>=100) {statusClass='status-danger'; progressColor='var(--neon-red)';}
+                    else if(progress>80) {statusClass='status-warning'; progressColor='var(--neon-yellow)';}
+                } else if(spent>0){
+                    progress = 100;
+                    statusClass='status-danger';
+                    progressColor='var(--neon-red)';
+                }
+
+                const currentBudget = budget>0 ? budget.toLocaleString() : '設定預算';
+
+                const listItemHtml = `
+                    <div class="budget-card">
+                        <div class="card-header">
+                            <div class="cat-info">
+                                <span class="cat-icon" style="color: ${color};"><i class="${icon}"></i></span>
+                                <span class="cat-name" style="color: ${color};">${catName}</span>
+                            </div>
+                            <div class="budget-setter" onclick="editBudget(this)">
+                                <div class="budget-label">本月預算</div>
+                                <div class="budget-display" style="color: ${budget>0?'var(--neon-yellow)':'var(--text-dark)'}">
+                                    $${currentBudget}
+                                </div>
+                                <input type="number" class="budget-input" value="${budget}" 
+                                    placeholder="輸入金額" 
+                                    onblur="saveBudget(this, '${catName}')"
+                                    onkeydown="if(event.key==='Enter') saveBudget(this,'${catName}')">
+                            </div>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-fill ${statusClass}" style="width:${progress}%;background-color:${progressColor};box-shadow:0 0 5px ${progressColor}50;"></div>
+                        </div>
+                        <div class="card-stats">
+                            <span class="spent-amount">已花 $${spent.toLocaleString()}</span>
+                            <span class="spent-percent">${progress.toFixed(0)}%</span>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', listItemHtml);
+            });
+
+            updateTotal(totalBudget.toLocaleString(), totalSpent.toLocaleString());
+        }
+
+        // ---------- 更新總覽 ----------
+        function updateTotal(budget, spent){
+            const budgetValue = parseFloat(budget.replace(/,/g,''))||0;
+            const spentValue = parseFloat(spent.replace(/,/g,''))||0;
+            const remaining = budgetValue-spentValue;
+
+            const remainEl = document.getElementById('totalRemaining');
+            const spentEl = document.getElementById('totalSpentText');
+            const budgetEl = document.getElementById('totalBudgetText');
+            const bar = document.getElementById('totalBar');
+
+            spentEl && (spentEl.textContent=`已花 $${spent}`);
+            budgetEl && (budgetEl.textContent=`總預算 $${budget}`);
+            if(remainEl){
+                remainEl.textContent=`$${remaining.toLocaleString()}`;
+                remainEl.style.color = remaining>=0?'var(--neon-green)':'var(--neon-red)';
+            }
+
+            if(bar){
+                let progress = budgetValue>0 ? Math.min(spentValue/budgetValue*100,100) : 0;
+                let color='var(--neon-green)';
+                if(progress>=100) color='var(--neon-red)';
+                else if(progress>80) color='var(--neon-yellow)';
+                bar.style.width=`${progress}%`;
+                bar.style.backgroundColor=color;
+                bar.style.boxShadow=`0 0 10px ${color}50`;
+            }
+        }
+
+        // ---------- 編輯/保存預算 ----------
+        function editBudget(el){
+            const display = el.querySelector('.budget-display');
+            const input = el.querySelector('.budget-input');
+            display && (display.style.display='none');
+            input && (input.style.display='block', input.focus(), input.select());
+        }
+        function saveBudget(input, cat){
+            const settings = getBudgetSettings();
+            if(input.value.trim()==='' || Number(input.value)<=0) delete settings[cat];
+            else settings[cat] = Number(input.value);
+            saveBudgetSettings(settings);
+
+            const display = input.parentElement.querySelector('.budget-display');
+            input.style.display='none';
+            display && (display.style.display='block');
+
+            showToast();
+            renderBudget();
+        }
+
+        // ---------- Toast ----------
+        function showToast(){
+            const t=document.getElementById('toast');
+            if(!t) return;
+            t.style.opacity=1;
+            setTimeout(()=>t.style.opacity=0,1200);
+        }
+
+        // ---------- 監聽 localStorage / 自訂事件 ----------
+        window.addEventListener('storage', (e) => {
+            // 當分類、預算設定、或「交易紀錄」改變時，都要重新渲染
+            const watchKeys = [STORAGE_KEY, CATEGORY_STORAGE_KEY, TRANSACTION_STORAGE_KEY];
+            
+            if (watchKeys.includes(e.key)) {
+                console.log(`偵測到 ${e.key} 更新，同步數據中...`);
+                renderBudget(); // 重新計算並顯示
+            }
+        });
+
+        // 如果你在同一頁切換，也要手動觸發
+        window.addEventListener('categoriesUpdated', renderBudget);
+        window.addEventListener('transactionsUpdated', renderBudget);
+
+        // 額外增加：自訂事件監聽 (用於同一個頁面切換時)
+        window.addEventListener('category-updated', ()=>renderBudget());
+
+        // ---------- 初始化 ----------
+        document.addEventListener('DOMContentLoaded', ()=>{
+            renderBudget();
+        });
+    </script> -->
+
+
+    <!-- <script>
+        /* ===============================
+        Budget Page - JS (子分類同步加強版)
+        =============================== */
+
+        const TRANSACTION_STORAGE_KEY = 'transactions';
+        const BUDGET_STORAGE_KEY = 'budget_settings';
+        const STORAGE_KEY = 'budget_settings'; 
+        const CATEGORY_STORAGE_KEY = 'categoryData'; // 與 category.html 保持一致
+
+        // ---------- Storage Helpers ----------
+        function getTransactions() {
+            const stored = localStorage.getItem(TRANSACTION_STORAGE_KEY);
+            try {
+                const list = stored ? JSON.parse(stored) : [];
+                return Array.isArray(list) ? list : [];
+            } catch(e) {
+                return [];
+            }
+        }
+
+        function getBudgetSettings() {
+            const stored = localStorage.getItem(BUDGET_STORAGE_KEY);
+            return stored ? JSON.parse(stored) : {};
+        }
+
+        function getCategoryData() {
+            const stored = localStorage.getItem(CATEGORY_STORAGE_KEY);
+            if (stored) {
+                try {
+                    return JSON.parse(stored);
+                } catch(e) { 
+                    console.error("分類資料格式錯誤", e); 
+                }
+            }
+            // 預設分類 (當本地完全沒資料時)
+            return {
+                expense: [
+                    { id: 1, name: "餐飲", icon: "fas fa-utensils", color: "#ff7f7f", sub: [] },
+                    { id: 2, name: "交通", icon: "fas fa-bus", color: "#ffcc66", sub: [] },
+                    { id: 3, name: "購物", icon: "fas fa-shopping-bag", color: "#a8f0c6", sub: [] },
+                    { id: 4, name: "娛樂", icon: "fas fa-gamepad", color: "#a7d7ff", sub: [] },
+                    { id: 5, name: "居住", icon: "fas fa-home", color: "#ffb3cf", sub: [] }
+                ],
+                income: []
+            };
+        }
+
+        function saveBudgetSettings(settings) {
+            localStorage.setItem(BUDGET_STORAGE_KEY, JSON.stringify(settings));
+        }
+
+        // ---------- Render Budget ----------
+        function renderBudget() {
+            const TRANSACTIONS = getTransactions();
+            const BUDGET_SETTINGS = getBudgetSettings();
+            const CATEGORY_DATA = getCategoryData();
+
+            const today = new Date();
+            const currentMonth = today.getMonth();
+            const currentYear = today.getFullYear();
+            const expenseCategories = CATEGORY_DATA.expense || [];
+
+            // 1. 篩選本月支出交易
+            const monthlyTransactions = TRANSACTIONS.filter(t => {
+                const date = new Date(t.date);
+                return date.getMonth() === currentMonth && 
+                       date.getFullYear() === currentYear && 
+                       t.type === 'expense';
+            });
+
+            // 2. 計算各類別已花費金額
+            const actualExpense = monthlyTransactions.reduce((acc, t) => {
+                const fullCatName = t.category || t.categoryText || '未分類'; // 例如 "餐飲 / 早餐"
+                const mainCatName = fullCatName.split(' / ')[0];             // 例如 "餐飲"
+                const amount = parseFloat(t.baseAmount ?? t.amount) || 0;
+
+                // 累計到具體類別 (可能是主類或子類)
+                acc[fullCatName] = (acc[fullCatName] || 0) + amount;
+
+                // 如果是子分類，主分類也要同步累計總支出 (以便主分類卡片顯示總額)
+                if (fullCatName.includes(' / ')) {
+                    acc[mainCatName] = (acc[mainCatName] || 0) + amount;
+                }
+                return acc;
+            }, {});
+
+            // 3. 準備顯示資料（展開主分類與子分類）
+            let displayCategories = []; // 改用 Array 方便排序與渲染
+            
+            expenseCategories.forEach(mainCat => {
+                // A. 加入主分類
+                displayCategories.push({
+                    name: mainCat.name,
+                    displayName: mainCat.name,
+                    spent: actualExpense[mainCat.name] || 0,
+                    budget: BUDGET_SETTINGS[mainCat.name] || 0,
+                    icon: mainCat.icon || 'fas fa-tag',
+                    color: mainCat.color || '#ffb3cf',
+                    isSub: false
+                });
+
+                // B. 自動展開子分類
+                if (mainCat.sub && Array.isArray(mainCat.sub)) {
+                    mainCat.sub.forEach(sub => {
+                        const subFullName = `${mainCat.name} / ${sub.name}`;
+                        displayCategories.push({
+                            name: subFullName,
+                            displayName: sub.name, // 顯示時只顯示子分類名稱
+                            parentName: mainCat.name,
+                            spent: actualExpense[subFullName] || 0,
+                            budget: BUDGET_SETTINGS[subFullName] || 0,
+                            icon: sub.icon || mainCat.icon,
+                            color: sub.color || mainCat.color,
+                            isSub: true
+                        });
+                    });
+                }
+            });
+
+            // 4. 開始渲染 HTML
+            const container = document.getElementById('budgetList');
+            const noData = document.getElementById('noBudgetMsg');
+            if (!container) return;
+
+            container.innerHTML = '';
+            let totalBudget = 0;
+            let totalSpent = 0;
+
+            if (displayCategories.length === 0) {
+                if(noData) noData.style.display = 'block';
+                updateTotal(0, 0);
+                return;
+            }
+
+            noData && (noData.style.display='none');
+
+            displayCategories.forEach(item => {
+                const budget = item.budget || 0;
+                const spent = item.spent || 0;
+                const color = item.color;
+                const icon = item.icon;
+
+                // 只有主分類會計入頂部的「總預算」與「總支出」
+                if (!item.isSub) {
+                    totalBudget += budget;
+                    totalSpent += spent;
+                }
+
+                // 計算進度條
+                let progress = 0;
+                let statusClass = 'status-safe';
+                let progressColor = color;
+                if(budget > 0){
+                    progress = Math.min(100, (spent / budget) * 100);
+                    if(progress >= 100) { statusClass='status-danger'; progressColor='var(--neon-red)'; }
+                    else if(progress > 80) { statusClass='status-warning'; progressColor='var(--neon-yellow)'; }
+                } else if(spent > 0) {
+                    progress = 100;
+                    statusClass='status-danger';
+                    progressColor='var(--neon-red)';
+                }
+
+                const budgetDisplay = budget > 0 ? `$${budget.toLocaleString()}` : '設定預算';
+
+                // 子分類卡片增加縮排樣式
+                const cardStyle = item.isSub 
+                    ? `style="margin-left: 20px; border-left: 2px dashed ${color}80; width: calc(100% - 20px);"` 
+                    : '';
+
+                const listItemHtml = `
+                    <div class="budget-card" ${cardStyle}>
+                        <div class="card-header">
+                            <div class="cat-info">
+                                <span class="cat-icon" style="color: ${color};"><i class="${icon}"></i></span>
+                                <span class="cat-name" style="color: ${color}; font-size: ${item.isSub ? '0.9em' : '1.1em'};">
+                                    ${item.isSub ? `<small style="opacity:0.6">${item.parentName} › </small>` : ''}${item.displayName}
+                                </span>
+                            </div>
+                            <div class="budget-setter" onclick="editBudget(this)">
+                                <div class="budget-label">本月預算</div>
+                                <div class="budget-display" style="color: ${budget > 0 ? 'var(--neon-yellow)' : 'var(--text-dark)'}">
+                                    ${budgetDisplay}
+                                </div>
+                                <input type="number" class="budget-input" value="${budget || ''}" 
+                                    placeholder="輸入金額" 
+                                    onblur="saveBudget(this, '${item.name}')"
+                                    onkeydown="if(event.key==='Enter') saveBudget(this,'${item.name}')">
+                            </div>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-fill ${statusClass}" style="width:${progress}%; background-color:${progressColor}; box-shadow:0 0 5px ${progressColor}50;"></div>
+                        </div>
+                        <div class="card-stats">
+                            <span class="spent-amount">已花 $${spent.toLocaleString()}</span>
+                            <span class="spent-percent">${progress.toFixed(0)}%</span>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', listItemHtml);
+            });
+
+            updateTotal(totalBudget.toLocaleString(), totalSpent.toLocaleString());
+        }
+
+        // ---------- 更新總覽 ----------
+        function updateTotal(budget, spent){
+            const budgetValue = parseFloat(budget.replace(/,/g,''))||0;
+            const spentValue = parseFloat(spent.replace(/,/g,''))||0;
+            const remaining = budgetValue - spentValue;
+
+            const remainEl = document.getElementById('totalRemaining');
+            const spentEl = document.getElementById('totalSpentText');
+            const budgetEl = document.getElementById('totalBudgetText');
+            const bar = document.getElementById('totalBar');
+
+            spentEl && (spentEl.textContent=`已花 $${spent}`);
+            budgetEl && (budgetEl.textContent=`總預算 $${budget}`);
+            if(remainEl){
+                remainEl.textContent=`$${remaining.toLocaleString()}`;
+                remainEl.style.color = remaining >= 0 ? 'var(--neon-green)' : 'var(--neon-red)';
+            }
+
+            if(bar){
+                let progress = budgetValue > 0 ? Math.min(spentValue / budgetValue * 100, 100) : 0;
+                let color = 'var(--neon-green)';
+                if(progress >= 100) color = 'var(--neon-red)';
+                else if(progress > 80) color = 'var(--neon-yellow)';
+                bar.style.width = `${progress}%`;
+                bar.style.backgroundColor = color;
+                bar.style.boxShadow = `0 0 10px ${color}50`;
+            }
+        }
+
+        // ---------- 編輯/保存預算 ----------
+        function editBudget(el){
+            const display = el.querySelector('.budget-display');
+            const input = el.querySelector('.budget-input');
+            display && (display.style.display='none');
+            input && (input.style.display='block', input.focus(), input.select());
+        }
+
+        function saveBudget(input, catName){
+            const settings = getBudgetSettings();
+            const val = parseFloat(input.value);
+            
+            if(input.value.trim() === '' || isNaN(val) || val <= 0) {
+                delete settings[catName];
+            } else {
+                settings[catName] = val;
+            }
+            saveBudgetSettings(settings);
+
+            const display = input.parentElement.querySelector('.budget-display');
+            input.style.display = 'none';
+            display && (display.style.display = 'block');
+
+            showToast();
+            renderBudget();
+        }
+
+        // ---------- Toast ----------
+        function showToast(){
+            const t = document.getElementById('toast');
+            if(!t) return;
+            t.style.opacity = 1;
+            setTimeout(() => t.style.opacity = 0, 1200);
+        }
+
+        // ---------- 監聽數據更新 ----------
+        window.addEventListener('storage', (e) => {
+            const watchKeys = [BUDGET_STORAGE_KEY, CATEGORY_STORAGE_KEY, TRANSACTION_STORAGE_KEY];
+            if (watchKeys.includes(e.key)) {
+                renderBudget();
+            }
+        });
+
+        window.addEventListener('category-updated', () => renderBudget());
+        window.addEventListener('transactionsUpdated', () => renderBudget());
+
+        // ---------- 初始化 ----------
+        document.addEventListener('DOMContentLoaded', () => {
+            renderBudget();
+        });
+    </script> -->
+
+    <script>
+        /* ===============================
+        Budget Page - JS (折疊展開版)
+        =============================== */
+
+        const TRANSACTION_STORAGE_KEY = 'transactions';
+        const BUDGET_STORAGE_KEY = 'budget_settings';
+        const CATEGORY_STORAGE_KEY = 'categoryData';
+
+        // ---------- Storage Helpers ----------
+        function getTransactions() {
+            const stored = localStorage.getItem(TRANSACTION_STORAGE_KEY);
+            try { return stored ? JSON.parse(stored) : []; } catch(e) { return []; }
+        }
+
+        function getBudgetSettings() {
+            const stored = localStorage.getItem(BUDGET_STORAGE_KEY);
+            return stored ? JSON.parse(stored) : {};
+        }
+
+        function getCategoryData() {
+            const stored = localStorage.getItem(CATEGORY_STORAGE_KEY);
+            if (stored) {
+                try { return JSON.parse(stored); } catch(e) { console.error("分類資料錯誤", e); }
+            }
+            return { expense: [], income: [] };
+        }
+
+        function saveBudgetSettings(settings) {
+            localStorage.setItem(BUDGET_STORAGE_KEY, JSON.stringify(settings));
+        }
+
+        // ---------- 切換展開/收合 ----------
+        function toggleSub(mainId) {
+            const container = document.getElementById(`sub-container-${mainId}`);
+            const card = document.getElementById(`main-card-${mainId}`);
+            if (container) {
+                container.classList.toggle('active');
+                card.classList.toggle('expanded');
+            }
+        }
+
+        // ---------- Render Budget ----------
+        function renderBudget() {
+            const TRANSACTIONS = getTransactions();
+            const BUDGET_SETTINGS = getBudgetSettings();
+            const CATEGORY_DATA = getCategoryData();
+
+            const today = new Date();
+            const currentMonth = today.getMonth();
+            const currentYear = today.getFullYear();
+            const expenseCategories = CATEGORY_DATA.expense || [];
+
+            // 1. 計算各類別支出
+            const monthlyTransactions = TRANSACTIONS.filter(t => {
+                const date = new Date(t.date);
+                return date.getMonth() === currentMonth && date.getFullYear() === currentYear && t.type === 'expense';
+            });
+
+            const actualExpense = monthlyTransactions.reduce((acc, t) => {
+                const fullCatName = t.category || t.categoryText || '未分類';
+                const amount = parseFloat(t.baseAmount ?? t.amount) || 0;
+                acc[fullCatName] = (acc[fullCatName] || 0) + amount;
+                
+                // 也要加總到主分類
+                if (fullCatName.includes(' / ')) {
+                    const mainCatName = fullCatName.split(' / ')[0];
+                    acc[mainCatName] = (acc[mainCatName] || 0) + amount;
+                }
+                return acc;
+            }, {});
+
+            const container = document.getElementById('budgetList');
+            if (!container) return;
+            container.innerHTML = '';
+
+            let totalBudget = 0;
+            let totalSpent = 0;
+
+            expenseCategories.forEach((mainCat, index) => {
+                const spent = actualExpense[mainCat.name] || 0;
+                const budget = BUDGET_SETTINGS[mainCat.name] || 0;
+                totalBudget += budget;
+                totalSpent += spent;
+
+                // 產生主分類 HTML
+                const hasSubs = mainCat.sub && mainCat.sub.length > 0;
+                const mainCardHtml = createCardHtml(mainCat.name, mainCat.name, budget, spent, mainCat.color, mainCat.icon, false, hasSubs, index);
+                
+                let subCardsHtml = '';
+                if (hasSubs) {
+                    mainCat.sub.forEach(sub => {
+                        const subFullName = `${mainCat.name} / ${sub.name}`;
+                        const subSpent = actualExpense[subFullName] || 0;
+                        const subBudget = BUDGET_SETTINGS[subFullName] || 0;
+                        subCardsHtml += createCardHtml(subFullName, sub.name, subBudget, subSpent, mainCat.color, sub.icon || mainCat.icon, true);
+                    });
+                }
+
+                const sectionHtml = `
+                    <div class="category-group">
+                        ${mainCardHtml}
+                        <div id="sub-container-${index}" class="sub-category-container">
+                            ${subCardsHtml}
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', sectionHtml);
+            });
+
+            updateTotal(totalBudget.toLocaleString(), totalSpent.toLocaleString());
+        }
+
+        // ---------- 產生卡片樣式函數 ----------
+        function createCardHtml(saveKey, displayName, budget, spent, color, icon, isSub, hasSubs = false, index = 0) {
+            let progress = 0;
+            let progressColor = color;
+            if (budget > 0) {
+                progress = Math.min(100, (spent / budget) * 100);
+                if (progress >= 100) progressColor = 'var(--neon-red)';
+                else if (progress > 80) progressColor = 'var(--neon-yellow)';
+            } else if (spent > 0) {
+                progress = 100;
+                progressColor = 'var(--neon-red)';
+            }
+
+            const budgetDisplay = budget > 0 ? `$${budget.toLocaleString()}` : '設定預算';
+            const clickAction = !isSub && hasSubs ? `onclick="toggleSub(${index})"` : '';
+
             return `
-                <div class="budget-card">
+                <div id="${!isSub ? 'main-card-'+index : ''}" class="budget-card ${!isSub ? 'main-budget-card' : ''}" ${clickAction}>
                     <div class="card-header">
                         <div class="cat-info">
                             <span class="cat-icon" style="color: ${color};"><i class="${icon}"></i></span>
-                            <span class="cat-name" style="color: ${color};">${name}</span>
+                            <span class="cat-name" style="color: ${color}; font-size: ${isSub ? '0.9em' : '1.1em'};">
+                                ${displayName}
+                                ${!isSub && hasSubs ? '<i class="fas fa-chevron-down expand-icon"></i>' : ''}
+                            </span>
                         </div>
-                        <div class="budget-setter" onclick="editBudget(this)">
-                            <div class="budget-label">本月預算</div>
-                            <div class="budget-display" style="color: var(--text-dark)">
-                                $設定預算
+                        <div class="budget-setter" onclick="event.stopPropagation(); editBudget(this)">
+                            <div class="budget-label">預算</div>
+                            <div class="budget-display" style="color: ${budget > 0 ? 'var(--neon-yellow)' : 'var(--text-dark)'}">
+                                ${budgetDisplay}
                             </div>
-                            <input type="number" class="budget-input" placeholder="輸入金額"
-                                onblur="saveBudget(this, '${name}')"
-                                onkeydown="if(event.key==='Enter') saveBudget(this, '${name}')">
+                            <input type="number" class="budget-input" value="${budget || ''}" 
+                                onblur="saveBudget(this, '${saveKey}')"
+                                onkeydown="if(event.key==='Enter') saveBudget(this,'${saveKey}')">
                         </div>
                     </div>
                     <div class="progress-container">
-                        <div class="progress-fill status-safe" style="width:0%;background-color:${color};"></div>
+                        <div class="progress-fill" style="width:${progress}%; background-color:${progressColor};"></div>
                     </div>
                     <div class="card-stats">
-                        <span class="spent-amount">已花 $0</span>
-                        <span class="spent-percent">0%</span>
+                        <span>已花 $${spent.toLocaleString()}</span>
+                        <span>${progress.toFixed(0)}%</span>
                     </div>
                 </div>
             `;
-        }).join('') : '';
-        if(noData) noData.style.display = expenseCategories.length > 0 ? 'none' : 'block';
-        updateTotal(0,0);
-        return;
-    }
-
-    noData && (noData.style.display='none');
-    container.innerHTML = '';
-    totalBudget = 0;
-    totalSpent = 0;
-
-    activeCategories.forEach(catName => {
-        const item = displayCategories[catName];
-        const budget = item.budget || 0;
-        const spent = item.spent || 0;
-        const color = item.color || '#ffb3cf';
-        const icon = item.icon || 'fas fa-tag';
-
-        totalBudget += budget;
-        totalSpent += spent;
-
-        let progress = 0;
-        let statusClass = 'status-safe';
-        let progressColor = color;
-        if(budget>0){
-            progress = Math.min(100,(spent/budget)*100);
-            if(progress>=100) {statusClass='status-danger'; progressColor='var(--neon-red)';}
-            else if(progress>80) {statusClass='status-warning'; progressColor='var(--neon-yellow)';}
-        } else if(spent>0){
-            progress = 100;
-            statusClass='status-danger';
-            progressColor='var(--neon-red)';
         }
 
-        const currentBudget = budget>0 ? budget.toLocaleString() : '設定預算';
+        // ---------- 其餘功能保持不變 ----------
+        function updateTotal(budget, spent){
+            const budgetVal = parseFloat(budget.replace(/,/g,''))||0;
+            const spentVal = parseFloat(spent.replace(/,/g,''))||0;
+            const remain = budgetVal - spentVal;
+            const remainEl = document.getElementById('totalRemaining');
+            if(remainEl) {
+                remainEl.textContent = `$${remain.toLocaleString()}`;
+                remainEl.style.color = remain >= 0 ? 'var(--neon-green)' : 'var(--neon-red)';
+            }
+            document.getElementById('totalSpentText').textContent = `已花 $${spent}`;
+            document.getElementById('totalBudgetText').textContent = `總預算 $${budget}`;
+            const bar = document.getElementById('totalBar');
+            if(bar) {
+                let p = budgetVal > 0 ? Math.min(spentVal/budgetVal*100, 100) : 0;
+                bar.style.width = `${p}%`;
+                bar.style.backgroundColor = p >= 100 ? 'var(--neon-red)' : (p > 80 ? 'var(--neon-yellow)' : 'var(--neon-green)');
+            }
+        }
 
-        const listItemHtml = `
-            <div class="budget-card">
-                <div class="card-header">
-                    <div class="cat-info">
-                        <span class="cat-icon" style="color: ${color};"><i class="${icon}"></i></span>
-                        <span class="cat-name" style="color: ${color};">${catName}</span>
-                    </div>
-                    <div class="budget-setter" onclick="editBudget(this)">
-                        <div class="budget-label">本月預算</div>
-                        <div class="budget-display" style="color: ${budget>0?'var(--neon-yellow)':'var(--text-dark)'}">
-                            $${currentBudget}
-                        </div>
-                        <input type="number" class="budget-input" value="${budget}" 
-                            placeholder="輸入金額" 
-                            onblur="saveBudget(this, '${catName}')"
-                            onkeydown="if(event.key==='Enter') saveBudget(this,'${catName}')">
-                    </div>
-                </div>
-                <div class="progress-container">
-                    <div class="progress-fill ${statusClass}" style="width:${progress}%;background-color:${progressColor};box-shadow:0 0 5px ${progressColor}50;"></div>
-                </div>
-                <div class="card-stats">
-                    <span class="spent-amount">已花 $${spent.toLocaleString()}</span>
-                    <span class="spent-percent">${progress.toFixed(0)}%</span>
-                </div>
-            </div>
-        `;
-        container.insertAdjacentHTML('beforeend', listItemHtml);
-    });
+        function editBudget(el){
+            const disp = el.querySelector('.budget-display');
+            const inp = el.querySelector('.budget-input');
+            disp.style.display = 'none';
+            inp.style.display = 'block';
+            inp.focus(); inp.select();
+        }
 
-    updateTotal(totalBudget.toLocaleString(), totalSpent.toLocaleString());
-}
+        function saveBudget(input, key){
+            const settings = getBudgetSettings();
+            const val = parseFloat(input.value);
+            if(isNaN(val) || val <= 0) delete settings[key];
+            else settings[key] = val;
+            saveBudgetSettings(settings);
+            renderBudget();
+            showToast();
+        }
 
-// ---------- 更新總覽 ----------
-function updateTotal(budget, spent){
-    const budgetValue = parseFloat(budget.replace(/,/g,''))||0;
-    const spentValue = parseFloat(spent.replace(/,/g,''))||0;
-    const remaining = budgetValue-spentValue;
+        function showToast(){
+            const t = document.getElementById('toast');
+            if(t) { t.style.opacity = 1; setTimeout(()=> t.style.opacity=0, 1000); }
+        }
 
-    const remainEl = document.getElementById('totalRemaining');
-    const spentEl = document.getElementById('totalSpentText');
-    const budgetEl = document.getElementById('totalBudgetText');
-    const bar = document.getElementById('totalBar');
-
-    spentEl && (spentEl.textContent=`已花 $${spent}`);
-    budgetEl && (budgetEl.textContent=`總預算 $${budget}`);
-    if(remainEl){
-        remainEl.textContent=`$${remaining.toLocaleString()}`;
-        remainEl.style.color = remaining>=0?'var(--neon-green)':'var(--neon-red)';
-    }
-
-    if(bar){
-        let progress = budgetValue>0 ? Math.min(spentValue/budgetValue*100,100) : 0;
-        let color='var(--neon-green)';
-        if(progress>=100) color='var(--neon-red)';
-        else if(progress>80) color='var(--neon-yellow)';
-        bar.style.width=`${progress}%`;
-        bar.style.backgroundColor=color;
-        bar.style.boxShadow=`0 0 10px ${color}50`;
-    }
-}
-
-// ---------- 編輯/保存預算 ----------
-function editBudget(el){
-    const display = el.querySelector('.budget-display');
-    const input = el.querySelector('.budget-input');
-    display && (display.style.display='none');
-    input && (input.style.display='block', input.focus(), input.select());
-}
-function saveBudget(input, cat){
-    const settings = getBudgetSettings();
-    if(input.value.trim()==='' || Number(input.value)<=0) delete settings[cat];
-    else settings[cat] = Number(input.value);
-    saveBudgetSettings(settings);
-
-    const display = input.parentElement.querySelector('.budget-display');
-    input.style.display='none';
-    display && (display.style.display='block');
-
-    showToast();
-    renderBudget();
-}
-
-// ---------- Toast ----------
-function showToast(){
-    const t=document.getElementById('toast');
-    if(!t) return;
-    t.style.opacity=1;
-    setTimeout(()=>t.style.opacity=0,1200);
-}
-
-// ---------- 監聽 localStorage / 自訂事件 ----------
-window.addEventListener('storage', (e)=>{
-    if(e.key===CATEGORY_STORAGE_KEY || e.key===TRANSACTION_STORAGE_KEY) renderBudget();
-});
-window.addEventListener('category-updated', ()=>renderBudget());
-
-// ---------- 初始化 ----------
-document.addEventListener('DOMContentLoaded', ()=>{
-    renderBudget();
-});
-</script>
-
+        window.addEventListener('storage', renderBudget);
+        window.addEventListener('category-updated', renderBudget);
+        document.addEventListener('DOMContentLoaded', renderBudget);
+    </script>
 
 </html>

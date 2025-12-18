@@ -1731,6 +1731,17 @@
             let mainCat = '';
             let subCat = '';
 
+            let oldMainCat = '';
+
+            if (id && id !== 0) {
+                const oldTx = TRANSACTIONS.find(t => t.id === id);
+                if (oldTx) {
+                    const oldFull = oldTx.category || oldTx.categoryText || '';
+                    oldMainCat = oldFull.split(' / ')[0];
+                }
+            }
+
+
             // 抓取主分類 (如果選單有選中，就抓選中的文字；沒選中就抓 value)
             if (mainSelect.selectedIndex !== -1) {
                 mainCat = mainSelect.options[mainSelect.selectedIndex].text;
@@ -1793,12 +1804,29 @@
                 newData.id = Date.now();
                 TRANSACTIONS.unshift(newData);
             } else {
-                // 修改
                 const index = TRANSACTIONS.findIndex(t => t.id === id);
                 if (index !== -1) {
+
+                    // ⭐️ 同步主分類變更（關鍵）
+                    if (oldMainCat && oldMainCat !== mainCat) {
+                        TRANSACTIONS.forEach(t => {
+                            if (t.type === 'expense') {
+                                const tMain = (t.category || t.categoryText || '').split(' / ')[0];
+                                if (tMain === oldMainCat) {
+                                    const rest = (t.category || '').includes(' / ')
+                                        ? ' / ' + (t.category.split(' / ')[1] || '')
+                                        : '';
+                                    t.category = mainCat + rest;
+                                    t.categoryText = mainCat + rest;
+                                }
+                            }
+                        });
+                    }
+
                     TRANSACTIONS[index] = { ...TRANSACTIONS[index], ...newData };
                 }
             }
+
             
             // 8. 存檔並更新畫面
             saveToLocalStorage();

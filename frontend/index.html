@@ -317,61 +317,96 @@
 
 </body>
 
-    <script>
-        // 側邊欄收合 (保留不變)
-        document.getElementById("sidebarToggle").addEventListener("click", () => {
-            document.querySelector(".app-sidebar").classList.toggle("collapsed");
-        });
+<script>
+/* ==============================
+   側邊欄 & 頁面切換（原本的 그대로）
+================================ */
+document.getElementById("sidebarToggle").addEventListener("click", () => {
+    document.querySelector(".app-sidebar").classList.toggle("collapsed");
+});
 
-        /**
-         * ⭐️ 核心切換函數：可處理導覽列點擊 (element 存在) 和 Iframe 內部呼叫 (element 為 null) ⭐️
-         * @param {HTMLElement|null} element - 點擊的 nav item 元素 (從導覽列點擊時傳入)
-         * @param {string} url - 要載入的內容頁面 URL ('transaction.html' 或 'recordpage.html')
-         */
-        function switchPage(element, url) {
-            // 1. 切換 iframe 的 src (強制重新載入子頁面)
-            document.getElementById('content-frame').src = url;
+function switchPage(element, url) {
+    document.getElementById('content-frame').src = url;
+    document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
 
-            // 2. 切換導覽列的 active 狀態
-            document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
-            
-            if (element) {
-                // (A) 導覽列按鈕點擊時 (element 存在)
-                element.classList.add("active");
-            } else {
-                // (B) ⭐️ Iframe 內部呼叫時 (element 為 null)
-                let targetPageName;
-                
-                // 根據 URL 判斷要點亮哪一個導覽列項目 (data-page)
-                if (url.includes('recordpage')) {
-                    targetPageName = 'record';
-                } else if (url.includes('transaction')) {
-                    targetPageName = 'list';
-                } else if (url.includes('report')) { // <-- 新增
-                    targetPageName = 'report';
-                } else if (url.includes('budget')) { // <-- 新增
-                    targetPageName = 'budget';
-                } else if (url.includes('settings')) { // <-- 新增
-                    targetPageName = 'settings';
-                }
-                
-                const navItem = document.querySelector(`.nav-item[data-page=\"${targetPageName}\"]`);
-                if (navItem) {
-                    navItem.classList.add('active');
-                }
-            }
+    if (element) {
+        element.classList.add("active");
+    } else {
+        let targetPageName;
+        if (url.includes('recordpage')) targetPageName = 'record';
+        else if (url.includes('transaction')) targetPageName = 'list';
+        else if (url.includes('report')) targetPageName = 'report';
+        else if (url.includes('budget')) targetPageName = 'budget';
+        else if (url.includes('settings')) targetPageName = 'settings';
+
+        const navItem = document.querySelector(`.nav-item[data-page="${targetPageName}"]`);
+        if (navItem) navItem.classList.add('active');
+    }
+}
+
+window.switchPage = switchPage;
+
+/* ==============================
+   🌍 匯率系統（乖乖整理版）
+================================ */
+
+const ONE_DAY = 24 * 60 * 60 * 1000;
+
+function getCurrencySetting() {
+    return JSON.parse(localStorage.getItem('app_currency')) || {
+        base: 'TWD',
+        symbol: 'NT$',
+        rates: {
+            TWD: 1,
+            USD: 0.032,
+            JPY: 4.6
         }
-        
-        // ⭐️ 必須暴露給 window，以便 iframe 內部 (transaction.html / recordpage.html) 可以呼叫 ⭐️
-        window.switchPage = switchPage;
-        
-        // 初始載入時，確保第一個按鈕是亮的
-        document.addEventListener('DOMContentLoaded', () => {
-            const initialItem = document.querySelector('.nav-item[data-page="list"]');
-            if(initialItem) {
-                initialItem.classList.add('active');
-            }
-        });
-    </script>
+    };
+}
+
+async function fetchLiveExchangeRates(base = 'TWD') {
+    try {
+        const res = await fetch(
+            `https://api.exchangerate.host/latest?base=${base}`
+        );
+        const data = await res.json();
+        if (!data?.rates) throw new Error('No rates');
+
+        const setting = {
+            base,
+            symbol: base === 'TWD' ? 'NT$' : base,
+            rates: data.rates,
+            updatedAt: new Date().toISOString()
+        };
+
+        localStorage.setItem('app_currency', JSON.stringify(setting));
+
+        window.dispatchEvent(
+            new StorageEvent('storage', { key: 'app_currency' })
+        );
+
+        return setting;
+    } catch {
+        return getCurrencySetting();
+    }
+}
+
+/* ==============================
+   初始化（只留一個 DOMContentLoaded）
+================================ */
+document.addEventListener('DOMContentLoaded', () => {
+
+    // 側邊欄初始亮燈
+    const initialItem = document.querySelector('.nav-item[data-page="list"]');
+    if (initialItem) initialItem.classList.add('active');
+
+    // 匯率初始化
+    const setting = getCurrencySetting();
+    if (!setting.updatedAt || Date.now() - new Date(setting.updatedAt) > ONE_DAY) {
+        fetchLiveExchangeRates(setting.base || 'TWD');
+    }
+});
+</script>
+
 
 </html>

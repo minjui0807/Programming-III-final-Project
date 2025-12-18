@@ -23,6 +23,27 @@
             --sidebar-width: 250px;           /* 側邊欄寬度 */
             --sidebar-collapsed-width: 72px;  /* 側邊欄收合後寬度 */
 
+            --cat-1: #ff7f7f;
+            --cat-2: #ffcc66;
+            --cat-3: #a8f0c6;
+            --cat-4: #a7d7ff;
+            --cat-5: #ffb3cf;
+            --cat-6: #cf9cff;
+            --cat-7: #66ffcc;
+            --cat-8: #ff9c66;
+            --cat-9: #99ccff;
+            --cat-10: #d4d4d4;
+            --cat-11: #ffd1dc;
+            --cat-12: #ffe066;
+            --cat-13: #8affc1;
+            --cat-14: #8ed1ff;
+            --cat-15: #c9a7ff;
+            --cat-16: #ffb380;
+            --cat-17: #b3ffb3;
+            --cat-18: #b3d9ff;
+            --cat-19: #ffe6b3;
+            --cat-20: #ffadad;
+
             --deep-blue: #0f2640;     
             --mouse-x: 50%;                   /* 預設滑鼠 X 位置 */
             --mouse-y: 50%;                   /* 預設滑鼠 Y 位置 */
@@ -1208,6 +1229,66 @@
             '其他收入': ['紅包', '二手拍賣', '退稅']
         };
 
+        const CATEGORY_COLOR_MAP = {
+            expense: [
+                { id: 1, name: "餐飲", icon: "fas fa-utensils", color: "var(--cat-1)", sub: [
+                    { id: 101, name: "外食", icon: "fas fa-burger", color: "var(--cat-1)" },
+                    { id: 102, name: "飲品", icon: "fas fa-coffee", color: "var(--cat-1)" },
+                    { id: 103, name: "零食", icon: "fas fa-cookie-bite", color: "var(--cat-1)" },
+                ]},
+                { id: 2, name: "交通", icon: "fas fa-bus", color: "var(--cat-2)", sub: [
+                    { id: 201, name: "油資/充電", icon: "fas fa-gas-pump", color: "var(--cat-2)" },
+                    { id: 202, name: "公車/捷運", icon: "fas fa-subway", color: "var(--cat-2)" },
+                    { id: 203, name: "計程車", icon: "fas fa-taxi", color: "var(--cat-2)" },
+                ]},
+                { id: 3, name: "購物", icon: "fas fa-shopping-bag", color: "var(--cat-3)", sub: [
+                    { id: 301, name: "服飾", icon: "fas fa-shirt", color: "var(--cat-3)" },
+                    { id: 302, name: "日用品", icon: "fas fa-toilet-paper", color: "var(--cat-3)" },
+                    { id: 303, name: "3C 產品", icon: "fas fa-mobile-screen-button", color: "var(--cat-3)" },
+                ]},
+                { id: 4, name: "娛樂", icon: "fas fa-gamepad", color: "var(--cat-4)", sub: [
+                    { id: 401, name: "電影/展覽", icon: "fas fa-ticket", color: "var(--cat-4)" },
+                    { id: 402, name: "遊戲", icon: "fas fa-dice", color: "var(--cat-4)" },
+                    { id: 403, name: "旅遊", icon: "fas fa-plane", color: "var(--cat-4)" },
+                ]},
+                { id: 5, name: "居住", icon: "fas fa-home", color: "var(--cat-5)", sub: [
+                    { id: 501, name: "房租/房貸", icon: "fas fa-building-columns", color: "var(--cat-5)" },
+                    { id: 502, name: "水電瓦斯", icon: "fas fa-lightbulb", color: "var(--cat-5)" },
+                    { id: 503, name: "網路/電信", icon: "fas fa-signal", color: "var(--cat-5)" },
+                ]}
+            ],
+            income: [
+                { id: 6, name: "薪資", icon: "fas fa-money-check-alt", color: "var(--cat-6)", sub: [
+                    { id: 601, name: "月薪", icon: "fas fa-money-bill-wave", color: "var(--cat-6)" },
+                    { id: 602, name: "獎金", icon: "fas fa-hand-holding-dollar", color: "var(--cat-6)" },
+                    { id: 603, name: "兼職", icon: "fas fa-briefcase", color: "var(--cat-6)" },
+                ]},
+                { id: 7, name: "投資", icon: "fas fa-chart-line", color: "var(--cat-7)", sub: [
+                    { id: 701, name: "股息", icon: "fas fa-arrow-trend-up", color: "var(--cat-7)" },
+                    { id: 702, name: "基金收益", icon: "fas fa-vault", color: "var(--cat-7)" },
+                    { id: 703, name: "房產租金", icon: "fas fa-house-chimney-crack", color: "var(--cat-7)" },
+                ]},
+                { id: 8, name: "禮金", icon: "fas fa-gift", color: "var(--cat-8)", sub: [
+                    { id: 801, name: "紅包", icon: "fas fa-envelope", color: "var(--cat-8)" },
+                    { id: 802, name: "生日禮物", icon: "fas fa-cake-candles", color: "var(--cat-8)" },
+                    { id: 803, name: "贊助", icon: "fas fa-heart", color: "var(--cat-8)" },
+                ]},
+                { id: 9, name: "副業", icon: "fas fa-laptop-code", color: "var(--cat-9)", sub: [
+                    { id: 901, name: "稿費", icon: "fas fa-pen-nib", color: "var(--cat-9)" },
+                    { id: 902, name: "銷售", icon: "fas fa-store", color: "var(--cat-9)" },
+                    { id: 903, name: "服務費", icon: "fas fa-handshake", color: "var(--cat-9)" },
+                ]},
+                { id: 10, name: "其他", icon: "fas fa-ellipsis-h", color: "var(--cat-10)", sub: [
+                    { id: 1101, name: "退款", icon: "fas fa-undo", color: "var(--cat-10)" },
+                    { id: 1102, name: "意外收入", icon: "fas fa-meteor", color: "var(--cat-10)" },
+                    { id: 1103, name: "利息", icon: "fas fa-percent", color: "var(--cat-10)" },
+                ]}
+            ]
+
+        };
+
+
+
         // [JS] 1. 讀取與記帳頁面同步的分類資料
         function loadAppCategories() {
             const stored = localStorage.getItem('app_categories');
@@ -1806,28 +1887,10 @@
             } else {
                 const index = TRANSACTIONS.findIndex(t => t.id === id);
                 if (index !== -1) {
-
-                    // ⭐️ 同步主分類變更（關鍵）
-                    if (oldMainCat && oldMainCat !== mainCat) {
-                        TRANSACTIONS.forEach(t => {
-                            if (t.type === 'expense') {
-                                const tMain = (t.category || t.categoryText || '').split(' / ')[0];
-                                if (tMain === oldMainCat) {
-                                    const rest = (t.category || '').includes(' / ')
-                                        ? ' / ' + (t.category.split(' / ')[1] || '')
-                                        : '';
-                                    t.category = mainCat + rest;
-                                    t.categoryText = mainCat + rest;
-                                }
-                            }
-                        });
-                    }
-
                     TRANSACTIONS[index] = { ...TRANSACTIONS[index], ...newData };
                 }
             }
 
-            
             // 8. 存檔並更新畫面
             saveToLocalStorage();
             renderTransactionList();
@@ -2014,13 +2077,25 @@
                     const itemBaseTWD = parseFloat(t.amountTWD || t.baseAmount || 0);
                     const itemDisplay = itemBaseTWD * targetCurrency.rate;
 
+                    let type = t.type; // expense / income
+                    let mainCategory = (t.category || t.categoryText || '').split(' / ')[0];
+
+                    // 根據類型找對應的分類陣列
+                    const catList = CATEGORY_COLOR_MAP[type] || [];
+
+                    // 在分類陣列中找主分類
+                    const catItem = catList.find(c => c.name === mainCategory);
+
+                    // 取得顏色
+                    const color = catItem?.color || '#9E9E9E';
+
                     let displayCategory = t.category || t.categoryText || '未分類';
                     const isExp = t.type === 'expense';
 
                     card.className = `transaction-card ${isExp ? 'expense-border' : 'income-border'}`;
                     card.innerHTML = `
                         <div class="card-content">
-                            <div class="icon-section"><i class="${t.icon || 'fas fa-folder'}"></i></div>
+                            <div class="icon-section"><i class="${t.icon || 'fas fa-folder'}" style="color: ${color};"></i></div>
                             <div class="info-section">
                                 <div class="category-and-desc">
                                     <span class="category-tag ${isExp ? 'cat-expense' : 'cat-income'}">${displayCategory}</span>

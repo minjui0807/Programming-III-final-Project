@@ -45,14 +45,17 @@
             text-shadow: 0 0 5px var(--neon-blue), 0 0 10px var(--neon-blue);
             transition: text-shadow 0.3s;
         }
+        
         .neon-pink-text {
             text-shadow: 0 0 5px var(--neon-pink), 0 0 10px var(--neon-pink);
             transition: text-shadow 0.3s;
         }
+
         .neon-shadow {
             box-shadow: 0 0 10px rgba(167, 215, 255, 0.3), 0 0 20px rgba(167, 215, 255, 0.1);
             transition: box-shadow 0.3s;
         }
+
         /* Active 狀態按鈕的霓虹光暈 */
         .active-neon-glow {
             box-shadow: 0 0 8px var(--neon-blue), 0 0 15px var(--neon-blue)50;
@@ -842,18 +845,18 @@
         }
 
         .icon-category-header {
-            font-size: 1rem;
-            font-weight: bold;
-            color: var(--neon-yellow); 
-            padding: 10px 5px; 
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 12px;
+            border-radius: 8px;
             cursor: pointer;
-            display: flex; 
+            display: flex;
             justify-content: space-between;
             align-items: center;
-            user-select: none;
-            white-space: normal; 
-            word-break: break-word;
-            transition: all 0.3s ease;
+            margin-bottom: 5px;
+            font-size: 0.9em; /* 稍微縮小字體更精緻 */
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--neon-yellow);
+            font-weight: bolder;
         }
 
         .icon-category-header:hover {
@@ -869,23 +872,39 @@
         }
 
         .icon-category-content {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            padding: 10px 5px 15px;
-            overflow: hidden; 
-            max-height: 500px; 
-            transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+            display: flex;        /* 使用 Flex 佈局 */
+            flex-wrap: wrap;     /* 自動換行 */
+            gap: 10px;           /* 圖示之間的間距 */
+            padding: 10px;
+            transition: all 0.3s ease;
         }
 
         .icon-category.collapsed .icon-category-content {
-            max-height: 0;
-            padding-top: 0;
-            padding-bottom: 0;
+            display: none;
         }
 
         .icon-category.collapsed .toggle-icon {
             transform: rotate(180deg);
+        }
+
+        /* 4. 控制圖示的大小 (防止圖示失控變大) */
+        .icon-item {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem; /* 控制圖示符號的大小 */
+            transition: 0.2s;
+        }
+
+        .icon-item:hover {
+            background: var(--neon-blue);
+            color: var(--bg-dark);
+            transform: scale(1.1);
         }
 
         .icon-option {
@@ -933,6 +952,46 @@
             color: var(--neon-yellow);
             text-shadow: 0 0 12px var(--neon-yellow);
             transform: scale(1.1);
+        }
+
+        /* 箭頭旋轉動畫 */
+        .toggle-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .icon-category.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        /* 展開/收合按鈕容器 */
+        .toggle-all-btns {
+            display: flex;
+            gap: 15px;
+        }
+
+        /* 基礎按鈕樣式 */
+        .toggle-btn {
+            cursor: pointer;
+            font-size: 0.85em;
+            color: var(--text-dark);
+            transition: all 0.3s ease;
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid transparent;
+        }
+
+        /* 滑鼠滑過效果 */
+        .toggle-btn:hover {
+            color: var(--text-light);
+        }
+
+        /* ✨ Active 霓虹效果 */
+        .toggle-btn.active {
+            color: var(--neon-blue);
+            border-color: rgba(155, 228, 255, 0.3);
+            background: rgba(155, 228, 255, 0.1);
+            text-shadow: 0 0 8px var(--neon-blue);
+            box-shadow: inset 0 0 5px rgba(155, 228, 255, 0.2);
         }
         
         /* --------------------------- 動畫 --------------------------- */
@@ -1137,12 +1196,22 @@
                 </div>
 
                 <div class="modal-right-panel">
-                    <label><i class="fas fa-icons"></i> 選擇圖示 (可收合)</label>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <label style="margin-bottom: 0;"><i class="fas fa-icons"></i> 選擇圖示</label>
+                        <div class="toggle-all-btns">
+                            <span id="btn-expand-all"  class="toggle-btn active"  onclick="toggleAllIconCategories(true, this)">
+                                <i class="fas fa-expand-alt"></i> 全部展開
+                            </span>
+                            <span id="btn-collapse-all"  class="toggle-btn"  onclick="toggleAllIconCategories(false, this)">
+                                <i class="fas fa-compress-alt"></i> 全部收合
+                            </span>
+                        </div>
+                    </div>
                     
                     <div id="iconSelector" class="icon-selector-container">
                         
-            <div class="icon-category" id="cat-food-drink">
-                            <div class="icon-category-header" onclick="toggleIconCategory('cat-food-drink')">飲食 / 飲品 <i class="fas fa-chevron-up toggle-icon"></i></div>
+                        <div class="icon-category" id="cat-food-drink">
+                            <div class="icon-category-header" onclick="toggleIconCategory('cat-food-drink')">飲食 / 飲品 <i class="fas fa-chevron-down toggle-icon"></i></div>
                             <div class="icon-category-content">
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-utensils" checked><i class="fas fa-utensils"></i></label>
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-hamburger"><i class="fas fa-hamburger"></i></label>
@@ -1163,7 +1232,7 @@
                         </div>
                         
                         <div class="icon-category" id="cat-traffic-trip">
-                            <div class="icon-category-header" onclick="toggleIconCategory('cat-traffic-trip')">交通 / 旅行 <i class="fas fa-chevron-up toggle-icon"></i></div>
+                            <div class="icon-category-header" onclick="toggleIconCategory('cat-traffic-trip')">交通 / 旅行 <i class="fas fa-chevron-down toggle-icon"></i></div>
                             <div class="icon-category-content">
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-bus"><i class="fas fa-bus"></i></label>
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-car"><i class="fas fa-car"></i></label>
@@ -1184,7 +1253,7 @@
                         </div>
 
                         <div class="icon-category" id="cat-shopping">
-                            <div class="icon-category-header" onclick="toggleIconCategory('cat-shopping')">購物 / 消費 <i class="fas fa-chevron-up toggle-icon"></i></div>
+                            <div class="icon-category-header" onclick="toggleIconCategory('cat-shopping')">購物 / 消費 <i class="fas fa-chevron-down toggle-icon"></i></div>
                             <div class="icon-category-content">
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-shopping-bag"><i class="fas fa-shopping-bag"></i></label>
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-cart-shopping"><i class="fas fa-cart-shopping"></i></label>
@@ -1205,7 +1274,7 @@
                         </div>
 
                         <div class="icon-category" id="cat-fun-sport">
-                            <div class="icon-category-header" onclick="toggleIconCategory('cat-fun-sport')">娛樂 / 運動 <i class="fas fa-chevron-up toggle-icon"></i></div>
+                            <div class="icon-category-header" onclick="toggleIconCategory('cat-fun-sport')">娛樂 / 運動 <i class="fas fa-chevron-down toggle-icon"></i></div>
                             <div class="icon-category-content">
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-gamepad"><i class="fas fa-gamepad"></i></label>
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-film"><i class="fas fa-film"></i></label>
@@ -1226,12 +1295,12 @@
                         </div>
 
                         <div class="icon-category" id="cat-finance-invest">
-                            <div class="icon-category-header" onclick="toggleIconCategory('cat-finance-invest')">財務 / 投資 <i class="fas fa-chevron-up toggle-icon"></i></div>
+                            <div class="icon-category-header" onclick="toggleIconCategory('cat-finance-invest')">財務 / 投資 <i class="fas fa-chevron-down toggle-icon"></i></div>
                             <div class="icon-category-content">
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-money-bill-wave"><i class="fas fa-money-bill-wave"></i></label>
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-piggy-bank"><i class="fas fa-piggy-bank"></i></label>
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-hand-holding-dollar"><i class="fas fa-hand-holding-dollar"></i></label>
-                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-sack-dollar"><i class="fas fa-sack-dollar"></i></label>
+                                <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-money-check"><i class="fas fa-money-check"></i></label>
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-wallet"><i class="fas fa-wallet"></i></label>
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-chart-line"><i class="fas fa-chart-line"></i></label>
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-chart-pie"><i class="fas fa-chart-pie"></i></label>
@@ -1247,7 +1316,7 @@
                         </div>
 
                         <div class="icon-category" id="cat-medical-edu">
-                            <div class="icon-category-header" onclick="toggleIconCategory('cat-medical-edu')">醫療 / 教育 <i class="fas fa-chevron-up toggle-icon"></i></div>
+                            <div class="icon-category-header" onclick="toggleIconCategory('cat-medical-edu')">醫療 / 教育 <i class="fas fa-chevron-down toggle-icon"></i></div>
                             <div class="icon-category-content">
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-clinic-medical"><i class="fas fa-clinic-medical"></i></label>
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-user-md"><i class="fas fa-user-md"></i></label>
@@ -1268,7 +1337,7 @@
                         </div>
 
                         <div class="icon-category" id="cat-life-home">
-                            <div class="icon-category-header" onclick="toggleIconCategory('cat-life-home')">日常 / 居家 <i class="fas fa-chevron-up toggle-icon"></i></div>
+                            <div class="icon-category-header" onclick="toggleIconCategory('cat-life-home')">日常 / 居家 <i class="fas fa-chevron-down toggle-icon"></i></div>
                             <div class="icon-category-content">
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-home"><i class="fas fa-home"></i></label>
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-mobile-alt"><i class="fas fa-mobile-alt"></i></label>
@@ -1289,7 +1358,7 @@
                         </div>
 
                         <div class="icon-category" id="cat-work-office">
-                            <div class="icon-category-header" onclick="toggleIconCategory('cat-work-office')">工作 / 辦公 <i class="fas fa-chevron-up toggle-icon"></i></div>
+                            <div class="icon-category-header" onclick="toggleIconCategory('cat-work-office')">工作 / 辦公 <i class="fas fa-chevron-down toggle-icon"></i></div>
                             <div class="icon-category-content">
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-laptop"><i class="fas fa-laptop"></i></label>
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-desktop"><i class="fas fa-desktop"></i></label>
@@ -1310,7 +1379,7 @@
                         </div>
 
                         <div class="icon-category" id="cat-tech-tools">
-                            <div class="icon-category-header" onclick="toggleIconCategory('cat-tech-tools')">科技 / 工具 <i class="fas fa-chevron-up toggle-icon"></i></div>
+                            <div class="icon-category-header" onclick="toggleIconCategory('cat-tech-tools')">科技 / 工具 <i class="fas fa-chevron-down toggle-icon"></i></div>
                             <div class="icon-category-content">
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-tools"><i class="fas fa-tools"></i></label>
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-wrench"><i class="fas fa-wrench"></i></label>
@@ -1331,7 +1400,7 @@
                         </div>
 
                         <div class="icon-category" id="cat-misc">
-                            <div class="icon-category-header" onclick="toggleIconCategory('cat-misc')">其他 / 符號 <i class="fas fa-chevron-up toggle-icon"></i></div>
+                            <div class="icon-category-header" onclick="toggleIconCategory('cat-misc')">其他 / 符號 <i class="fas fa-chevron-down toggle-icon"></i></div>
                             <div class="icon-category-content">
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-star"><i class="fas fa-star"></i></label>
                                 <label class="icon-option"><input type="radio" name="icon-selector" value="fas fa-heart"><i class="fas fa-heart"></i></label>
@@ -1435,16 +1504,20 @@
             ];
 
             function getCurrencySetting() {
-                return JSON.parse(localStorage.getItem('app_currency')) || {
-                    base: 'TWD',
-                    symbol: 'NT$',
+                const saved = JSON.parse(localStorage.getItem('app_currency')) || {};
+
+                return {
+                    base: saved.base || 'TWD',
+                    symbol: saved.symbol || 'NT$',
                     rates: {
                         TWD: 1,
                         JPY: 4.6,
-                        USD: 0.032
+                        USD: 0.032,
+                        ...(saved.rates || {}) // ⭐️ 不存在也沒關係
                     }
                 };
             }
+
 
             // ---------- State ----------
             const today = new Date().toISOString().split('T')[0];
@@ -1771,7 +1844,7 @@
 
             // ---------- Modal (修正了 loadCategoryData() 的呼叫) ----------
             let pendingModalContext=null;
-            function openAddCategoryModal(ctx){ 
+            function openAddCategoryModal(ctx) { 
                 pendingModalContext = ctx;
                 addCategoryModal.style.display = 'block';
 
@@ -1781,7 +1854,32 @@
                 }
 
                 if(addCategoryNameInput) addCategoryNameInput.focus();
+
+                // ---------- 預覽區初始化 ----------
+                const previewCard = document.getElementById('categoryPreviewCard');
+                const previewName = document.getElementById('previewNameText');
+                const previewIcon = document.getElementById('previewIcon');
+                const colorHiddenInput = document.getElementById('selectedColorValue');
+                const colorPicker = document.getElementById('customColorPicker');
+
+                // 預設值
+                const defaultColor = '#ff7f7f';
+                const defaultIcon = 'fas fa-utensils';
+
+                if(previewCard) previewCard.style.borderLeftColor = defaultColor; // 左邊顏色條
+                if(previewName) previewName.textContent = '分類名稱'; // 預設文字
+                if(previewIcon) previewIcon.className = defaultIcon; // 預設圖示
+                if(colorHiddenInput) colorHiddenInput.value = defaultColor;
+                if(colorPicker) colorPicker.value = defaultColor;
+
+                // color swatches 初始化
+                const colorSwatches = document.querySelectorAll('.color-swatch');
+                if(colorSwatches.length){
+                    colorSwatches.forEach(s => s.classList.remove('active'));
+                    colorSwatches[0].classList.add('active'); // 預設選第一個顏色
+                }
             }
+
 
             function closeAddCategoryModal(){
                 if(addCategoryModal) addCategoryModal.style.display='none';
@@ -1800,15 +1898,27 @@
                     const arr=categoryData[pendingModalContext.type]||[];
                     if(arr.find(c=>c.name===name)) return alert('分類已存在！');
                     const newId=getNextId(arr);
-                    const colorHex='#ff7f7f';
-                    const rgb=hexToRgb(colorHex);
-                    arr.push({id:newId,name,icon,color:colorHex,colorRgb:`${rgb.r},${rgb.g},${rgb.b}`,sub:[]});
-                    categoryData[pendingModalContext.type]=arr;
+
+                    // ⭐️ 抓使用者選的顏色
+                    const colorHex = document.getElementById('selectedColorValue')?.value || '#ff7f7f';
+                    const rgb = hexToRgb(colorHex);
+
+                    arr.push({
+                        id: newId,
+                        name,
+                        icon,
+                        color: colorHex,           // 儲存使用者選的顏色
+                        colorRgb: `${rgb.r},${rgb.g},${rgb.b}`,
+                        sub: []
+                    });
+
+                    categoryData[pendingModalContext.type] = arr;
                     saveCategoryData(categoryData);
                     APP_CATEGORIES = categoryData; // 更新全局變數
                     renderPrimaryCategories();
                     selectPrimaryById(newId);
-                } else if(pendingModalContext.kind==='sub'){
+                }
+                else if(pendingModalContext.kind==='sub'){
                     const arr=categoryData[pendingModalContext.type]||[];
                     const prim=arr.find(p=>p.id==pendingModalContext.primaryId);
                     if(!prim) return alert('找不到主分類');
@@ -1848,9 +1958,21 @@
                 // 系統基準幣別
                 const { base, rates } = getCurrencySetting();
 
-                const baseAmount = currency === base
-                    ? amount
-                    : amount / (rates[currency] || 1);
+                let baseAmount;
+
+                // ⭐️ 情況 1：同幣別
+                if (currency === base) {
+                    baseAmount = amount;
+                }
+                // ⭐️ 情況 2：有匯率
+                else if (rates[currency]) {
+                    baseAmount = amount / rates[currency];
+                }
+                // ⭐️ 情況 3：沒有匯率（重點）
+                else {
+                    baseAmount = amount; // 👈 直接當作 base 幣
+                    console.warn(`No rate for ${currency}, fallback to baseAmount = amount`);
+                }
 
                 const categoryIconToUse=selectedSub?(selectedSub.icon||selectedPrimary.icon):selectedPrimary.icon;
                 const categoryObject={
@@ -1913,6 +2035,21 @@
                 if(colorPicker) colorPicker.addEventListener('input',e=>{colorSwatches.forEach(x=>x.classList.remove('active'));updatePreviewColor(e.target.value);});
                 iconRadios.forEach(r=>r.addEventListener('change',e=>{if(e.target.checked) previewIcon.className=e.target.value;}));
                 updatePreviewColor('#ff7f7f');
+
+                colorSwatches.forEach(s => s.addEventListener('click', ()=>{
+                    colorSwatches.forEach(x => x.classList.remove('active'));
+                    s.classList.add('active');
+                    const color = s.dataset.color;
+                    if(previewCard) previewCard.style.borderLeftColor = color;
+                    if(colorHiddenInput) colorHiddenInput.value = color;
+                    if(colorPicker) colorPicker.value = color;
+                }));
+                if(colorPicker) colorPicker.addEventListener('input', e=>{
+                    colorSwatches.forEach(x=>x.classList.remove('active'));
+                    const color = e.target.value;
+                    if(previewCard) previewCard.style.borderLeftColor = color;
+                    if(colorHiddenInput) colorHiddenInput.value = color;
+                });
             }
 
             // ---------- URL type (不變) ----------
@@ -1934,6 +2071,49 @@
             localStorage.setItem('receiptImages', JSON.stringify(map));
             return key;
         }
+    </script>
+
+    <script>
+        /**
+         * 切換單一圖示類別收合狀態
+         */
+        function toggleIconCategory(catId) {
+            const catElement = document.getElementById(catId);
+            if (catElement) {
+                catElement.classList.toggle('collapsed');
+            }
+        }
+
+        /**
+         * 批次展開或收合所有類別，並處理按鈕 Active 效果
+         * @param {boolean} isOpen - true 為展開, false 為收合
+         * @param {HTMLElement} element - 被點擊的按鈕元素
+         */
+        function toggleAllIconCategories(isOpen, element) {
+            // 1. 切換所有分類的收合狀態
+            const categories = document.querySelectorAll('.icon-category');
+            categories.forEach(cat => {
+                if (isOpen) {
+                    cat.classList.remove('collapsed');
+                } else {
+                    cat.classList.add('collapsed');
+                }
+            });
+
+            // 2. 切換按鈕的 Active 效果
+            // 先移除同容器內所有按鈕的 active
+            const parent = element.parentElement;
+            parent.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+            
+            // 給當前點擊的按鈕加上 active
+            element.classList.add('active');
+        }
+
+        // 選擇性：如果你希望每次打開 Modal 時預設是收合的，可以加在 openAddCategoryModal 裡
+        // function openAddCategoryModal(ctx) {
+        //     toggleAllIconCategories(false); // 打開時預設收合
+        //     ...
+            // }
     </script>
 
 </html>

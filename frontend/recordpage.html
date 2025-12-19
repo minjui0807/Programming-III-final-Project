@@ -1500,7 +1500,8 @@
             const CURRENCIES = [
                 { code: 'TWD', rate: 1.0 },
                 { code: 'JPY', rate: 4.6 },
-                { code: 'USD', rate: 0.032 }
+                { code: 'USD', rate: 0.032 },
+                { code: 'EUR', rate: 0.029 }
             ];
 
             function getCurrencySetting() {
@@ -1513,6 +1514,7 @@
                         TWD: 1,
                         JPY: 4.6,
                         USD: 0.032,
+                        EUR: 0.029,
                         ...(saved.rates || {}) // ⭐️ 不存在也沒關係
                     }
                 };

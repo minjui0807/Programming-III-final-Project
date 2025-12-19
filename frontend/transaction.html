@@ -1926,6 +1926,14 @@
 
         // ======================================================
 
+        function getCategoryColor(type, mainCategory) {
+            const categoryData = JSON.parse(localStorage.getItem('categoryData')) || {};
+            const list = categoryData[type] || [];
+            const found = list.find(c => c.name === mainCategory);
+            return found?.color || '#9E9E9E';
+        }
+
+
         function renderTransactionList(list = TRANSACTIONS) {
             const listContainer = document.getElementById('transactionList');
             if (!listContainer) return;
@@ -1940,7 +1948,8 @@
             const CURRENCIES = [
                 { code: 'TWD', rate: 1.0 },
                 { code: 'JPY', rate: 4.6 },
-                { code: 'USD', rate: 0.032 }
+                { code: 'USD', rate: 0.032 },
+                { code: 'EUR', rate: 0.029 }
             ];
             const targetCurrency = CURRENCIES.find(c => c.code === targetCurrencyCode) || CURRENCIES[0];
 
@@ -2080,14 +2089,7 @@
                     let type = t.type; // expense / income
                     let mainCategory = (t.category || t.categoryText || '').split(' / ')[0];
 
-                    // 根據類型找對應的分類陣列
-                    const catList = CATEGORY_COLOR_MAP[type] || [];
-
-                    // 在分類陣列中找主分類
-                    const catItem = catList.find(c => c.name === mainCategory);
-
-                    // 取得顏色
-                    const color = catItem?.color || '#9E9E9E';
+                    const color = getCategoryColor(type, mainCategory);
 
                     let displayCategory = t.category || t.categoryText || '未分類';
                     const isExp = t.type === 'expense';

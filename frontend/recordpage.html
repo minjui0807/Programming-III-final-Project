@@ -1076,6 +1076,12 @@
                     <option value="USD">USD</option>
                     <option value="JPY">JPY</option>
                     <option value="EUR">EUR</option>
+                    <option value="HKD">HKD</option>
+                    <option value="CNY">CNY</option>
+                    <option value="GBP">GBP</option>
+                    <option value="AUD">AUD</option>
+                    <option value="KRW">KRW</option>
+                    <option value="SGD">SGD</option>
                 </select>
             </div>
 
@@ -1499,9 +1505,15 @@
 
             const CURRENCIES = [
                 { code: 'TWD', rate: 1.0 },
-                { code: 'JPY', rate: 4.6 },
                 { code: 'USD', rate: 0.032 },
-                { code: 'EUR', rate: 0.029 }
+                { code: 'JPY', rate: 4.6 },
+                { code: 'EUR', rate: 0.029 },
+                { code: 'HKD', rate: 0.24 },
+                { code: 'CNY', rate: 0.22 },
+                { code: 'GBP', rate: 0.024 },
+                { code: 'AUD', rate: 0.046 },
+                { code: 'KRW', rate: 41.5 },
+                { code: 'SGD', rate: 0.041 },
             ];
 
             function getCurrencySetting() {
@@ -1511,10 +1523,16 @@
                     base: saved.base || 'TWD',
                     symbol: saved.symbol || 'NT$',
                     rates: {
-                        TWD: 1,
-                        JPY: 4.6,
-                        USD: 0.032,
-                        EUR: 0.029,
+                        TWD:1,
+                        USD:0.032,
+                        JPY:4.6,
+                        EUR:0.029,
+                        HKD:0.24,
+                        CNY:0.22,
+                        GBP:0.024,
+                        AUD:0.046,
+                        KRW:41.5,
+                        SGD:0.041,
                         ...(saved.rates || {}) // ⭐️ 不存在也沒關係
                     }
                 };
@@ -1700,10 +1718,16 @@
                 document.querySelectorAll('.amount[data-currency]').forEach(el => {
                     const currency = el.dataset.currency;
                     const symbolMap = {
-                        TWD: 'NT$',
-                        USD: '$',
-                        JPY: '¥',
-                        EUR: '€'
+                        TWD:'NT$',
+                        USD:'$',
+                        JPY:'¥',
+                        EUR:'€',
+                        HKD:'HK$',
+                        CNY:'¥',
+                        GBP:'£',
+                        AUD:'A$',
+                        KRW:'₩',
+                        SGD:'S$'
                     };
                     el.querySelector('.currency-symbol').textContent =
                         symbolMap[currency] || currency;
@@ -1950,47 +1974,37 @@
             // ---------- Form submit (不變) ----------
             function onRecordFormSubmit(e){
                 e.preventDefault();
-                const amount = Number(amountInput?.value || 0);
-                if (!amount || amount <= 0) return alert('請輸入有效金額！');
+                const amountInputValue = Number(amountInput?.value || 0);
+                if (!amountInputValue || amountInputValue <= 0) return alert('請輸入有效金額！');
                 if(!selectedPrimary) return alert('請選擇主分類！');
 
-                // 使用者當下幣別（record page 自己選的）
-                const currency = document.getElementById('currencySelect')?.value || 'TWD';
+                // 1️⃣ 使用設定頁的幣別，而不是表單初始
+                const currencySetting = getCurrencySetting();
+                const currency = currencySetting.base || 'TWD'; // 依設定頁幣別
+                const rates = currencySetting.rates;
 
-                // 系統基準幣別
-                const { base, rates } = getCurrencySetting();
-
-                let baseAmount;
-
-                // ⭐️ 情況 1：同幣別
-                if (currency === base) {
-                    baseAmount = amount;
-                }
-                // ⭐️ 情況 2：有匯率
-                else if (rates[currency]) {
-                    baseAmount = amount / rates[currency];
-                }
-                // ⭐️ 情況 3：沒有匯率（重點）
-                else {
-                    baseAmount = amount; // 👈 直接當作 base 幣
-                    console.warn(`No rate for ${currency}, fallback to baseAmount = amount`);
+                // 2️⃣ 將使用者輸入金額 (amountInput.value) 轉換成基準幣別
+                let baseAmount = amountInputValue;
+                if (currency !== 'TWD' && rates[currency]) {
+                    baseAmount = amountInputValue / rates[currency]; // 轉成 TWD
                 }
 
-                const categoryIconToUse=selectedSub?(selectedSub.icon||selectedPrimary.icon):selectedPrimary.icon;
-                const categoryObject={
-                    primary:{id:selectedPrimary.id,name:selectedPrimary.name,icon:selectedPrimary.icon,color:selectedPrimary.color},
-                    sub:selectedSub?{id:selectedSub.id,name:selectedSub.name,icon:categoryIconToUse}:null
+                const categoryIconToUse = selectedSub ? (selectedSub.icon || selectedPrimary.icon) : selectedPrimary.icon;
+                const categoryObject = {
+                    primary: { id:selectedPrimary.id, name:selectedPrimary.name, icon:selectedPrimary.icon, color:selectedPrimary.color },
+                    sub: selectedSub ? { id:selectedSub.id, name:selectedSub.name, icon: categoryIconToUse } : null
                 };
-                const categoryText=selectedSub?`${selectedPrimary.name} / ${selectedSub.name}`:selectedPrimary.name;
-                const description=(descriptionInput?.value?.trim())||'無備註';
-                const transactions=loadTransactions();
-                const newId=getNextId(transactions);
+                const categoryText = selectedSub ? `${selectedPrimary.name} / ${selectedSub.name}` : selectedPrimary.name;
+                const description = (descriptionInput?.value?.trim()) || '無備註';
+
+                const transactions = loadTransactions();
+                const newId = getNextId(transactions);
                 const newTransaction = {
                     id: newId,
                     type: selectedType,
-                    amount,          // 原始輸入
-                    currency,        // 原始幣別
-                    baseAmount,      // ⭐️ 唯一計算用
+                    amount: amountInputValue,     // 使用者輸入金額
+                    currency,                     // 設定頁幣別
+                    baseAmount,                   // 換算成 TWD
                     date: dateInput?.value || today,
                     categoryText,
                     categoryObject,
@@ -2003,8 +2017,9 @@
                 saveTransactions(transactions);
                 localStorage.setItem('lastTransactionUpdate', Date.now());
 
+                // 提示
                 if(resultDisplay){
-                    resultDisplay.innerHTML=`<h3>🎉 新增成功</h3> 分類: ${escapeHtml(categoryText)} 金額: ${amount}`;
+                    resultDisplay.innerHTML=`<h3>🎉 新增成功</h3> 分類: ${escapeHtml(categoryText)} 金額: ${amountInputValue} ${currency}`;
                     resultDisplay.style.display='block';
                     setTimeout(()=>{resultDisplay.style.display='none'},1200);
                 }

@@ -424,9 +424,8 @@
 
 </body>
 
-    
     <script>
-        // 🔴 全域圖表字體與顏色設定
+        // 🔹 全域圖表字體與顏色設定
         Chart.defaults.font.size = 14;
         Chart.defaults.color = '#e6e6e6';
 
@@ -435,72 +434,104 @@
 
         const CATEGORY_COLORS = {
             expense: [
-                { id: 1, name: "餐飲", icon: "fas fa-utensils", color: "var(--cat-1)", sub: []},
-                { id: 2, name: "交通", icon: "fas fa-bus", color: "var(--cat-2)", sub: []},
-                { id: 3, name: "購物", icon: "fas fa-shopping-bag", color: "var(--cat-3)", sub: []},
-                { id: 4, name: "娛樂", icon: "fas fa-gamepad", color: "var(--cat-4)", sub: []},
-                { id: 5, name: "居住", icon: "fas fa-home", color: "var(--cat-5)", sub: []}
+                { id: 1, name: "餐飲", icon: "fas fa-utensils", color: "var(--cat-1)" },
+                { id: 2, name: "交通", icon: "fas fa-bus", color: "var(--cat-2)" },
+                { id: 3, name: "購物", icon: "fas fa-shopping-bag", color: "var(--cat-3)" },
+                { id: 4, name: "娛樂", icon: "fas fa-gamepad", color: "var(--cat-4)" },
+                { id: 5, name: "居住", icon: "fas fa-home", color: "var(--cat-5)" }
             ],
             income: [
-                { id: 6, name: "薪資", icon: "fas fa-money-check-alt", color: "var(--cat-6)", sub: []},
-                { id: 7, name: "投資", icon: "fas fa-chart-line", color: "var(--cat-7)", sub: []},
-                { id: 8, name: "禮金", icon: "fas fa-gift", color: "var(--cat-8)", sub: []},
-                { id: 9, name: "副業", icon: "fas fa-laptop-code", color: "var(--cat-9)", sub: []},
-                { id: 10, name: "其他", icon: "fas fa-ellipsis-h", color: "var(--cat-10)", sub: []}
+                { id: 6, name: "薪資", icon: "fas fa-money-check-alt", color: "var(--cat-6)" },
+                { id: 7, name: "投資", icon: "fas fa-chart-line", color: "var(--cat-7)" },
+                { id: 8, name: "禮金", icon: "fas fa-gift", color: "var(--cat-8)" },
+                { id: 9, name: "副業", icon: "fas fa-laptop-code", color: "var(--cat-9)" },
+                { id: 10, name: "其他", icon: "fas fa-ellipsis-h", color: "var(--cat-10)" }
             ]
         };
 
-        // 🌈 自動解析 CSS 變數並建立名稱對應表
-        function getCategoryMap() {
+        // 🌈 將 CSS 變數轉為實際顏色
+        function getCategoryColorMap() {
+            const raw = localStorage.getItem('categoryData');
             const map = {};
-            const allCats = [...CATEGORY_COLORS.expense, ...CATEGORY_COLORS.income];
-            
-            allCats.forEach(cat => {
-                // 抓取 CSS 變數的實際顏色 (例如將 var(--cat-1) 轉為 #ff7f7f)
-                // 如果抓不到，就直接用字串本身
-                const resolvedColor = getComputedStyle(document.documentElement)
-                    .getPropertyValue(cat.color.replace('var(', '').replace(')', '')).trim() || cat.color;
-                
-                map[cat.name] = {
-                    color: resolvedColor,
-                    icon: cat.icon
-                };
-            });
+
+            if (!raw) return map;
+
+            try {
+                const data = JSON.parse(raw);
+                ['expense','income'].forEach(type => {
+                    (data[type] || []).forEach(main => {
+                        // 主分類
+                        map[main.name] = {
+                            color: resolveCssColor(main.color),
+                            icon: main.icon
+                        };
+                        // 子分類
+                        (main.sub || []).forEach(sub => {
+                            map[sub.name] = {
+                                color: resolveCssColor(sub.color || main.color),
+                                icon: sub.icon
+                            };
+                        });
+                    });
+                });
+            } catch(e){}
+
             return map;
         }
 
-        const COLOR_MAP = getCategoryMap();
+        function resolveCssColor(color) {
+            if (!color) return '#e6e6e6';
+            if (!color.startsWith('var(')) return color;
 
-        // 預設顏色（如果分類不在名單內）
+            const varName = color.replace('var(', '').replace(')', '');
+            return getComputedStyle(document.documentElement)
+                .getPropertyValue(varName).trim() || '#e6e6e6';
+        }
+
+
+        const COLOR_MAP = getCategoryColorMap();
         const DEFAULT_COLOR = '#e6e6e6';
 
-        // ---------- 貨幣與匯率邏輯 ----------
+        // 🔹 幣別符號對照表
+        const CURRENCY_SYMBOLS = {
+            TWD: 'NT$',
+            USD: '$',
+            JPY: 'JP¥',
+            EUR: '€',
+            HKD: 'HK$',
+            CNY: 'CN¥',
+            GBP: '£',
+            AUD: 'A$',
+            KRW: '₩',
+            SGD: 'S$'
+        };
+
+        // ---------- 幣別設定 ----------
         function getCurrencyConfig() {
             const stored = localStorage.getItem(CURRENCY_KEY);
-            if (!stored) return { symbol: '$', base: 'TWD' };
-            try { return JSON.parse(stored); } catch(e) { return { symbol: '$', base: 'TWD' }; }
+            let base = 'TWD'; // 預設幣別
+            if (stored) {
+                try {
+                    const parsed = JSON.parse(stored);
+                    base = parsed.base || 'TWD';
+                } catch(e) { /* 若解析失敗，使用預設 */ }
+            }
+            const symbol = CURRENCY_SYMBOLS[base] || '$'; // 🔹 根據表格取符號
+            return { base, symbol };
         }
 
-        function getExchangeRate(targetCurrency) {
-            // 這裡定義匯率，基準為 TWD (1)
-            // 你也可以根據需求調整這些數值
-            const rates = {
-'               TWD': 1.0,
-                'USD': 0.032,
-                'JPY': 4.6,
-                'EUR': 0.029
-            };
-            return rates[targetCurrency] || 1;
+        const FIXED_RATES = { TWD:1, USD:0.032, JPY:4.6, EUR:0.029, HKD:0.24, CNY:0.22, GBP:0.024, AUD:0.046, KRW:41.5, SGD:0.041 };
+
+        function getExchangeRate(currencyBase) {
+            return FIXED_RATES[currencyBase] || 1;
         }
 
-        // 取得轉換後的金額
         function getConvertedAmount(t, rate) {
-            // 如果有原始金額 baseAmount 就用它，沒有就用 amount
             const originalVal = parseFloat(t.baseAmount || t.amount) || 0;
             return originalVal * rate;
         }
 
-        // ---------- 核心初始化 ----------
+        // ---------- 標籤切換 ----------
         function switchTab(tabName) {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
@@ -556,7 +587,7 @@
 
             TRANSACTIONS.forEach(t => {
                 const amt = getConvertedAmount(t, rate);
-                let cat = (t.category || t.categoryText || '未分類').split(' / ')[0];
+                const cat = (t.category || t.categoryText || '未分類').split(' / ')[0];
                 const date = t.date;
 
                 if (t.type === 'income') {
@@ -576,105 +607,45 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: { 
-                    legend: { 
-                        position: 'bottom', 
-                        labels: { color: '#e6e6e6', font: { size: 12 } } 
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.label}: ${symbol}${context.raw.toLocaleString()}`;
-                            }
-                        }
-                    }
+                    legend: { position: 'bottom', labels: { color: '#e6e6e6', font: { size: 12 } } },
+                    tooltip: { callbacks: { label: context => `${context.label}: ${symbol}${context.raw.toLocaleString()}` } }
                 }
             };
 
-            const expLabels = Object.keys(expMap);
-            const expColors = expLabels.map(label => COLOR_MAP[label]?.color || DEFAULT_COLOR);
-
-            // 支出圓餅圖
+            // 支出圓餅
             new Chart(document.getElementById('expensePieChart'), {
                 type: 'doughnut',
-                data: {
-                    labels: expLabels,
-                    datasets: [{
-                        data: Object.values(expMap),
-                        backgroundColor: expColors, // 使用動態生成的顏色陣列
-                        borderWidth: 0
-                    }]
-                },
+                data: { labels: Object.keys(expMap), datasets: [{ data: Object.values(expMap), backgroundColor: Object.keys(expMap).map(l=>COLOR_MAP[l]?.color||DEFAULT_COLOR), borderWidth: 0 }] },
                 options: commonOptions
             });
 
-            // 收入圓餅圖同理
-            const incLabels = Object.keys(incMap);
-            const incColors = incLabels.map(label => COLOR_MAP[label]?.color || DEFAULT_COLOR);   
-                     
+            // 收入圓餅
             new Chart(document.getElementById('incomePieChart'), {
                 type: 'doughnut',
-                data: {
-                    labels: incLabels,
-                    datasets: [{
-                        data: Object.values(incMap),
-                        backgroundColor: incColors,
-                        borderWidth: 0
-                    }]
-                },
+                data: { labels: Object.keys(incMap), datasets: [{ data: Object.values(incMap), backgroundColor: Object.keys(incMap).map(l=>COLOR_MAP[l]?.color||DEFAULT_COLOR), borderWidth: 0 }] },
                 options: commonOptions
             });
 
-            // 收支趨勢 (折線圖)
             const sortedDates = Object.keys(dateMap).sort();
+
+            // 收支趨勢折線圖
             new Chart(document.getElementById('trendChart'), {
                 type: 'line',
-                data: {
+                data: { 
                     labels: sortedDates,
                     datasets: [
-                        {
-                            label: '收入',
-                            data: sortedDates.map(d => dateMap[d].inc),
-                            borderColor: '#a7d7ff',
-                            backgroundColor: '#a7d7ff',
-                            borderWidth: 3,
-                            tension: 0.3
-                        },
-                        {
-                            label: '支出',
-                            data: sortedDates.map(d => dateMap[d].exp),
-                            borderColor: '#ffb3cf',
-                            backgroundColor: '#ffb3cf',
-                            borderWidth: 3,
-                            tension: 0.3
-                        }
+                        { label: '收入', data: sortedDates.map(d=>dateMap[d].inc), borderColor:'#a7d7ff', backgroundColor:'#a7d7ff', borderWidth:3, tension:0.3 },
+                        { label: '支出', data: sortedDates.map(d=>dateMap[d].exp), borderColor:'#ffb3cf', backgroundColor:'#ffb3cf', borderWidth:3, tension:0.3 }
                     ]
                 },
-                options: {
-                    ...commonOptions,
-                    scales: {
-                        y: { ticks: { callback: value => symbol + value.toLocaleString() } }
-                    }
-                }
+                options: { ...commonOptions, scales:{ y:{ ticks:{ callback: value => symbol + value.toLocaleString() } } } }
             });
 
-            // 收支對比 (長條圖)
+            // 收支對比長條圖
             new Chart(document.getElementById('balanceBarChart'), {
                 type: 'bar',
-                data: {
-                    labels: ['總收入', '總支出'],
-                    datasets: [{
-                        data: [totalInc, totalExp],
-                        backgroundColor: ['rgba(167, 215, 255, 0.8)', 'rgba(255, 179, 207, 0.8)'],
-                        borderRadius: 8
-                    }]
-                },
-                options: {
-                    ...commonOptions,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { ticks: { callback: value => symbol + value.toLocaleString() } }
-                    }
-                }
+                data: { labels:['總收入','總支出'], datasets:[{ data:[totalInc,totalExp], backgroundColor:['rgba(167,215,255,0.8)','rgba(255,179,207,0.8)'], borderRadius:8 }] },
+                options: { ...commonOptions, plugins:{ legend:{ display:false } }, scales:{ y:{ ticks:{ callback: value => symbol + value.toLocaleString() } } } }
             });
         }
 
@@ -682,17 +653,12 @@
             const renderList = (dataList, containerId, fallbackColor) => {
                 const container = document.getElementById(containerId);
                 container.innerHTML = '';
-                
-                if (dataList.length === 0) {
-                    container.innerHTML = '<li style="text-align:center;color:#666;padding:20px;">無資料</li>';
-                    return;
-                }
+                if(dataList.length===0){ container.innerHTML='<li style="text-align:center;color:#666;padding:20px;">無資料</li>'; return; }
 
-                const total = dataList.reduce((sum, item) => sum + item.amount, 0);
+                const total = dataList.reduce((sum, item)=>sum+item.amount,0);
 
-                dataList.slice(0, 5).forEach(item => {
-                    const percent = total > 0 ? ((item.amount / total) * 100).toFixed(1) : 0;
-                    // 🌟 這裡就是關鍵：優先找分類顏色，找不到才用預設色
+                dataList.slice(0,5).forEach(item=>{
+                    const percent = total>0?((item.amount/total)*100).toFixed(1):0;
                     const catStyle = COLOR_MAP[item.name] || { color: DEFAULT_COLOR };
                     const displayColor = catStyle.color !== DEFAULT_COLOR ? catStyle.color : fallbackColor;
                     const li = document.createElement('li');
@@ -707,8 +673,8 @@
                                 <span class="rank-percent">${percent}%</span>
                             </div>
                         </div>
-                        <div class="rank-amount" style="color: ${displayColor}; text-shadow: 0 0 8px ${displayColor}80;">
-                            ${symbol}${item.amount.toLocaleString(undefined, {maximumFractionDigits: 0})}
+                        <div class="rank-amount" style="color:${displayColor}; text-shadow:0 0 8px ${displayColor}80;">
+                            ${symbol}${item.amount.toLocaleString(undefined,{maximumFractionDigits:0})}
                         </div>
                     `;
                     container.appendChild(li);
@@ -718,32 +684,24 @@
             const incMap = {};
             const expMap = {};
 
-            TRANSACTIONS.forEach(t => {
+            TRANSACTIONS.forEach(t=>{
                 const amt = getConvertedAmount(t, rate);
-                let cat = (t.category || t.categoryText || '未分類').split(' / ')[0];
+                const cat = (t.category || t.categoryText || '未分類').split(' / ')[0];
                 const icon = t.icon || 'fas fa-circle';
-
-                if (t.type === 'income') {
-                    if (!incMap[cat]) incMap[cat] = { amount: 0, icon: icon };
-                    incMap[cat].amount += amt;
-                } else {
-                    if (!expMap[cat]) expMap[cat] = { amount: 0, icon: icon };
-                    expMap[cat].amount += amt;
-                }
+                if(t.type==='income'){ if(!incMap[cat]) incMap[cat]={amount:0,icon:icon}; incMap[cat].amount+=amt; }
+                else{ if(!expMap[cat]) expMap[cat]={amount:0,icon:icon}; expMap[cat].amount+=amt; }
             });
 
-            const incList = Object.keys(incMap).map(k => ({ name: k, ...incMap[k] })).sort((a,b) => b.amount - a.amount);
-            const expList = Object.keys(expMap).map(k => ({ name: k, ...expMap[k] })).sort((a,b) => b.amount - a.amount);
+            const incList = Object.keys(incMap).map(k=>({ name:k, ...incMap[k]})).sort((a,b)=>b.amount-a.amount);
+            const expList = Object.keys(expMap).map(k=>({ name:k, ...expMap[k]})).sort((a,b)=>b.amount-a.amount);
 
-            renderList(incList, 'incomeRanking', 'var(--neon-blue)'); 
-            renderList(expList, 'expenseRanking', 'var(--neon-pink)');
+            renderList(incList,'incomeRanking','var(--neon-blue)');
+            renderList(expList,'expenseRanking','var(--neon-pink)');
         }
 
-        // ⭐️ 監聽幣別切換事件
-        window.addEventListener('storage', (e) => {
-            if (e.key === CURRENCY_KEY) {
-                location.reload(); // 報表頁邏輯較多，直接刷新是最穩定的作法
-            }
+        // ⭐️ 監聽幣別變更
+        window.addEventListener('storage', (e)=>{
+            if(e.key===CURRENCY_KEY) location.reload();
         });
     </script>
 

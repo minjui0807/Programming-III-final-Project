@@ -1,211 +1,180 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡️ 數據核心：LumiTrack系統</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚡️ 數據核心：LumiTrack系統</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    /* --------------------------- 全域變數 --------------------------- */
+    :root {
+        --bg-dark: #0f1115;
+        --bg-secondary: #1e1e1e;
+        --neon-blue: #a7d7ff;
+        --neon-pink: #ffb3cf;
+        --neon-green: #a8f0c6;
+        --neon-yellow: #fff1a6;
+        --text-light: #e6e6e6;
+        --text-dark: #b8b8b8;
+        --gray-default: #d8d8d8;
+        --sidebar-width: 200px;
+        --sidebar-collapsed-width: 72px;
+        --border-color: #2a2a2a;
 
-    <style>
-        /* --------------------------- 全域變數 --------------------------- */
-        :root{
-            --bg-dark: #0f1115;
-            --bg-secondary: #1e1e1e;
-            --neon-blue: #a7d7ff;
-            --neon-pink: #ffb3cf;
-            --neon-green: #a8f0c6;
-            --neon-yellow: #fff1a6;
-            --text-light: #e6e6e6;
-            --text-dark: #b8b8b8;
-            --gray-default: #d8d8d8;
-            --sidebar-width: 200px;
-            --sidebar-collapsed-width: 72px;
-            --border-color: #2a2a2a;
-        }
+        /* 分類顏色 */
+        --cat-1: #ff7f7f; --cat-2: #ffcc66; --cat-3: #a8f0c6; --cat-4: #a7d7ff;
+        --cat-5: #ffb3cf; --cat-6: #cf9cff; --cat-7: #66ffcc; --cat-8: #ff9c66;
+        --cat-9: #99ccff; --cat-10: #d4d4d4; --cat-11: #ffd1dc; --cat-12: #ffe066;
+        --cat-13: #8affc1; --cat-14: #8ed1ff; --cat-15: #c9a7ff; --cat-16: #ffb380;
+        --cat-17: #b3ffb3; --cat-18: #b3d9ff; --cat-19: #ffe6b3; --cat-20: #ffadad;
+    }
 
-        /* 隱藏所有捲軸但保留捲動功能 */
-        * {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        *::-webkit-scrollbar {
-            display: none;
-            width: 0 !important;
-            height: 0 !important;
-        }
+    /* --------------------------- 霓虹光暈 --------------------------- */
+    .neon-text { text-shadow:0 0 5px var(--neon-blue),0 0 10px var(--neon-blue); transition: text-shadow 0.3s; }
+    .neon-pink-text { text-shadow:0 0 5px var(--neon-pink),0 0 10px var(--neon-pink); transition: text-shadow 0.3s; }
+    .neon-shadow { box-shadow:0 0 10px rgba(167,215,255,0.3),0 0 20px rgba(167,215,255,0.1); transition: box-shadow 0.3s; }
+    .active-neon-glow { box-shadow:0 0 8px var(--neon-blue),0 0 15px rgba(167,215,255,0.5); border-color: var(--neon-blue)!important; }
 
-        body{
-            margin:0;
-            padding:0;
-            background: var(--bg-dark);
-            color: var(--text-light);
-            font-family: 'Noto Sans TC', 'Poppins', sans-serif;
-            display:flex;
-            min-height: 100vh;
-            overflow: hidden;
-        }
+    /* --------------------------- 滾動條隱藏 --------------------------- */
+    html, body, * {
+        -ms-overflow-style:none;
+        scrollbar-width:none;
+    }
+    *::-webkit-scrollbar { display:none; width:0; height:0; }
 
-        /* --------------------------- 側邊欄 --------------------------- */
-        .app-sidebar{
-            width: var(--sidebar-width);
-            min-width: var(--sidebar-width);
-            background: rgba(10,12,18,0.7);
-            backdrop-filter: blur(8px);
-            padding: 16px 12px;
-            display:flex;
-            flex-direction: column;
-            gap: 12px;
-            border-right: 1px solid rgba(255,255,255,0.04);
-            transition: width .28s ease;
-            height: 100vh;
-            position: sticky;
-            top:0;
-            z-index: 100;
-        }
+    /* --------------------------- 基礎版面 --------------------------- */
+    body {
+        margin:0;
+        padding:0;
+        background: var(--bg-dark);
+        color: var(--text-light);
+        font-family:'Noto Sans TC','Poppins','微軟正黑體',sans-serif;
+        display:flex;
+        min-height:100vh;
+        overflow:hidden;
+    }
 
-        .app-sidebar.collapsed{
-            width: var(--sidebar-collapsed-width);
-            min-width: var(--sidebar-collapsed-width);
-        }
+    /* --------------------------- 側邊欄 --------------------------- */
+    .app-sidebar {
+        width: var(--sidebar-width);
+        min-width: var(--sidebar-width);
+        background: rgba(10,12,18,0.7);
+        backdrop-filter: blur(8px);
+        padding: 16px 12px;
+        display:flex;
+        flex-direction: column;
+        gap: 12px;
+        border-right: 1px solid rgba(255,255,255,0.04);
+        transition: width 0.28s ease;
+        height: 100vh;
+        position: sticky;
+        top:0;
+    }
+    .app-sidebar.collapsed { width: var(--sidebar-collapsed-width); min-width: var(--sidebar-collapsed-width); }
 
-        .sidebar-toggle{
-            background: transparent;
-            border: none;
-            color: var(--text-light);
-            padding: 8px;
-            cursor: pointer;
-            align-self: flex-end;
-            transition: color 0.3s;
-        }
-        .sidebar-toggle:hover { color: var(--neon-blue); }
+    .sidebar-toggle {
+        background: transparent;
+        border: none;
+        color: var(--text-light);
+        padding: 8px;
+        cursor: pointer;
+        align-self: flex-end;
+    }
 
-        .sidebar-brand{
-            display:flex;
-            align-items:center;
-            gap:10px;
-            padding: 6px 8px;
-        }
+    /* LOGO */
+    .sidebar-brand {
+        display:flex;
+        align-items:center;
+        gap:10px;
+        padding:6px 8px;
+    }
+    .brand-mark { width:36px; height:36px; display:flex; align-items:center; justify-content:center; background:linear-gradient(90deg,var(--neon-blue), #7ee0ff20); border-radius:8px; }
+    .brand-text { font-size:1rem; color: var(--neon-blue); font-weight:700; text-shadow:0 0 20px #8fd3ff; }
 
-        .brand-mark{
-            width:36px; height:36px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            background: linear-gradient(90deg, var(--neon-blue), #7ee0ff20);
-            border-radius:8px;
-            font-weight: bold;
-        }
+    /* 選單 */
+    .sidebar-menu { list-style:none; padding:8px 4px; margin:0; display:flex; flex-direction:column; gap:6px; }
+    .nav-item {
+        display:flex; align-items:center; gap:12px;
+        border-radius:10px; cursor:pointer; border:none;
+        background:transparent; color: var(--text-dark);
+        padding:10px 12px; font-size:1.05em; font-weight:500;
+        transition: all 0.3s ease;
+    }
+    .nav-item:hover { background: rgba(155,228,255,0.05); transform:translateX(4px); color: var(--text-light); }
+    .nav-item.active { color: var(--neon-blue); background: rgba(155,228,255,0.15); box-shadow:0 0 10px rgba(155,228,255,0.3); text-shadow:0 0 5px var(--neon-blue); }
+    .nav-item i { font-size:1.3em; width:25px; }
+    .nav-icon { width:25px; text-align:center; }
+    .app-sidebar.collapsed .nav-label, .app-sidebar.collapsed .brand-text { display:none; }
 
-        .brand-text{
-            font-size: 1rem;
-            color: var(--neon-blue);
-            font-weight:700;
-            text-shadow: 0 0 20px #8fd3ff;
-        }
+    /* --------------------------- tooltip --------------------------- */
+    .nav-item { position: relative; }
+    .nav-item .tooltip {
+        position: absolute;
+        left: 100%;
+        top: 50%;
+        transform: translateY(-50%);
+        background: var(--bg-secondary);
+        color: var(--text-light);
+        padding: 4px 8px;
+        border-radius: 4px;
+        white-space: nowrap;
+        font-size: 0.85em;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s;
+        z-index: 100;
+    }
+    .app-sidebar.collapsed .nav-item:hover .tooltip { opacity: 1; }
 
-        .sidebar-menu{
-            list-style:none;
-            padding:8px 4px;
-            margin:0;
-            display:flex;
-            flex-direction:column;
-            gap:6px;
-        }
+    /* --------------------------- iframe 內容區 --------------------------- */
+    #content-frame { flex-grow:1; border:none; width:100%; height:100vh; background-color: var(--bg-dark); transition: all 0.3s ease-in-out; }
 
-        .nav-item{
-            display:flex;
-            align-items:center;
-            gap:12px;
-            border-radius:10px;
-            cursor:pointer;
-            border:none;
-            background:transparent;
-            color: var(--text-dark);
-            padding: 10px 12px;
-            font-size: 1.05em;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            width: 100%;
-            text-align: left;
-        }
-
-        .nav-item:hover{
-            background: rgba(155,228,255,0.05);
-            transform: translateX(4px);
-            color: var(--text-light);
-        }
-
-        .nav-item.active{
-            color: var(--neon-blue);
-            background: rgba(155,228,255,0.15);
-            box-shadow: 0 0 10px rgba(155,228,255,0.3);
-            text-shadow: 0 0 5px var(--neon-blue);
-        }
-
-        .nav-icon{
-            width:25px;
-            text-align:center;
-            font-size: 1.3em;
-        }
-
-        .app-sidebar.collapsed .nav-label,
-        .app-sidebar.collapsed .brand-text{
-            display:none;
-        }
-
-        /* --------------------------- 主內容區 (Iframe) --------------------------- */
-        #content-frame {
-            flex-grow: 1;
-            border: none;
-            width: 100%;
-            height: 100vh;
-            background-color: var(--bg-dark);
-        }
-    </style>
+</style>
 </head>
 
 <body>
 
     <nav class="app-sidebar">
-        <button id="sidebarToggle" class="sidebar-toggle">
-            <i class="fas fa-bars"></i>
-        </button>
-
+        <button id="sidebarToggle" class="sidebar-toggle"><i class="fas fa-bars"></i></button>
         <div class="sidebar-brand">
             <span class="brand-mark">⚡</span>
             <span class="brand-text">LumiTrack</span>
         </div>
-
         <ul id="sidebarMenu" class="sidebar-menu">
             <li>
-                <button class="nav-item active" data-page="list" onclick="switchPage(this, 'transaction.html')">
+                <button class="nav-item" data-page="list" onclick="switchPage(this,'transaction.html')">
                     <span class="nav-icon"><i class="fas fa-list"></i></span>
                     <span class="nav-label">交易記錄</span>
+                    <span class="tooltip">交易記錄</span>
                 </button>
             </li>
             <li>
-                <button class="nav-item" data-page="record" onclick="switchPage(this, 'recordpage.html')">
+                <button class="nav-item" data-page="record" onclick="switchPage(this,'recordpage.html')">
                     <span class="nav-icon"><i class="fas fa-edit"></i></span>
                     <span class="nav-label">記帳頁面</span>
+                    <span class="tooltip">記帳頁面</span>
                 </button>
             </li>
             <li>
-                <button class="nav-item" data-page="report" onclick="switchPage(this, 'report.html')">
+                <button class="nav-item" data-page="report" onclick="switchPage(this,'report.html')">
                     <span class="nav-icon"><i class="fas fa-chart-pie"></i></span>
                     <span class="nav-label">報告分析</span>
+                    <span class="tooltip">報告分析</span>
                 </button>
             </li>
             <li>
-                <button class="nav-item" data-page="budget" onclick="switchPage(this, 'budget.html')">
+                <button class="nav-item" data-page="budget" onclick="switchPage(this,'budget.html')">
                     <span class="nav-icon"><i class="fas fa-wallet"></i></span>
                     <span class="nav-label">管理預算</span>
+                    <span class="tooltip">管理預算</span>
                 </button>
             </li>
             <li>
-                <button class="nav-item" data-page="settings" onclick="switchPage(this, 'settings.html')">
+                <button class="nav-item" data-page="settings" onclick="switchPage(this,'settings.html')">
                     <span class="nav-icon"><i class="fas fa-cog"></i></span>
                     <span class="nav-label">系統設定</span>
+                    <span class="tooltip">系統設定</span>
                 </button>
             </li>
         </ul>
@@ -214,106 +183,58 @@
     <iframe id="content-frame" name="content-frame" src="transaction.html"></iframe>
 
     <script>
-        /* ==============================
-           側邊欄控制
-        ================================ */
+        // --------------------------- 側邊欄收合 ---------------------------
         document.getElementById("sidebarToggle").addEventListener("click", () => {
             document.querySelector(".app-sidebar").classList.toggle("collapsed");
         });
 
+        // --------------------------- 頁面切換 ---------------------------
         function switchPage(element, url) {
             document.getElementById('content-frame').src = url;
             document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
             if (element) element.classList.add("active");
+            else {
+                const pageMap = { transaction:'list', recordpage:'record', report:'report', budget:'budget', settings:'settings' };
+                const pageKey = Object.keys(pageMap).find(key => url.includes(key));
+                const navItem = document.querySelector(`.nav-item[data-page="${pageMap[pageKey]}"]`);
+                if (navItem) navItem.classList.add('active');
+            }
         }
         window.switchPage = switchPage;
 
-        /* ==============================
-           🌍 匯率核心系統 (LumiTrack Brain)
-        ================================ */
-        const CURRENCY_KEY = 'app_currency';
-        
-        // 乖乖要求的幣別對照表
-        const SYMBOL_MAP = { 
-            TWD: 'NT$', USD: '$', JPY: '¥', EUR: '€', HKD: 'HK$', 
-            CNY: '¥', GBP: '£', AUD: 'A$', KRW: '₩', SGD: 'S$' 
+        // --------------------------- 固定匯率 ---------------------------
+        const CURRENCY_KEY='app_currency';
+        const SYMBOL_MAP={ TWD:'NT$', USD:'$', JPY:'¥', EUR:'€', HKD:'HK$', CNY:'¥', GBP:'£', AUD:'A$', KRW:'₩', SGD:'S$' };
+
+        // 直接固定匯率
+        const FIXED_CURRENCY = {
+            base: 'TWD',
+            rates: { TWD:1, USD:0.032, JPY:4.6, EUR:0.029 },
+            updatedAt: new Date().toISOString()
+        };
+        localStorage.setItem(CURRENCY_KEY, JSON.stringify(FIXED_CURRENCY));
+
+        window.getCurrencySetting = function() {
+            return JSON.parse(localStorage.getItem(CURRENCY_KEY)) || { base: 'TWD', rates: { TWD:1 } };
         };
 
-        // 1. 取得貨幣設定
-        function getCurrencySetting() {
-            const defaultData = {
-                base: 'TWD',
-                rates: { TWD: 1, USD: 0.031, JPY: 4.6, HKD: 0.24, CNY: 0.22, EUR: 0.028, GBP: 0.024, AUD: 0.046, KRW: 41.5, SGD: 0.041 },
-                updatedAt: null
-            };
-            try {
-                const stored = localStorage.getItem(CURRENCY_KEY);
-                return stored ? JSON.parse(stored) : defaultData;
-            } catch (e) { return defaultData; }
-        }
-
-        // 2. 抓取即時匯率
-        async function fetchLiveRates() {
-            try {
-                console.log("🌐 正在獲取最新匯率...");
-                // 以 TWD 為基準抓取
-                const res = await fetch('https://open.er-api.com/v6/latest/TWD');
-                const data = await res.json();
-                
-                if (data.result === "success") {
-                    const currentSetting = getCurrencySetting();
-                    const filteredRates = {};
-                    
-                    // 只保留 SYMBOL_MAP 中定義的幣別
-                    Object.keys(SYMBOL_MAP).forEach(code => {
-                        if (data.rates[code]) filteredRates[code] = data.rates[code];
-                    });
-
-                    const newSetting = {
-                        ...currentSetting,
-                        rates: filteredRates,
-                        updatedAt: new Date().toISOString()
-                    };
-
-                    localStorage.setItem(CURRENCY_KEY, JSON.stringify(newSetting));
-                    
-                    // 觸發 storage 事件讓其他頁面同步
-                    window.dispatchEvent(new StorageEvent('storage', { key: CURRENCY_KEY }));
-                    console.log("✅ 匯率更新成功:", filteredRates);
-                    return newSetting;
-                }
-            } catch (err) {
-                console.error("❌ 匯率更新失敗 (使用緩存):", err);
-            }
-            return getCurrencySetting();
-        }
-
-        // 3. 全域匯率轉換工具 (供子頁面 window.parent.convertAmount 調用)
-        // 邏輯：所有交易數據在底層預設存為 TWD，顯示時才轉為當前幣別
         window.convertAmount = function(amountInTWD, toTarget = true) {
             const { base, rates } = getCurrencySetting();
             const rate = rates[base] || 1;
-            // toTarget=true: TWD -> 外幣, false: 外幣 -> TWD
             return toTarget ? amountInTWD * rate : amountInTWD / rate;
         };
 
-        // 4. 取得當前幣別符號 (供子頁面調用)
         window.getCurrencySymbol = function() {
             const { base } = getCurrencySetting();
             return SYMBOL_MAP[base] || '$';
         };
 
-        /* ==============================
-           初始化
-        ================================ */
+        // --------------------------- 初始化 ---------------------------
         document.addEventListener('DOMContentLoaded', () => {
-            const setting = getCurrencySetting();
-            // 如果超過 6 小時沒有更新，則重新抓取
-            const lastUpdate = setting.updatedAt ? new Date(setting.updatedAt) : new Date(0);
-            if (Date.now() - lastUpdate.getTime() > 6 * 60 * 60 * 1000) {
-                fetchLiveRates();
-            }
+            const initialItem = document.querySelector('.nav-item[data-page="list"]');
+            if (initialItem) initialItem.classList.add('active');
         });
     </script>
+
 </body>
 </html>

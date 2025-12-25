@@ -4,525 +4,223 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>⚙️ 系統設定 | LumiTrack</title>
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-
     <style>
         :root {
-            --bg-dark: #0f1115;                      /* 主要背景色 (最深) */
-            --bg-secondary: #1e1e1e;                 /* 次要背景色 (用於卡片/表單) */
-            --neon-blue: #9be4ff;                    /* 霓虹藍 (收入/主色) */
-            --neon-pink: #ff9ccf;                    /* 霓虹粉 (支出/副色) */
-            --neon-green: #7df2a8;                   /* 儲存按鈕 */
-            --neon-yellow: #fff1a6;                  /* 強調色 */
-            --text-light: #e9f7ff;                   /* 文字淺色 */
-            --text-dark: #c4d9ee;                    /* 文字深色 */
-
-            --cat-1: #ff7f7f;
-            --cat-2: #ffcc66;
-            --cat-3: #a8f0c6;
-            --cat-4: #a7d7ff;
-            --cat-5: #ffb3cf;
-            --cat-6: #cf9cff;
-            --cat-7: #66ffcc;
-            --cat-8: #ff9c66;
-            --cat-9: #99ccff;
-            --cat-10: #d4d4d4;
-            --cat-11: #ffd1dc;
-            --cat-12: #ffe066;
-            --cat-13: #8affc1;
-            --cat-14: #8ed1ff;
-            --cat-15: #c9a7ff;
-            --cat-16: #ffb380;
-            --cat-17: #b3ffb3;
-            --cat-18: #b3d9ff;
-            --cat-19: #ffe6b3;
-            --cat-20: #ffadad;
+            --bg-dark: #0f1115;
+            --bg-secondary: #1e1e1e;
+            --neon-blue: #9be4ff;
+            --neon-pink: #ff9ccf;
+            --text-light: #e9f7ff;
+            --text-dark: #c4d9ee;
         }
-
-        /* 針對整個 body 元素 */
-        body::-webkit-scrollbar {
-            width: 0px;  /* 隱藏垂直滾動條 */
-            height: 0px; /* 隱藏水平滾動條 */
-        }
-
-        body::-webkit-scrollbar,
-        .content-container::-webkit-scrollbar,
-        .category-list-container::-webkit-scrollbar {
-            display: none;
-            width: 0 !important;
-            height: 0 !important;
-        }
-
-        /* 針對需要滾動的特定容器 (如主要的內容區塊) */
-        .content-container::-webkit-scrollbar,
-        .category-list-container::-webkit-scrollbar {
-            width: 0px;
-            height: 0px;
-        }
-
-        /* 1. 針對所有元素（包含 body 和所有 div）隱藏滾動條，但保留滾動功能 */
-        * {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;     /* Firefox */
-        }
-
-        *::-webkit-scrollbar {
-            display: none;             /* Chrome, Safari, Opera */
-            width: 0 !important;
-            height: 0 !important;
-        }
-
-        /* 2. 確保 html 和 body 也完全隱藏 */
-        html, body {
-            overflow: -moz-scrollbars-none;
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-        body {
-            margin: 0; padding: 20px;
-            background: var(--bg-dark);
-            color: var(--text-light);
-            font-family: system-ui, -apple-system, sans-serif;
-            scrollbar-width: none;
-        }
-        
-        .container { max-width: 720px; margin: auto; }
-        .page-title { color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue); font-size: 1.8em; text-align: center; margin-bottom: 30px; }
-
-        .card {
-            background: var(--bg-secondary);
-            border-radius: 18px;
-            padding: 24px;
-            margin-bottom: 22px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 12px 28px rgba(0,0,0,0.5);
-        }
-
-        .card-title { display: flex; align-items: center; gap: 10px; font-size: 1.25rem; font-weight: bold; margin-bottom: 8px; color: var(--neon-blue); }
-        .card-desc { font-size: 0.9rem; color: var(--text-dark); margin-bottom: 16px; }
-
-        /* 貨幣選擇樣式 */
-        .currency-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-            gap: 10px;
-        }
-
-        button, .custom-select {
-            padding: 12px;
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
-            background: #252525;
-            color: var(--text-light);
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
-            text-align: center;
-        }
-
-        button:hover { border-color: var(--neon-blue); background: #2a2a2a; }
-
-        /* 選中狀態 */
-        button.active, .custom-select.active {
-            background: var(--neon-blue);
-            color: #000;
-            border-color: var(--neon-blue);
-            box-shadow: 0 0 15px var(--neon-blue);
-        }
-
-        /* 下拉選單特別樣式 */
-        .custom-select {
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23a7d7ff' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 10px center;
-            background-size: 20px;
-            padding-right: 30px;
-            outline: none;
-        }
-        .custom-select option { background: var(--bg-dark); color: #fff; }
-
-        .btn-group { display: flex; gap: 12px; flex-wrap: wrap; }
-        .btn-group button { flex: 1; min-width: 120px; }
-
-        /* --- 強化版危險區域樣式 --- */
-        .danger-card {
-            position: relative;
-            border: 2px solid var(--neon-red) !important;
-            background: rgba(255, 60, 60, 0.05) !important;
-            overflow: hidden;
-            /* 呼吸閃爍效果 */
-            animation: danger-pulse 2s infinite alternate;
-        }
-
-        @keyframes danger-pulse {
-            from { box-shadow: 0 0 10px rgba(255, 127, 127, 0.2); }
-            to { box-shadow: 0 0 25px rgba(255, 127, 127, 0.5); }
-        }
-
-        /* 頂部警示條紋 */
-        .danger-card::before {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; right: 0; height: 6px;
-            background: repeating-linear-gradient(
-                45deg,
-                #ff7f7f,
-                #ff7f7f 10px,
-                #000 10px,
-                #000 20px
-            );
-        }
-
-        .danger-input-group {
-            margin-top: 15px;
-            background: rgba(0,0,0,0.3);
-            padding: 15px;
-            border-radius: 12px;
-            border: 1px dashed var(--neon-red);
-        }
-
-        .danger-input-group label {
-            display: block;
-            font-size: 0.85rem;
-            color: var(--neon-pink);
-            margin-bottom: 8px;
-        }
-
-        .danger-input-group input {
-            width: 100%;
-            background: #151515;
-            border: 1px solid #444;
-            padding: 10px;
-            color: #fff;
-            border-radius: 8px;
-            font-family: monospace;
-            text-align: center;
-            letter-spacing: 2px;
-            box-sizing: border-box;
-        }
-
-        .danger-input-group input:focus {
-            border-color: var(--neon-red);
-            outline: none;
-            box-shadow: 0 0 8px var(--neon-red);
-        }
-
-        /* 禁用狀態的按鈕 */
-        .danger-btn:disabled {
-            filter: grayscale(1);
-            opacity: 0.3;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-        .danger-btn { background: transparent; border-color: var(--neon-red); color: var(--neon-red); }
-        .danger-btn:hover { background: var(--neon-red); color: #fff; box-shadow: 0 0 15px var(--neon-red); }
-
-        .go-btn { background: rgba(167, 215, 255, 0.1); color: var(--neon-blue); border-color: var(--neon-blue); }
-        
+        * { -ms-overflow-style: none; scrollbar-width: none; }
+        *::-webkit-scrollbar { display: none; }
+        html, body { overflow: -moz-scrollbars-none; -ms-overflow-style: none; scrollbar-width: none; }
+        body { margin:0; padding:20px; background:var(--bg-dark); color:var(--text-light); font-family:system-ui,-apple-system,sans-serif; }
+        .container { max-width:720px; margin:auto; }
+        .page-title { color:var(--neon-blue); text-shadow:0 0 10px var(--neon-blue); font-size:1.8em; text-align:center; margin-bottom:30px; }
+        .card { background:var(--bg-secondary); border-radius:18px; padding:24px; margin-bottom:22px; border:1px solid #333; box-shadow:0 12px 28px rgba(0,0,0,0.5); }
+        .card-title { display:flex; align-items:center; gap:10px; font-size:1.25rem; font-weight:bold; margin-bottom:8px; color:var(--neon-blue); }
+        .card-desc { font-size:0.9rem; color:var(--text-dark); margin-bottom:16px; }
+        .currency-container { display:grid; grid-template-columns:repeat(auto-fit,minmax(80px,1fr)); gap:10px; }
+        button, .custom-select { padding:12px; border-radius:10px; border:1px solid #333; background:#252525; color:var(--text-light); cursor:pointer; font-weight:600; transition: all 0.3s; text-align:center; }
+        button:hover { border-color:var(--neon-blue); background:#2a2a2a; }
+        button.active, .custom-select.active { background:var(--neon-blue); color:#000; border-color:var(--neon-blue); box-shadow:0 0 15px var(--neon-blue); }
+        .custom-select { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23a7d7ff' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; background-size:20px; padding-right:30px; outline:none; }
+        .custom-select option { background:var(--bg-dark); color:#fff; }
+        .btn-group { display:flex; gap:12px; flex-wrap:wrap; }
+        .btn-group button { flex:1; min-width:120px; }
+        .danger-card { position:relative; border:2px solid #ff3c3c !important; background:rgba(255,60,60,0.05) !important; overflow:hidden; animation: danger-pulse 2s infinite alternate; }
+        @keyframes danger-pulse { from { box-shadow:0 0 10px rgba(255,127,127,0.2); } to { box-shadow:0 0 25px rgba(255,127,127,0.5); } }
+        .danger-card::before { content:""; position:absolute; top:0; left:0; right:0; height:6px; background:repeating-linear-gradient(45deg,#ff7f7f,#ff7f7f 10px,#000 10px,#000 20px); }
+        .danger-input-group { margin-top:15px; background:rgba(0,0,0,0.3); padding:15px; border-radius:12px; border:1px dashed #ff3c3c; }
+        .danger-input-group label { display:block; font-size:0.85rem; color:var(--neon-pink); margin-bottom:8px; }
+        .danger-input-group input { width:100%; background:#151515; border:1px solid #444; padding:10px; color:#fff; border-radius:8px; font-family:monospace; text-align:center; letter-spacing:2px; box-sizing:border-box; }
+        .danger-input-group input:focus { border-color:#ff3c3c; outline:none; box-shadow:0 0 8px #ff3c3c; }
+        .danger-btn:disabled { filter:grayscale(1); opacity:0.3; cursor:not-allowed; box-shadow:none; }
+        .danger-btn { background:transparent; border-color:#ff3c3c; color:#ff3c3c; }
+        .danger-btn:hover { background:#ff3c3c; color:#fff; box-shadow:0 0 15px #ff3c3c; }
+        .go-btn { background:rgba(167,215,255,0.1); color:var(--neon-blue); border-color:var(--neon-blue); }
     </style>
 </head>
 <body>
+    <div class="container">
+        <h1 class="page-title"><i class="fas fa-microchip"></i> 核心系統設定</h1>
 
-<div class="container">
-    <h1 class="page-title"><i class="fas fa-microchip"></i> 核心系統設定</h1>
-
-    <div class="card">
-        <div class="card-title"><i class="fas fa-sitemap"></i> 分類架構管理</div>
-        <div class="card-desc">自定義您的收支類別，系統將自動套用至所有報表。</div>
-        <button class="go-btn" style="width:100%" onclick="location.href='category.html'">
-            <i class="fas fa-external-link-alt"></i> 進入分類編輯器
-        </button>
-    </div>
-
-    <div class="card">
-        <div class="card-title"><i class="fas fa-globe"></i> 基準貨幣設定</div>
-        <div class="card-desc">選擇系統的主貨幣，這將影響匯總報表的顯示。</div>
-        <div class="currency-container" id="currencyArea">
-            <button data-currency="TWD">TWD 台幣</button>
-            <button data-currency="USD">USD 美金</button>
-            <button data-currency="JPY">JPY 日幣</button>
-            <button data-currency="EUR">EUR 歐元</button>
-            <select id="otherCurrency" class="custom-select">
-                <option value="" disabled selected>其他貨幣</option>
-                <option value="HKD">HKD 港幣</option>
-                <option value="CNY">CNY 人民幣</option>
-                <option value="GBP">GBP 英鎊</option>
-                <option value="AUD">AUD 澳幣</option>
-                <option value="KRW">KRW 韓元</option>
-                <option value="SGD">SGD 新幣</option>
-            </select>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-title"><i class="fas fa-cloud-download-alt"></i> 數據備份與導出</div>
-        <div class="card-desc">匯出含 Excel 統計表與完整數據的 ZIP 壓縮包。</div>
-        <div class="btn-group">
-            <button onclick="exportFullBackup()"><i class="fas fa-file-export"></i> 完整匯出 (ZIP)</button>
-            <button onclick="document.getElementById('importZipFile').click()"><i class="fas fa-file-import"></i> 還原備份</button>
-            <input type="file" id="importZipFile" style="display:none" accept=".zip" />
-        </div>
-    </div>
-
-    <div class="card danger-card">
-        <div class="card-title" style="color:var(--neon-red)">
-            <i class="fas fa-biohazard"></i>  危險區域
-        </div>
-        <div class="card-desc">
-            初始化將會抹除所有交易、自定義分類以及預算設定。此操作一旦執行，存儲於瀏覽器內的數據將消散。
+        <div class="card">
+            <div class="card-title"><i class="fas fa-sitemap"></i> 分類架構管理</div>
+            <div class="card-desc">自定義您的收支類別，系統將自動套用至所有報表。</div>
+            <button class="go-btn" style="width:100%" onclick="location.href='category.html'">
+                <i class="fas fa-external-link-alt"></i> 進入分類編輯器
+            </button>
         </div>
 
-        <div class="danger-input-group">
-            <label>請在下方輸入 <b style="color:var(--text-light)">RESET</b> 以解除按鈕鎖定：</label>
-            <input type="text" id="confirmResetInput" placeholder="在此輸入..." autocomplete="off" oninput="checkResetLock()">
+        <div class="card">
+            <div class="card-title"><i class="fas fa-globe"></i> 基準貨幣設定</div>
+            <div class="card-desc">選擇系統的主貨幣，這將影響匯總報表的顯示。</div>
+            <div class="currency-container" id="currencyArea">
+                <button data-currency="TWD">TWD 台幣</button>
+                <button data-currency="USD">USD 美金</button>
+                <button data-currency="JPY">JPY 日幣</button>
+                <button data-currency="EUR">EUR 歐元</button>
+                <select id="otherCurrency" class="custom-select">
+                    <option value="" disabled selected>其他貨幣</option>
+                    <option value="HKD">HKD 港幣</option>
+                    <option value="CNY">CNY 人民幣</option>
+                    <option value="GBP">GBP 英鎊</option>
+                    <option value="AUD">AUD 澳幣</option>
+                    <option value="KRW">KRW 韓元</option>
+                    <option value="SGD">SGD 新幣</option>
+                </select>
+            </div>
         </div>
 
-        <button id="finalDeleteBtn" class="danger-btn" style="width:100%; margin-top:15px;" onclick="clearAllData()" disabled>
-            <i class="fas fa-skull-crossbones"></i> 執行系統重置
-        </button>
+        <div class="card">
+            <div class="card-title"><i class="fas fa-cloud-download-alt"></i> 數據備份與導出</div>
+            <div class="card-desc">匯出含 Excel 統計表與完整數據的 ZIP 壓縮包。</div>
+            <div class="btn-group">
+                <button onclick="exportFullBackup()"><i class="fas fa-file-export"></i> 完整匯出 (ZIP)</button>
+                <button onclick="document.getElementById('importZipFile').click()"><i class="fas fa-file-import"></i> 還原備份</button>
+                <input type="file" id="importZipFile" style="display:none" accept=".zip" />
+            </div>
+        </div>
+
+        <div class="card danger-card">
+            <div class="card-title" style="color:#ff3c3c">
+                <i class="fas fa-biohazard"></i>  危險區域
+            </div>
+            <div class="card-desc">
+                初始化將會抹除所有交易、自定義分類以及預算設定。此操作一旦執行，存儲於瀏覽器內的數據將消散。
+            </div>
+            <div class="danger-input-group">
+                <label>請在下方輸入 <b style="color:var(--text-light)">RESET</b> 以解除按鈕鎖定：</label>
+                <input type="text" id="confirmResetInput" placeholder="在此輸入..." autocomplete="off">
+            </div>
+            <button id="finalDeleteBtn" class="danger-btn" style="width:100%; margin-top:15px;" onclick="clearAllData()" disabled>
+                <i class="fas fa-skull-crossbones"></i> 執行系統重置
+            </button>
+        </div>
     </div>
 
     <script>
-        
-        const STORAGE_KEYS = {
-            TX: 'transactions',
-            CAT: 'categoryData',
-            BUD: 'budget_settings',
-            IMGS: 'receiptImages',
-            CUR: 'app_currency'
-        };
+        const STORAGE_KEYS = { TX:'transactions', CAT:'categoryData', BUD:'budget_settings', IMGS:'receiptImages', CUR:'app_currency' };
+        const SYMBOL_MAP = { TWD:'NT$', USD:'$', JPY:'JP¥', EUR:'€', HKD:'HK$', CNY:'CN¥', GBP:'£', AUD:'A$', KRW:'₩', SGD:'S$' };
+        const FIXED_RATES = { TWD:1, USD:0.032, JPY:4.6, EUR:0.029, HKD:0.24, CNY:0.22, GBP:0.024, AUD:0.046, KRW:41.5, SGD:0.041 };
+        const DEFAULT_DATA = { currency:{base:'TWD',symbol:'NT$'}, categories:{} };
 
-        // 系統預設資料 (防止匯出空資料)
-        const DEFAULT_DATA = {
-            categories: {
-                expense: [
-                    { id: 1, name: "餐飲", icon: "fas fa-utensils", color: "var(--cat-1)", sub: [
-                        { id: 101, name: "外食", icon: "fas fa-burger", color: "var(--cat-1)" },
-                        { id: 102, name: "飲品", icon: "fas fa-coffee", color: "var(--cat-1)" },
-                        { id: 103, name: "零食", icon: "fas fa-cookie-bite", color: "var(--cat-1)" },
-                    ]},
-                    { id: 2, name: "交通", icon: "fas fa-bus", color: "var(--cat-2)", sub: [
-                        { id: 201, name: "油資/充電", icon: "fas fa-gas-pump", color: "var(--cat-2)" },
-                        { id: 202, name: "公車/捷運", icon: "fas fa-subway", color: "var(--cat-2)" },
-                        { id: 203, name: "計程車", icon: "fas fa-taxi", color: "var(--cat-2)" },
-                    ]},
-                    { id: 3, name: "購物", icon: "fas fa-shopping-bag", color: "var(--cat-3)", sub: [
-                        { id: 301, name: "服飾", icon: "fas fa-shirt", color: "var(--cat-3)" },
-                        { id: 302, name: "日用品", icon: "fas fa-toilet-paper", color: "var(--cat-3)" },
-                        { id: 303, name: "3C 產品", icon: "fas fa-mobile-screen-button", color: "var(--cat-3)" },
-                    ]},
-                    { id: 4, name: "娛樂", icon: "fas fa-gamepad", color: "var(--cat-4)", sub: [
-                        { id: 401, name: "電影/展覽", icon: "fas fa-ticket", color: "var(--cat-4)" },
-                        { id: 402, name: "遊戲", icon: "fas fa-dice", color: "var(--cat-4)" },
-                        { id: 403, name: "旅遊", icon: "fas fa-plane", color: "var(--cat-4)" },
-                    ]},
-                    { id: 5, name: "居住", icon: "fas fa-home", color: "var(--cat-5)", sub: [
-                        { id: 501, name: "房租/房貸", icon: "fas fa-building-columns", color: "var(--cat-5)" },
-                        { id: 502, name: "水電瓦斯", icon: "fas fa-lightbulb", color: "var(--cat-5)" },
-                        { id: 503, name: "網路/電信", icon: "fas fa-signal", color: "var(--cat-5)" },
-                    ]}
-                ],
-                income: [
-                    { id: 6, name: "薪資", icon: "fas fa-money-check-alt", color: "var(--cat-6)", sub: [
-                        { id: 601, name: "月薪", icon: "fas fa-money-bill-wave", color: "var(--cat-6)" },
-                        { id: 602, name: "獎金", icon: "fas fa-hand-holding-dollar", color: "var(--cat-6)" },
-                        { id: 603, name: "兼職", icon: "fas fa-briefcase", color: "var(--cat-6)" },
-                    ]},
-                    { id: 7, name: "投資", icon: "fas fa-chart-line", color: "var(--cat-7)", sub: [
-                        { id: 701, name: "股息", icon: "fas fa-arrow-trend-up", color: "var(--cat-7)" },
-                        { id: 702, name: "基金收益", icon: "fas fa-vault", color: "var(--cat-7)" },
-                        { id: 703, name: "房產租金", icon: "fas fa-house-chimney-crack", color: "var(--cat-7)" },
-                    ]},
-                    { id: 8, name: "禮金", icon: "fas fa-gift", color: "var(--cat-8)", sub: [
-                        { id: 801, name: "紅包", icon: "fas fa-envelope", color: "var(--cat-8)" },
-                        { id: 802, name: "生日禮物", icon: "fas fa-cake-candles", color: "var(--cat-8)" },
-                        { id: 803, name: "贊助", icon: "fas fa-heart", color: "var(--cat-8)" },
-                    ]},
-                    { id: 9, name: "副業", icon: "fas fa-laptop-code", color: "var(--cat-9)", sub: [
-                        { id: 901, name: "稿費", icon: "fas fa-pen-nib", color: "var(--cat-9)" },
-                        { id: 902, name: "銷售", icon: "fas fa-store", color: "var(--cat-9)" },
-                        { id: 903, name: "服務費", icon: "fas fa-handshake", color: "var(--cat-9)" },
-                    ]},
-                    { id: 10, name: "其他", icon: "fas fa-ellipsis-h", color: "var(--cat-10)", sub: [
-                        { id: 1101, name: "退款", icon: "fas fa-undo", color: "var(--cat-10)" },
-                        { id: 1102, name: "意外收入", icon: "fas fa-meteor", color: "var(--cat-10)" },
-                        { id: 1103, name: "利息", icon: "fas fa-percent", color: "var(--cat-10)" },
-                    ]}
-                ]
-            },
-            currency: { base: 'TWD', symbol: 'NT$' }
-        };
-
-        const SYMBOL_MAP = { TWD: 'NT$', USD: '$', JPY: '¥', EUR: '€', HKD: 'HK$', CNY: '¥', GBP: '£', AUD: 'A$', KRW: '₩', SGD: 'S$' };
-
-        document.addEventListener('DOMContentLoaded', () => {
-            initCurrencyUI();
-        });
-
-        /* ===============================
-        貨幣處理邏輯
-        =============================== */
         function initCurrencyUI() {
-            const current = JSON.parse(localStorage.getItem(STORAGE_KEYS.CUR)) || DEFAULT_DATA.currency;
-            const btns = document.querySelectorAll('#currencyArea button');
+            const buttons = document.querySelectorAll('#currencyArea button');
             const select = document.getElementById('otherCurrency');
+            let current = JSON.parse(localStorage.getItem(STORAGE_KEYS.CUR)) || DEFAULT_DATA.currency;
 
-            function updateUI(base) {
-                btns.forEach(b => b.classList.toggle('active', b.dataset.currency === base));
-                
-                const isOther = Array.from(select.options).some(opt => opt.value === base);
-                select.classList.toggle('active', isOther);
-                if(isOther) select.value = base;
-                else select.value = "";
+            function updateUI(base){
+                buttons.forEach(b=>b.classList.toggle('active',b.dataset.currency===base));
+                const isOther = Array.from(select.options).some(o=>o.value===base);
+                select.classList.toggle('active',isOther); select.value=isOther?base:"";
             }
 
-            btns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    saveCurrency(btn.dataset.currency);
-                    updateUI(btn.dataset.currency);
-                });
-            });
-
-            select.addEventListener('change', () => {
-                saveCurrency(select.value);
-                updateUI(select.value);
-            });
-
+            buttons.forEach(b=>b.addEventListener('click',()=>saveCurrency(b.dataset.currency)));
+            select.addEventListener('change',()=>saveCurrency(select.value));
             updateUI(current.base);
+
+            function saveCurrency(base){
+                const setting={base,symbol:SYMBOL_MAP[base]||base};
+                localStorage.setItem(STORAGE_KEYS.CUR,JSON.stringify(setting));
+                updateUI(base);
+            }
         }
 
-        function saveCurrency(base) {
-            const setting = { base, symbol: SYMBOL_MAP[base] || base };
-            localStorage.setItem(STORAGE_KEYS.CUR, JSON.stringify(setting));
-            window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEYS.CUR }));
+        document.addEventListener('DOMContentLoaded',()=>initCurrencyUI());
+
+        const confirmInput=document.getElementById('confirmResetInput');
+        const finalDeleteBtn=document.getElementById('finalDeleteBtn');
+        confirmInput.addEventListener('input',()=>{
+            const active = confirmInput.value.trim().toUpperCase()==='RESET';
+            finalDeleteBtn.disabled = !active;
+            finalDeleteBtn.classList.toggle('active',active);
+        });
+
+        function clearAllData(){
+            if(!confirm('🚨 最後警告：數據即將永久刪除！')) return;
+            finalDeleteBtn.innerHTML='<i class="fas fa-skull-crossbones"></i> 正在抹除數據核心...';
+            finalDeleteBtn.disabled=true;
+            setTimeout(()=>{
+                Object.values(STORAGE_KEYS).forEach(k=>localStorage.removeItem(k));
+                alert('🛑 系統已初始化。所有數據已歸零。');
+                location.reload();
+            },1500);
         }
 
-        /* ===============================
-        強化版 匯出邏輯
-        =============================== */
-        async function exportFullBackup() {
-            const zip = new JSZip();
-            
-            // 取得資料，若為空則抓預設
-            const txData = JSON.parse(localStorage.getItem(STORAGE_KEYS.TX) || '[]');
-            const catData = JSON.parse(localStorage.getItem(STORAGE_KEYS.CAT)) || DEFAULT_DATA.categories;
-            const budData = JSON.parse(localStorage.getItem(STORAGE_KEYS.BUD)) || {};
-            const curData = JSON.parse(localStorage.getItem(STORAGE_KEYS.CUR)) || DEFAULT_DATA.currency;
-            const imgData = JSON.parse(localStorage.getItem(STORAGE_KEYS.IMGS) || '{}');
+        async function exportFullBackup(){
+            const zip=new JSZip();
+            const txData=JSON.parse(localStorage.getItem(STORAGE_KEYS.TX)||'[]');
+            const catData=JSON.parse(localStorage.getItem(STORAGE_KEYS.CAT)||'{}');
+            const budData=JSON.parse(localStorage.getItem(STORAGE_KEYS.BUD)||'{}');
+            const curData=JSON.parse(localStorage.getItem(STORAGE_KEYS.CUR)||'{}');
+            const imgData=JSON.parse(localStorage.getItem(STORAGE_KEYS.IMGS)||'{}');
 
-            const payload = {
-                meta: { app: 'LumiTrack', version: '1.2', exportedAt: new Date().toISOString() },
-                transactions: txData,
-                categories: catData,
-                budgets: budData,
-                currency: curData,
-                images: imgData
-            };
+            const payload={meta:{app:'LumiTrack',version:'1.2',exportedAt:new Date().toISOString()},transactions:txData,categories:catData,budgets:budData,currency:curData,images:imgData};
+            zip.file('lumi_data_backup.json',JSON.stringify(payload,null,2));
 
-            // 1. JSON 原始檔
-            zip.file('lumi_data_backup.json', JSON.stringify(payload, null, 2));
-
-            // 2. Excel 報表
-            const wb = XLSX.utils.book_new();
-            
-            // Sheet A: 交易明細清單
-            const detailRows = txData.map(t => ({
-                日期: t.date || '',
-                類型: t.type === 'income' ? '收入' : '支出',
-                主分類: t.categoryObject?.primary?.name || '未分類',
-                子分類: t.categoryObject?.sub?.name || '-',
-                金額: Number(t.amount || 0),
-                原始貨幣: t.currency || curData.base,
-                備註: t.note || ''
+            const wb=XLSX.utils.book_new();
+            const detailRows=txData.map(t=>({
+                日期:t.date||'',
+                類型:t.type==='income'?'收入':'支出',
+                主分類:t.categoryObject?.primary?.name||'未分類',
+                子分類:t.categoryObject?.sub?.name||'-',
+                金額:Number(t.amount||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}),
+                原始貨幣:SYMBOL_MAP[t.currency]||t.currency||curData.base,
+                備註:t.note||''
             }));
-            const wsDetails = XLSX.utils.json_to_sheet(detailRows);
-            XLSX.utils.book_append_sheet(wb, wsDetails, '交易明細');
+            XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(detailRows),'交易明細');
 
-            // Sheet B: 分類統計 (用於圖表)
-            const summaryMap = {};
-            txData.forEach(t => {
-                const key = `${t.type}|${t.categoryObject?.primary?.name || '未分類'}`;
-                if(!summaryMap[key]) summaryMap[key] = { 類型: t.type==='income'?'收入':'支出', 分類: t.categoryObject?.primary?.name || '未分類', 總額: 0, 筆數: 0 };
-                summaryMap[key].總額 += Number(t.baseAmount || t.amount || 0);
-                summaryMap[key].筆數 += 1;
+            const summaryMap={};
+            txData.forEach(t=>{
+                const key=`${t.type}|${t.categoryObject?.primary?.name||'未分類'}`;
+                if(!summaryMap[key]) summaryMap[key]={類型:t.type==='income'?'收入':'支出',分類:t.categoryObject?.primary?.name||'未分類',總額:0,筆數:0};
+                summaryMap[key].總額+=Number(t.baseAmount||t.amount||0); summaryMap[key].筆數+=1;
             });
-            const wsSummary = XLSX.utils.json_to_sheet(Object.values(summaryMap));
-            XLSX.utils.book_append_sheet(wb, wsSummary, '分類統計圖表數據');
+            XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(Object.values(summaryMap)),'分類統計圖表數據');
 
-            const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-            zip.file('數據分析報表.xlsx', excelBuffer);
+            const excelBuffer=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+            zip.file('數據分析報表.xlsx',excelBuffer);
 
-            // 下載 ZIP
-            const content = await zip.generateAsync({ type: 'blob' });
-            saveAs(content, `LumiTrack_Backup_${new Date().toISOString().slice(0,10)}.zip`);
+            const content=await zip.generateAsync({type:'blob'});
+            const timestamp=new Date().toISOString().replace(/[:.]/g,'-');
+            saveAs(content,`LumiTrack_Backup_${timestamp}.zip`);
         }
 
-        /* ===============================
-        匯入與清除
-        =============================== */
-        document.getElementById('importZipFile').addEventListener('change', async e => {
-            const file = e.target.files[0];
-            if(!file || !confirm('⚠️ 匯入將覆蓋現有所有設定與紀錄，確定繼續？')) return;
-
-            try {
+        /* ===== 還原備份 ZIP ===== */
+        document.getElementById('importZipFile').addEventListener('change', async (e)=>{
+            const file=e.target.files[0];
+            if(!file) return;
+            if(!confirm('⚠️ 即將還原備份，現有數據將被覆蓋，確定嗎？')) return;
+            try{
                 const zip = await JSZip.loadAsync(file);
                 const jsonFile = zip.file('lumi_data_backup.json');
-                if(!jsonFile) throw new Error('找不到備份數據檔案');
+                if(!jsonFile) { alert('❌ ZIP 中找不到備份資料'); return; }
+                const content = await jsonFile.async('string');
+                const data = JSON.parse(content);
 
-                const data = JSON.parse(await jsonFile.async('string'));
+                localStorage.setItem(STORAGE_KEYS.TX, JSON.stringify(data.transactions||[]));
+                localStorage.setItem(STORAGE_KEYS.CAT, JSON.stringify(data.categories||{}));
+                localStorage.setItem(STORAGE_KEYS.BUD, JSON.stringify(data.budgets||{}));
+                localStorage.setItem(STORAGE_KEYS.CUR, JSON.stringify(data.currency||{base:'TWD',symbol:'NT$'}));
+                localStorage.setItem(STORAGE_KEYS.IMGS, JSON.stringify(data.images||{}));
 
-                localStorage.setItem(STORAGE_KEYS.TX, JSON.stringify(data.transactions || []));
-                localStorage.setItem(STORAGE_KEYS.CAT, JSON.stringify(data.categories || DEFAULT_DATA.categories));
-                localStorage.setItem(STORAGE_KEYS.BUD, JSON.stringify(data.budgets || {}));
-                localStorage.setItem(STORAGE_KEYS.CUR, JSON.stringify(data.currency || DEFAULT_DATA.currency));
-                localStorage.setItem(STORAGE_KEYS.IMGS, JSON.stringify(data.images || {}));
+                alert('✅ 備份已成功還原！');
 
-                alert('✅ 數據還原成功！');
-                location.reload();
-            } catch (err) {
-                alert('❌ 匯入失敗：' + err.message);
+                // 自動刷新貨幣 UI
+                initCurrencyUI();
+            }catch(err){
+                console.error(err);
+                alert('❌ 還原過程出現錯誤，請檢查檔案格式');
             }
         });
-
-        // 1. 檢查解鎖字串
-        function checkResetLock() {
-            const input = document.getElementById('confirmResetInput').value;
-            const btn = document.getElementById('finalDeleteBtn');
-            
-            if (input.trim().toUpperCase() === 'RESET') {
-                btn.disabled = false;
-                btn.style.boxShadow = '0 0 20px var(--neon-red)';
-            } else {
-                btn.disabled = true;
-                btn.style.boxShadow = 'none';
-            }
-        }
-
-        // 2. 強化版清除邏輯
-        window.clearAllData = function() {
-            // 雖然已經輸入 RESET，但為了保險起見再做一次最後確認
-            const finalWarning = confirm('🚨 最後警告：數據即將永久刪除！\n\n您確定真的要執行嗎？這不可還原。');
-            
-            if(finalWarning) {
-                // 加入一個「毀滅中」的視覺回饋
-                const btn = document.getElementById('finalDeleteBtn');
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在抹除數據核心...';
-                btn.disabled = true;
-
-                setTimeout(() => {
-                    Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));
-                    alert('🛑 系統已初始化。所有數據已歸零。');
-                    location.reload();
-                }, 1500); // 增加一點延遲感，讓操作顯得更沈重
-            }
-        };
     </script>
-
 </body>
 </html>

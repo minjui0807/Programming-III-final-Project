@@ -1164,10 +1164,16 @@
         };
 
         const DEFAULT_RATES = {
-            TWD: 1,
-            USD: 0.032,
-            JPY: 4.6,
-            EUR: 0.029   // ← 歐元
+            TWD:1,
+            USD:0.032,
+            JPY:4.6,
+            EUR:0.029,
+            HKD:0.24,
+            CNY:0.22,
+            GBP:0.024,
+            AUD:0.046,
+            KRW:41.5,
+            SGD:0.041
         };
 
         function getCurrencySetting() {
@@ -1335,8 +1341,6 @@
             return main.icon || CATEGORY_ICON_MAP[mainCat] || 'fas fa-folder';
 
         }
-
-
 
         // [JS] 確保有這個圖示對照表，不然存檔會報錯！
         const CATEGORY_ICON_MAP = {
@@ -1613,100 +1617,79 @@
             const transaction = TRANSACTIONS.find(t => t.id === id);
             if (!transaction) return;
 
-            // 1. 填入資料
             document.getElementById('modal_id').value = transaction.id;
             document.getElementById('modal_date').value = transaction.date;
             document.getElementById('modal_type').value = transaction.type;
-            document.getElementById('modal_amount').value = transaction.amount;
-            document.getElementById('modal_description').value = transaction.description || '';
 
+            // ⭐️ 設置幣別選單
             renderCurrencySelect(transaction.currency);
+
+            // ⭐️ 填入交易當時輸入的原始金額
+            document.getElementById('modal_amount').value = transaction.amount;
+
+            // ⭐️ 選擇幣別
             document.getElementById('modal_currency').value = transaction.currency;
+
+            // ⭐️ 更新即時換算顯示 baseAmount
             updateExchangePreview();
 
-            // 2. 解析分類
+            document.getElementById('modal_description').value = transaction.description || '';
+
+            // 分類處理
             let fullCategory = transaction.category || transaction.categoryText || '';
             let mainCat = fullCategory;
             let subCat = '';
-
             if (fullCategory.includes(' / ')) {
                 const parts = fullCategory.split(' / ');
                 mainCat = parts[0];
                 subCat = parts[1];
             }
+            updateModalCategoriesFromCategoryData(transaction.type, mainCat, subCat);
 
-            updateModalCategoriesFromCategoryData(
-                transaction.type,
-                mainCat,
-                subCat
-            );
-
-
-            // 3. 綁定類型切換
-            const typeSelect = document.getElementById('modal_type');
-            typeSelect.onchange = function() {
-                const newType = this.value;
-                const catData = APP_CATEGORIES[newType] || {};
-                const firstMain = Object.keys(catData)[0] || '';
-                updateModalCategoriesFromCategoryData(
-                    newType,
-                    firstMain, // 使用新類型的第一個主分類
-                    ''         // 子分類重置
-                );
-            };
-
-
-            // 4. 設定刪除按鈕 (⭐️ 大絕招：影分身替換術)
-            let delBtn = document.getElementById('modalDeleteBtn');
+            // 顯示刪除按鈕 & 圖片
+            const delBtn = document.getElementById('modalDeleteBtn');
             if (delBtn) {
-                // 複製一個全新的按鈕 (會清除所有舊的 onclick 事件)
                 const newBtn = delBtn.cloneNode(true);
-                // 用新按鈕替換掉舊按鈕
                 delBtn.parentNode.replaceChild(newBtn, delBtn);
-                // 更新變數指向新按鈕
-                delBtn = newBtn;
-
-                delBtn.style.display = 'inline-block';
-                
-                // 綁定這一次的刪除事件
-                delBtn.onclick = function(e) {
-                    e.preventDefault(); // 阻止表單送出
-                    
-                    // ⭐️ 這裡只會執行一次，因為按鈕是全新的！
-                    if (confirm('確定要刪除這筆交易嗎？')) {
-                        deleteTransaction(transaction.id);
-                    }
+                newBtn.style.display = 'inline-block';
+                newBtn.onclick = function() {
+                    if (confirm('確定要刪除這筆交易嗎？')) deleteTransaction(transaction.id);
                 };
             }
 
             const preview = document.getElementById('photoPreview');
-                const receiptImageKey = transaction.receiptImageKey; // 讀取儲存在交易紀錄中的圖片索引鍵
-                
-                let base64Image = '';
+            const base64Image = getReceiptImage(transaction.receiptImageKey);
+            if (base64Image) {
+                preview.innerHTML = `<img src="${base64Image}">`;
+                currentReceiptImageKey = transaction.receiptImageKey;
+            } else {
+                preview.innerHTML = `<i class="fas fa-camera"></i><p>尚未上傳照片</p>`;
+                currentReceiptImageKey = '';
+            }
 
-                if (receiptImageKey) {
-                    // 使用輔助函式從 localStorage 取得 Base64 資料
-                    base64Image = getReceiptImage(receiptImageKey); 
-                }
-                
-                // 如果有 Base64 圖片資料，就顯示
-                if (base64Image && base64Image.startsWith('data:image')) {
-                    preview.innerHTML = `<img src="${base64Image}">`;
-                    // 🔹 讓你的 Modal 圖片上傳區域知道目前有圖片
-                    // 為了讓使用者在 Modal 裡可以替換圖片，必須把 key 存起來
-                    currentReceiptImageKey = receiptImageKey; 
-                } else {
-                    // 否則顯示預設的 "尚未上傳照片"
-                    preview.innerHTML = `
-                        <i class="fas fa-camera"></i>
-                        <p>尚未上傳照片</p>
-                    `;
-                }
-
-            // 5. 顯示視窗
-            const modal = document.getElementById('editTransactionModal');
-            modal.style.display = 'flex';
+            document.getElementById('editTransactionModal').style.display = 'flex';
         }
+
+        // ⭐️ 即時換算金額 (Modal 顯示)
+        function updateExchangePreview() {
+            const amountInput = document.getElementById('modal_amount');
+            const currencySelect = document.getElementById('modal_currency');
+            const textElem = document.getElementById('exchangeHint');
+            if (!amountInput || !currencySelect || !textElem) return;
+
+            const rawAmount = parseFloat(amountInput.value.replace(/,/g, '')) || 0;
+            const from = currencySelect.value || 'TWD';
+            const base = getCurrencySetting().base || 'TWD';
+            const symbol = getCurrencySetting().symbol || 'NT$';
+
+            const converted = convertAmount(rawAmount, from, base);
+            textElem.textContent = `即時換算 ≈ ${symbol}${converted.toFixed(2)} (${base})`;
+        }
+
+        // 監聽金額與幣別變動
+        document.getElementById('modal_amount').addEventListener('input', updateExchangePreview);
+        document.getElementById('modal_currency').addEventListener('change', updateExchangePreview);
+
 
         function importTransactions(importedList) {
             // 讀取現有的 receiptImages
@@ -1794,109 +1777,77 @@
         // [JS] 3. 儲存修改 (超級直白版：直接抓選單文字，保證不為空)
         function saveModalChanges(e) {
             e.preventDefault();
-            
-            // 1. 取得基本欄位
+
+            // 1️⃣ 取得基本欄位
             const id = parseInt(document.getElementById('modal_id').value);
             const date = document.getElementById('modal_date').value;
             const type = document.getElementById('modal_type').value;
-            const amount = parseFloat(document.getElementById('modal_amount').value);
             const description = document.getElementById('modal_description').value || '';
             const currency = document.getElementById('modal_currency').value;
-            
-            // 2. ⭐️ 核心修正：取得分類 (直攻選單的文字內容)
-            const mainSelect = document.getElementById('modal_main_category');
-            const subSelect = document.getElementById('modal_sub_category');
-            const { base } = getCurrencySetting();
-            const baseAmount = convertAmount(amount, currency, base);
-            
-            let mainCat = '';
-            let subCat = '';
 
-            let oldMainCat = '';
-
-            if (id && id !== 0) {
-                const oldTx = TRANSACTIONS.find(t => t.id === id);
-                if (oldTx) {
-                    const oldFull = oldTx.category || oldTx.categoryText || '';
-                    oldMainCat = oldFull.split(' / ')[0];
-                }
-            }
-
-
-            // 抓取主分類 (如果選單有選中，就抓選中的文字；沒選中就抓 value)
-            if (mainSelect.selectedIndex !== -1) {
-                mainCat = mainSelect.options[mainSelect.selectedIndex].text;
-            } else {
-                mainCat = mainSelect.value;
-            }
-
-            // 抓取子分類
-            if (subSelect.selectedIndex !== -1) {
-                subCat = subSelect.options[subSelect.selectedIndex].text;
-            } else {
-                subCat = subSelect.value;
-            }
-
-            // 排除預設選項 "-- 無 --" 或空字串
-            if (subCat === '-- 無 --' || subCat.trim() === '') {
-                subCat = '';
-            }
-
-            // 3. 組合字串
-            let finalCategory = mainCat;
-
-            if (subCat === '無子分類') {
-                subCat = '';
-            }
-            
-            // 防呆：如果主分類還是抓不到，給預設值
-            if (!finalCategory || finalCategory.trim() === '') {
-                finalCategory = '未分類';
-            } else if (subCat) {
-                // 如果有子分類，組合成 "主分類 / 子分類"
-                finalCategory = `${mainCat} / ${subCat}`;
-            }
-
-            // 4. 驗證資料
-            if (!date || !type || isNaN(amount)) {
-                alert('請檢查日期、類型與金額是否正確！');
+            // 2️⃣ 取得金額並防呆（去掉千分位）
+            const rawAmount = document.getElementById('modal_amount').value.replace(/,/g, '');
+            const amount = parseFloat(rawAmount);
+            if (isNaN(amount)) {
+                alert('請輸入正確的金額！');
                 return;
             }
 
+            // 3️⃣ 取得分類
+            const mainSelect = document.getElementById('modal_main_category');
+            const subSelect = document.getElementById('modal_sub_category');
+
+            let mainCat = mainSelect.selectedIndex !== -1 ? mainSelect.options[mainSelect.selectedIndex].text : mainSelect.value;
+            let subCat = subSelect.selectedIndex !== -1 ? subSelect.options[subSelect.selectedIndex].text : subSelect.value;
+
+            if (subCat === '無子分類' || subCat.trim() === '') subCat = '';
+
+            let finalCategory = mainCat;
+            if (subCat) finalCategory = `${mainCat} / ${subCat}`;
+            if (!finalCategory || finalCategory.trim() === '') finalCategory = '未分類';
+
+            // 4️⃣ 計算 baseAmount
+            const { base } = getCurrencySetting();
+            const baseAmount = convertAmount(amount, currency, base);
+
+            // 5️⃣ 取得圖示
             const newIcon = resolveCategoryIcon(type, mainCat, subCat);
 
-            // 6. 準備資料物件
+            // 6️⃣ 準備交易物件
             const newData = {
-                date: date,
-                type: type,
-                category: finalCategory,     // 新版欄位
-                categoryText: finalCategory, // 舊版欄位 (雙重保險)
-                currency: currency,
-                amount: amount,
-                baseAmount: baseAmount,
-                description: description,
+                date,
+                type,
+                category: finalCategory,
+                categoryText: finalCategory,
+                currency,
+                amount,
+                baseAmount,
+                description,
                 icon: newIcon,
                 receiptImageKey: currentReceiptImageKey
             };
 
-            // 7. 寫入陣列
+            // 7️⃣ 寫入交易陣列
             if (id === 0 || isNaN(id)) {
-                // 新增
+                // 新增交易
                 newData.id = Date.now();
                 TRANSACTIONS.unshift(newData);
             } else {
+                // 編輯交易
                 const index = TRANSACTIONS.findIndex(t => t.id === id);
                 if (index !== -1) {
                     TRANSACTIONS[index] = { ...TRANSACTIONS[index], ...newData };
                 }
             }
 
-            // 8. 存檔並更新畫面
+            // 8️⃣ 存檔並更新畫面
             saveToLocalStorage();
             renderTransactionList();
             closeModal();
-        }
 
+            // 9️⃣ debug log（可選）
+            console.log('交易已保存：', newData);
+        }
 
         // --------------------------- 渲染邏輯 ---------------------------
 
@@ -1938,56 +1889,39 @@
             const listContainer = document.getElementById('transactionList');
             if (!listContainer) return;
 
-            // ==========================================
-            // ⭐️ [新增] 讀取系統設定的幣別與匯率表
-            // ==========================================
-            const settingsJSON = localStorage.getItem('app_currency');
-            const targetCurrencyCode = settingsJSON ? JSON.parse(settingsJSON).base : 'TWD';
-            
-            // 匯率對照表 (需與 recordpage.html 一致)
-            const CURRENCIES = [
-                { code: 'TWD', rate: 1.0 },
-                { code: 'JPY', rate: 4.6 },
-                { code: 'USD', rate: 0.032 },
-                { code: 'EUR', rate: 0.029 }
-            ];
-            const targetCurrency = CURRENCIES.find(c => c.code === targetCurrencyCode) || CURRENCIES[0];
+            // 讀取系統設定的幣別與匯率
+            const currencySetting = getCurrencySetting();
+            const targetCurrencyCode = currencySetting.base || 'TWD';
+            const targetSymbol = currencySetting.symbol || 'NT$';
+            const rates = getCurrencyRates();
 
-            // ==========================================
-            // Part 1: 計算總金額 (以設定幣別顯示)
-            // ==========================================
+            // 計算總金額（台幣基準）
             let totalIncomeTWD = 0;
             let totalExpenseTWD = 0;
-
             const safeList = Array.isArray(list) ? list : [];
 
-            if (safeList.length > 0) {
-                safeList.forEach(t => {
-                    // 抓取台幣基準值，如果沒有就抓 baseAmount
-                    const amtTWD = parseFloat(t.amountTWD || t.baseAmount) || 0;
-                    if (t.type === 'income') totalIncomeTWD += amtTWD;
-                    else if (t.type === 'expense') totalExpenseTWD += amtTWD;
-                });
-            }
+            safeList.forEach(t => {
+                const amtTWD = parseFloat(t.baseAmount) || 0;
+                if (t.type === 'income') totalIncomeTWD += amtTWD;
+                else if (t.type === 'expense') totalExpenseTWD += amtTWD;
+            });
 
-            // 將總金額換算成目標幣別
-            const displayTotalIncome = totalIncomeTWD * targetCurrency.rate;
-            const displayTotalExpense = totalExpenseTWD * targetCurrency.rate;
+            // 換算成目標幣別
+            const displayTotalIncome = convertAmount(totalIncomeTWD, 'TWD', targetCurrencyCode);
+            const displayTotalExpense = convertAmount(totalExpenseTWD, 'TWD', targetCurrencyCode);
             const displayTotalBalance = displayTotalIncome - displayTotalExpense;
 
             // 更新儀表板
             const dashIncome = document.getElementById('dashIncome');
             if (dashIncome) {
-                // 格式化函數：日圓不顯示小數點，其他保留兩位
                 const fmt = (num) => targetCurrencyCode === 'JPY' 
                     ? Math.round(num).toLocaleString() 
                     : num.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
-                document.getElementById('dashIncome').textContent = `${targetCurrencyCode} ${fmt(displayTotalIncome)}`;
-                document.getElementById('dashExpense').textContent = `${targetCurrencyCode} ${fmt(displayTotalExpense)}`;
-                document.getElementById('dashBalance').textContent = `${targetCurrencyCode} ${fmt(displayTotalBalance)}`;
+                document.getElementById('dashIncome').textContent = `${targetSymbol} ${fmt(displayTotalIncome)}`;
+                document.getElementById('dashExpense').textContent = `${targetSymbol} ${fmt(displayTotalExpense)}`;
+                document.getElementById('dashBalance').textContent = `${targetSymbol} ${fmt(displayTotalBalance)}`;
 
-                // 進度條邏輯保持不變 (比例一樣)
                 const barIncome = document.getElementById('barIncome');
                 const barExpense = document.getElementById('barExpense');
                 const barBalance = document.getElementById('barBalance');
@@ -2002,42 +1936,19 @@
                 }
             }
 
-            // ==========================================
-            // Part 2: 處理無資料狀態 (Empty State)
-            // ==========================================
+            // 無資料狀態
             const emptyState = document.getElementById('emptyState');
             if (safeList.length === 0) {
                 if (emptyState) emptyState.style.display = 'block';
                 listContainer.style.display = 'none';
-                
-                // 如果 HTML 裡沒有寫 emptyState，這裡手動插入 (相容舊版)
-                if (!emptyState) {
-                    listContainer.style.display = 'block';
-                    listContainer.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-icon"><i class="fas fa-inbox"></i></div>
-                            <p>目前沒有任何交易紀錄</p>
-                            <button id="addFirstTransactionBtn" class="add-btn-small">
-                                <i class="fas fa-plus"></i> 新增第一筆
-                            </button>
-                        </div>`;
-                    // 綁定按鈕
-                    setTimeout(() => {
-                        const btn = document.getElementById('addFirstTransactionBtn');
-                        if(btn) btn.onclick = () => window.parent.switchPage ? window.parent.switchPage(null, 'recordpage.html') : window.location.href = 'recordpage.html';
-                    }, 0);
-                }
-                return; // 沒資料就停在這裡，不往下渲染列表
+                return;
+            } else {
+                if (emptyState) emptyState.style.display = 'none';
+                listContainer.style.display = 'block';
+                listContainer.innerHTML = '';
             }
 
-            // 有資料：隱藏空狀態，顯示列表容器
-            if (emptyState) emptyState.style.display = 'none';
-            listContainer.style.display = 'block';
-            listContainer.innerHTML = ''; // 清空舊內容
-
-            // ==========================================
-            // Part 3: 日期分組與渲染列表
-            // ==========================================
+            // 日期分組
             const grouped = safeList.reduce((acc, t) => {
                 const date = t.date || '未知日期';
                 if (!acc[date]) acc[date] = [];
@@ -2045,24 +1956,39 @@
                 return acc;
             }, {});
 
-            const sortedDates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
+            const sortedDates = Object.keys(grouped).sort((a,b) => new Date(b) - new Date(a));
 
             sortedDates.forEach(date => {
-                // 計算當日小計 (台幣基準)
-                let dailyTotalTWD = 0;
+                // 當日收入/支出（台幣）
+                let dailyIncomeTWD = 0;
+                let dailyExpenseTWD = 0;
+
                 grouped[date].forEach(t => {
-                    const val = parseFloat(t.amountTWD || t.baseAmount || 0);
-                    dailyTotalTWD += (t.type === 'income' ? val : -val);
+                    const amt = parseFloat(t.baseAmount) || 0;
+                    if (t.type === 'income') dailyIncomeTWD += amt;
+                    else if (t.type === 'expense') dailyExpenseTWD += amt;
                 });
 
-                // 換算成目標幣別顯示
-                const dailyDisplay = dailyTotalTWD * targetCurrency.rate;
-                const formattedDaily = (dailyDisplay >= 0 ? '+' : '-') + targetCurrencyCode + ' ' + 
-                    (targetCurrencyCode === 'JPY' ? Math.round(Math.abs(dailyDisplay)).toLocaleString() : Math.abs(dailyDisplay).toLocaleString(undefined, {minimumFractionDigits: 2}));
+                // 分開轉換成目標幣別
+                let dailyBalanceDisplay = 0;
+                grouped[date].forEach(t => {
+                    const amtDisplay = convertAmount(parseFloat(t.amount) || 0, t.currency, targetCurrencyCode);
+                    dailyBalanceDisplay += (t.type === 'income' ? 1 : -1) * amtDisplay;
+                });
+
+                const fmt = (num) => targetCurrencyCode === 'JPY'
+                    ? Math.round(num).toLocaleString()
+                    : num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                const formattedDaily = (dailyBalanceDisplay >= 0 ? '+' : '-') + targetSymbol +
+                    (targetCurrencyCode === 'JPY' 
+                        ? Math.round(Math.abs(dailyBalanceDisplay)).toLocaleString() 
+                        : Math.abs(dailyBalanceDisplay).toLocaleString(undefined, { minimumFractionDigits: 2 }));
+
 
                 const dateDiv = document.createElement('div');
                 dateDiv.className = 'date-group';
-                const summaryColor = dailyTotalTWD >= 0 ? 'income-color' : 'expense-color';
+                const summaryColor = dailyBalanceDisplay >= 0 ? 'income-color' : 'expense-color';
 
                 dateDiv.innerHTML = `
                     <div class="date-group-header" onclick="toggleDateGroup(this)">
@@ -2075,24 +2001,18 @@
                     <div class="daily-transactions" style="display: block;"></div>
                 `;
                 listContainer.appendChild(dateDiv);
-                
                 const dailyContainer = dateDiv.querySelector('.daily-transactions');
-                
+
+                // 每筆交易渲染
                 grouped[date].forEach(t => {
                     const card = document.createElement('div');
                     card.onclick = () => editTransaction(t.id);
-                    
-                    // 單筆換算
-                    const itemBaseTWD = parseFloat(t.amountTWD || t.baseAmount || 0);
-                    const itemDisplay = itemBaseTWD * targetCurrency.rate;
 
-                    let type = t.type; // expense / income
-                    let mainCategory = (t.category || t.categoryText || '').split(' / ')[0];
-
-                    const color = getCategoryColor(type, mainCategory);
-
-                    let displayCategory = t.category || t.categoryText || '未分類';
+                    const itemDisplay = convertAmount(parseFloat(t.amount) || 0, t.currency, targetCurrencyCode);
                     const isExp = t.type === 'expense';
+                    const mainCategory = (t.category || t.categoryText || '').split(' / ')[0];
+                    const color = getCategoryColor(t.type, mainCategory);
+                    const displayCategory = t.category || t.categoryText || '未分類';
 
                     card.className = `transaction-card ${isExp ? 'expense-border' : 'income-border'}`;
                     card.innerHTML = `
@@ -2105,10 +2025,10 @@
                                 </div>
                             </div>
                             <div class="amount-section ${isExp ? 'expense-color' : 'income-color'}">
-                                ${isExp ? '-' : '+'} ${targetCurrencyCode} ${
+                                ${isExp ? '-' : '+'} ${targetSymbol} ${
                                     targetCurrencyCode === 'JPY' 
                                     ? Math.round(itemDisplay).toLocaleString() 
-                                    : itemDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})
+                                    : itemDisplay.toLocaleString(undefined, { minimumFractionDigits: 2 })
                                 }
                             </div>
                         </div>
@@ -2117,7 +2037,6 @@
                 });
             });
         }
-
 
         /**
         * [JS] 點擊日期標題時收合/展開
@@ -2151,14 +2070,35 @@
         }
 
         function updateExchangePreview() {
-            const amount = parseFloat(document.getElementById('modal_amount').value) || 0;
-            const from = document.getElementById('modal_currency').value;
-            const { base, symbol } = getCurrencySetting();
+            const amountInput = document.getElementById('modal_amount');
+            const currencySelect = document.getElementById('modal_currency');
+
+            if (!amountInput || !currencySelect) return;
+
+            const amount = parseFloat(amountInput.value) || 0;
+            const from = currencySelect.value || 'TWD'; // fallback
+            const currencySetting = getCurrencySetting();
+            const base = currencySetting.base || 'TWD';
+            const symbol = currencySetting.symbol || 'NT$'; // ✅ fallback
 
             const converted = convertAmount(amount, from, base);
-            document.getElementById('exchangeHint').textContent =
-                `≈ ${symbol}${converted.toFixed(2)} (${base})`;
+            const safeConverted = isNaN(converted) ? 0 : converted;
+
+            const textElem = document.getElementById('exchangeHint');
+            if (textElem) {
+                textElem.textContent = `即時換算 ≈ ${symbol}${safeConverted.toFixed(2)} (${base})`;
+
+            }
         }
+
+
+
+        // 金額輸入欄
+        document.getElementById('modal_amount').addEventListener('input', updateExchangePreview);
+
+        // 幣別下拉欄
+        document.getElementById('modal_currency').addEventListener('change', updateExchangePreview);
+
 
         document.getElementById('modalCopyBtn').onclick = function () {
             const id = parseInt(document.getElementById('modal_id').value);
@@ -2176,8 +2116,6 @@
             renderTransactionList();
             closeModal();
         };
-
-
 
         // --------------------------- 事件綁定 ---------------------------
 

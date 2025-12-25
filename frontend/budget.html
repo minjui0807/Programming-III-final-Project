@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <style>
-        /* --------------------------- 全域變數與霓虹樣式 --------------------------- */
         :root {
             --bg-dark: #0f1115;
             --bg-secondary: #1e1e1e;
@@ -20,402 +19,278 @@
             --text-dark: #b8b8b8;
             --border-color: #2a2a2a;
 
-            /* 分類顏色 */
-            --cat-1: #ff7f7f; --cat-2: #ffcc66; --cat-3: #a8f0c6; --cat-4: #a7d7ff;
-            --cat-5: #ffb3cf; --cat-6: #cf9cff; --cat-12: #ffe066;
+            
+            --cat-1: #ff7f7f;
+            --cat-2: #ffcc66;
+            --cat-3: #a8f0c6;
+            --cat-4: #a7d7ff;
+            --cat-5: #ffb3cf;
+            --cat-6: #cf9cff;
+            --cat-7: #66ffcc;
+            --cat-8: #ff9c66;
+            --cat-9: #99ccff;
+            --cat-10: #d4d4d4;
+            --cat-11: #ffd1dc;
+            --cat-12: #ffe066;
+            --cat-13: #8affc1;
+            --cat-14: #8ed1ff;
+            --cat-15: #c9a7ff;
+            --cat-16: #ffb380;
+            --cat-17: #b3ffb3;
+            --cat-18: #b3d9ff;
+            --cat-19: #ffe6b3;
+            --cat-20: #ffadad;
         }
 
-        /* 隱藏滾動條但保留功能 */
-        * {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+        * { -ms-overflow-style: none; scrollbar-width: none; }
         *::-webkit-scrollbar { display: none; }
 
-        body {
-            margin: 0;
-            padding: 20px;
-            background: var(--bg-dark);
-            font-family: 'Segoe UI', sans-serif;
-            color: var(--text-light);
-        }
+        body { margin:0; padding:20px; background:var(--bg-dark); font-family:'Segoe UI', sans-serif; color:var(--text-light); }
+        .container { max-width: 900px; margin:auto; padding-bottom:80px; }
 
-        .container { max-width: 900px; margin: auto; padding-bottom: 80px; }
+        .page-title { color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue); font-size:1.8em; margin-bottom:25px; display:flex; align-items:center; gap:12px; }
 
-        .page-title {
-            color: var(--neon-blue);
-            text-shadow: 0 0 10px var(--neon-blue);
-            font-size: 1.8em;
-            margin-bottom: 25px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+        .total-budget-card { background: linear-gradient(145deg,#1e1e1e,#252525); padding:25px; border-radius:20px; margin-bottom:30px; text-align:center; border:1px solid var(--border-color); box-shadow:0 10px 30px rgba(0,0,0,0.5); }
+        .total-title { color: var(--text-dark); font-size:1rem; }
+        .total-amount { font-size:2.6rem; font-weight:bold; margin:15px 0; transition: color 0.3s; }
 
-        /* --------------------------- 總覽卡片 --------------------------- */
-        .total-budget-card {
-            background: linear-gradient(145deg, #1e1e1e, #252525);
-            padding: 25px;
-            border-radius: 20px;
-            margin-bottom: 30px;
-            text-align: center;
-            border: 1px solid var(--border-color);
-        }
-        .total-title { color: var(--text-dark); font-size: 1rem; }
-        .total-amount { font-size: 2.6rem; font-weight: bold; margin: 15px 0; }
+        .progress-container { background: rgba(255,255,255,0.1); height:18px; border-radius:9px; overflow:hidden; margin:10px 0; }
+        .progress-fill { height:100%; width:0%; transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1), background-color 0.3s; }
+        .progress-text { display:flex; justify-content:space-between; color: var(--text-dark); font-size:0.9em; }
 
-        .progress-container {
-            background: rgba(255, 255, 255, 0.1);
-            height: 18px;
-            border-radius: 9px;
-            overflow: hidden;
-            margin: 10px 0;
-        }
-        .progress-fill {
-            height: 100%;
-            width: 0%;
-            transition: width 0.5s ease-in-out, background-color 0.3s;
-        }
-        .progress-text {
-            display: flex;
-            justify-content: space-between;
-            color: var(--text-dark);
-            font-size: 0.9em;
-        }
+        .budget-list { display:grid; grid-template-columns: repeat(auto-fit, minmax(320px,1fr)); gap:20px; }
+        .budget-card { background: var(--bg-secondary); padding:20px; border-radius:16px; border:1px solid var(--border-color); transition: transform 0.2s, background 0.2s; }
+        .main-budget-card { cursor:pointer; }
+        .main-budget-card:hover { background: rgba(255,255,255,0.05); transform: translateY(-2px); }
 
-        /* --------------------------- 分類列表 --------------------------- */
-        .budget-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 20px;
-        }
-        .budget-card {
-            background: var(--bg-secondary);
-            padding: 20px;
-            border-radius: 16px;
-            border: 1px solid var(--border-color);
-            transition: transform 0.2s;
-        }
-        .main-budget-card { cursor: pointer; }
-        .main-budget-card:hover { background: rgba(255, 255, 255, 0.05); }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        .cat-info { display: flex; gap: 12px; align-items: center; }
-        .cat-icon {
-            width: 40px; height: 40px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.05);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.2rem;
-        }
-        .cat-name { font-weight: bold; }
-
-        .expand-icon { transition: transform 0.3s; font-size: 0.8em; margin-left: 5px; }
+        .card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
+        .cat-info { display:flex; gap:12px; align-items:center; }
+        .cat-icon { width:40px; height:40px; border-radius:50%; background: rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:center; font-size:1.2rem; }
+        .cat-name { font-weight:bold; }
+        .expand-icon { transition: transform 0.3s; font-size:0.8em; margin-left:5px; color: var(--text-dark); }
         .expanded .expand-icon { transform: rotate(180deg); }
 
-        .budget-setter { text-align: right; }
-        .budget-label { font-size: 0.75rem; color: var(--text-dark); }
-        .budget-display { font-size: 1rem; cursor: pointer; transition: color 0.2s; }
-        .budget-display:hover { color: var(--neon-yellow); }
-        .budget-input {
-            display: none; width: 80px;
-            background: #000; color: #fff;
-            border: 1px solid var(--neon-blue);
-            padding: 4px; border-radius: 4px; text-align: right;
-        }
+        .budget-setter { text-align:right; }
+        .budget-label { font-size:0.75rem; color: var(--text-dark); margin-bottom:2px; }
+        .budget-display { font-size:1.1rem; cursor:pointer; transition: color 0.2s; font-weight:500; }
+        .budget-display:hover { color: var(--neon-yellow); text-decoration:underline; }
+        .budget-input { display:none; width:90px; background:#000; color:#fff; border:1px solid var(--neon-blue); padding:5px; border-radius:6px; text-align:right; font-size:1rem; outline:none; box-shadow:0 0 10px rgba(167,215,255,0.3); }
 
-        .card-stats {
-            display: flex; justify-content: space-between;
-            margin-top: 10px; font-size: 0.85em; color: var(--text-dark);
-        }
+        .card-stats { display:flex; justify-content:space-between; margin-top:10px; font-size:0.85em; color: var(--text-dark); }
+        .sub-category-container { display:none; margin-left:15px; padding-left:15px; border-left:1px dashed #444; margin-top:10px; }
+        .sub-category-container.active { display:block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(-5px);} to { opacity:1; transform:translateY(0);} }
 
-        /* 子分類容器 */
-        .sub-category-container {
-            display: none;
-            margin-left: 15px;
-            padding-left: 15px;
-            border-left: 1px dashed #444;
-            margin-top: 10px;
-        }
-        .sub-category-container.active { display: block; }
-
-        .toast {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: var(--neon-green); color: #000;
-            padding: 10px 25px; border-radius: 30px;
-            font-weight: bold; opacity: 0; transition: 0.3s; z-index: 1000;
-        }
+        .toast { position: fixed; bottom:30px; left:50%; transform:translateX(-50%); background: var(--neon-green); color:#000; padding:10px 25px; border-radius:30px; font-weight:bold; opacity:0; transition:0.3s; z-index:1000; box-shadow:0 5px 15px rgba(0,0,0,0.3);}
     </style>
 </head>
-
 <body>
     <div class="container">
         <h1 class="page-title"><i class="fas fa-shield-alt"></i> 預算控制中心</h1>
 
         <div class="total-budget-card">
-            <div class="total-title">本月剩餘預算</div>
-            <div class="total-amount" id="totalRemaining">$0</div>
-            <div class="progress-container">
-                <div class="progress-fill" id="totalBar"></div> 
-            </div>
-            <div class="progress-text">
-                <span id="totalSpentText">已花 $0</span>
-                <span id="totalBudgetText">總預算 $0</span>
-            </div>
+            <div class="total-title" id="monthTitle">本月剩餘預算</div>
+            <div class="total-amount" id="totalRemaining">---</div>
+            <div class="progress-container"><div class="progress-fill" id="totalBar"></div></div>
+            <div class="progress-text"><span id="totalSpentText">已花 ---</span><span id="totalBudgetText">總預算 ---</span></div>
         </div>
 
         <div class="budget-list" id="budgetList"></div>
-
-        <div id="noBudgetMsg" style="text-align: center; color: var(--text-dark); padding: 50px 0; display: none;">
-            <i class="fas fa-receipt fa-3x" style="color: var(--neon-pink); margin-bottom: 15px;"></i>
+        <div id="noBudgetMsg" style="text-align:center;color:var(--text-dark);padding:50px 0;display:none;">
+            <i class="fas fa-receipt fa-3x" style="color:var(--neon-pink);margin-bottom:15px;"></i>
             <h3>尚未設定分類或預算</h3>
-            <p>點擊下方分類金額即可開始設定預算</p>
+            <p>點擊上方分類金額即可開始設定預算</p>
         </div>
     </div>
 
     <div class="toast" id="toast">✅ 預算已更新</div>
 
     <script>
-        /* ===============================
-            配置與資料工具
-        =============================== */
-        const STORAGE_KEYS = {
-            TRANSACTIONS: 'transactions',
-            BUDGET: 'budget_settings',
-            CATEGORY: 'categoryData',
-            CURRENCY: 'app_currency'
-        };
+        // -------------------------- 固定匯率 --------------------------
+        const FIXED_RATES={TWD:1,USD:0.032,JPY:4.6,EUR:0.029,HKD:0.24,CNY:0.22,GBP:0.024,AUD:0.046,KRW:41.5,SGD:0.041};
+        const SYMBOL_MAP={TWD:'NT$',USD:'$',JPY:'JP¥',EUR:'€',HKD:'HK$',CNY:'CN¥',GBP:'£',AUD:'A$',KRW:'₩',SGD:'S$'};
 
-        const SYMBOL_MAP = { 
-            TWD: 'NT$', USD: '$', JPY: '¥', EUR: '€', 
-            HKD: 'HK$', CNY: '¥', GBP: '£', AUD: 'A$', 
-            KRW: '₩', SGD: 'S$' 
-        };
-
-        const getJSON = (key, defaultVal = {}) => {
-            try { return JSON.parse(localStorage.getItem(key)) || defaultVal; } 
-            catch { return defaultVal; }
-        };
-
-        // 取得幣別資訊與匯率
-        function getCurrencyInfo() {
-            const config = getJSON(STORAGE_KEYS.CURRENCY, { base: 'TWD', symbol: 'NT$', rates: { TWD: 1 } });
-            const base = config.base || 'TWD';
-            return {
-                base: base,
-                symbol: SYMBOL_MAP[base] || config.symbol || '$',
-                rate: config.rates?.[base] || 1 // 這是 1台幣 兌換多少 外幣
-            };
+        function getCurrencyInfo(){
+            const cur=JSON.parse(localStorage.getItem('app_currency'))||{base:'TWD'};
+            const base=cur.base||'TWD';
+            const symbol=SYMBOL_MAP[base]||'$';
+            const rate=FIXED_RATES[base]||1;
+            return {base,symbol,rate};
         }
 
-        /* ===============================
-            核心渲染邏輯
-        =============================== */
-        function renderBudget() {
-            const transactions = getJSON(STORAGE_KEYS.TRANSACTIONS, []);
-            const budgetSettings = getJSON(STORAGE_KEYS.BUDGET, {}); // 這裡存的是台幣基準
-            const categoryData = getJSON(STORAGE_KEYS.CATEGORY, getDefaultCategories());
-            const { symbol, rate } = getCurrencyInfo();
+        function convertAmount(amountTWD){
+            const {rate}=getCurrencyInfo();
+            return amountTWD*rate;
+        }
 
-            const now = new Date();
-            const currentMonth = now.getMonth();
-            const currentYear = now.getFullYear();
+        // -------------------------- 渲染預算 --------------------------
+        function renderBudget(){
+            const budgetSettings=JSON.parse(localStorage.getItem('budget_settings'))||{};
+            const transactions=JSON.parse(localStorage.getItem('transactions'))||[];
+            const categoryData=JSON.parse(localStorage.getItem('categoryData'))||getDefaultCategories();
+            const {symbol}=getCurrencyInfo();
 
-            // 1. 計算本月各分類支出 (從交易紀錄的 baseAmount 換算成目前幣別)
-            const expenseMap = transactions.reduce((acc, t) => {
-                const tDate = new Date(t.date);
-                if (tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear && t.type === 'expense') {
-                    const fullName = t.category || t.categoryText || '未分類';
-                    // 使用 baseAmount (台幣) 乘上 目前匯率
-                    const amount = (parseFloat(t.baseAmount) || parseFloat(t.amount) || 0) * rate;
-                    
-                    acc[fullName] = (acc[fullName] || 0) + amount;
-                    if (fullName.includes(' / ')) {
-                        const mainName = fullName.split(' / ')[0];
-                        acc[mainName] = (acc[mainName] || 0) + amount;
-                    }
-                }
-                return acc;
-            }, {});
+            const now=new Date();
+            const currentMonth=now.getMonth();
+            const currentYear=now.getFullYear();
+            document.getElementById('monthTitle').textContent=`${currentMonth+1} 月剩餘預算`;
 
-            const container = document.getElementById('budgetList');
-            container.innerHTML = '';
+            let totalBudget=0,totalSpent=0;
+            const container=document.getElementById('budgetList');
+            container.innerHTML='';
 
-            let totalBudgetConverted = 0;
-            let totalSpentConverted = 0;
+            categoryData.expense.forEach((mainCat,idx)=>{
+                const budgetBase=budgetSettings[mainCat.name]||0;
+                const budgetConverted=convertAmount(budgetBase);
 
-            // 2. 渲染分類卡片
-            categoryData.expense.forEach((mainCat, idx) => {
-                const spent = expenseMap[mainCat.name] || 0;
-                // ⭐️ 關鍵修正：將儲存的台幣預算乘上匯率
-                const budgetBase = budgetSettings[mainCat.name] || 0;
-                const budgetConverted = budgetBase * rate;
+                const spent=transactions
+                    .filter(t=>{
+                        const d=new Date(t.date); 
+                        return d.getMonth()===currentMonth && d.getFullYear()===currentYear && t.type==='expense' && t.category===mainCat.name;
+                    })
+                    .reduce((a,t)=>a+convertAmount(t.baseAmount||t.amount||0),0);
 
-                totalBudgetConverted += budgetConverted;
-                totalSpentConverted += spent;
+                totalBudget+=budgetConverted;
+                totalSpent+=spent;
 
-                const hasSubs = mainCat.sub && mainCat.sub.length > 0;
-                let subHtml = '';
-
-                if (hasSubs) {
-                    mainCat.sub.forEach(sub => {
-                        const subFullName = `${mainCat.name} / ${sub.name}`;
-                        const subSpent = expenseMap[subFullName] || 0;
-                        const subBudgetBase = budgetSettings[subFullName] || 0;
-                        const subBudgetConverted = subBudgetBase * rate;
-                        
-                        subHtml += createCardHtml(subFullName, sub.name, subBudgetConverted, subSpent, mainCat.color, sub.icon, true, false, 0, symbol);
+                let subHtml='';
+                if(mainCat.sub?.length>0){
+                    mainCat.sub.forEach(sub=>{
+                        const subKey=`${mainCat.name} / ${sub.name}`;
+                        const subBudget=convertAmount(budgetSettings[subKey]||0);
+                        const subSpent=transactions
+                            .filter(t=>t.category===subKey)
+                            .reduce((a,t)=>a+convertAmount(t.baseAmount||t.amount||0),0);
+                        subHtml+=createCardHtml(subKey,sub.name,subBudget,subSpent,sub.color,sub.icon,true,false,0,symbol);
                     });
                 }
 
-                container.insertAdjacentHTML('beforeend', `
+                container.insertAdjacentHTML('beforeend',`
                     <div class="category-group">
-                        ${createCardHtml(mainCat.name, mainCat.name, budgetConverted, spent, mainCat.color, mainCat.icon, false, hasSubs, idx, symbol)}
-                        <div id="sub-container-${idx}" class="sub-category-container">
-                            ${subHtml}
-                        </div>
+                        ${createCardHtml(mainCat.name,mainCat.name,budgetConverted,spent,mainCat.color,mainCat.icon,false,mainCat.sub?.length>0,idx,symbol)}
+                        <div id="sub-container-${idx}" class="sub-category-container">${subHtml}</div>
                     </div>
                 `);
             });
 
-            // 3. 更新總覽
-            updateTotalDisplay(totalBudgetConverted, totalSpentConverted, symbol);
-            document.getElementById('noBudgetMsg').style.display = categoryData.expense.length ? 'none' : 'block';
+            updateTotalDisplay(totalBudget,totalSpent,symbol);
+            document.getElementById('noBudgetMsg').style.display=categoryData.expense.length?'none':'block';
         }
 
-        function createCardHtml(key, name, budget, spent, color, icon, isSub, hasSubs, idx, symbol) {
-            const progress = budget > 0 ? Math.min(100, (spent / budget) * 100) : (spent > 0 ? 100 : 0);
-            const barColor = progress >= 100 ? 'var(--neon-red)' : (progress > 80 ? 'var(--neon-yellow)' : (isSub ? color : 'var(--neon-green)'));
-            
-            // 顯示時取整數比較美觀
-            const budgetLabel = budget > 0 ? `${symbol}${Math.round(budget).toLocaleString()}` : '點擊設定';
+        function createCardHtml(key,name,budget,spent,color,icon,isSub,hasSubs,idx,symbol){
+            const progress=budget>0?Math.min(100,(spent/budget)*100):(spent>0?100:0);
+            const barColor=progress>=100?'var(--neon-red)':(progress>80?'var(--neon-yellow)':(isSub?color:'var(--neon-green)'));
+            const formattedBudget=budget>0?`${symbol}${Math.round(budget).toLocaleString()}`:'點擊設定';
+            const formattedSpent=`${symbol}${Math.round(spent).toLocaleString()}`;
 
             return `
-                <div id="${!isSub ? 'main-card-'+idx : ''}" class="budget-card ${!isSub ? 'main-budget-card' : ''}" 
-                    ${!isSub && hasSubs ? `onclick="toggleSub(${idx})"` : ''} style="margin-bottom: 10px;">
+                <div id="${!isSub?'main-card-'+idx:''}" class="budget-card ${!isSub?'main-budget-card':''}" ${!isSub && hasSubs?`onclick="toggleSub(${idx})"`:''} style="margin-bottom:10px; border-left:4px solid ${color}">
                     <div class="card-header">
                         <div class="cat-info">
-                            <span class="cat-icon" style="color: ${color};"><i class="${icon}"></i></span>
-                            <span class="cat-name" style="color: ${color}; font-size: ${isSub ? '0.9em' : '1.1em'};">
-                                ${name} ${!isSub && hasSubs ? '<i class="fas fa-chevron-down expand-icon"></i>' : ''}
+                            <span class="cat-icon" style="color:${color};"><i class="${icon}"></i></span>
+                            <span class="cat-name" style="color:${color}; font-size:${isSub?'0.9em':'1.1em'};">
+                                ${name} ${!isSub && hasSubs?'<i class="fas fa-chevron-down expand-icon"></i>':''}
                             </span>
                         </div>
                         <div class="budget-setter" onclick="event.stopPropagation();">
                             <div class="budget-label">預算 (${symbol})</div>
-                            <div class="budget-display" onclick="editBudget(this)" style="color: ${budget > 0 ? 'var(--text-light)' : 'var(--text-dark)'}">
-                                ${budgetLabel}
+                            <div class="budget-display" onclick="editBudget(this)" style="color:${budget>0?'var(--text-light)':'var(--text-dark)'}">
+                                ${formattedBudget}
                             </div>
-                            <input type="number" class="budget-input" value="${budget > 0 ? Math.round(budget) : ''}" 
-                                onblur="saveBudget(this, '${key}')"
+                            <input type="number" class="budget-input" value="${budget>0?Math.round(budget):''}" 
+                                onblur="saveBudget(this,'${key}')"
                                 onkeydown="if(event.key==='Enter') this.blur()">
                         </div>
                     </div>
                     <div class="progress-container">
-                        <div class="progress-fill" style="width:${progress}%; background-color:${barColor};"></div>
+                        <div class="progress-fill" style="width:${progress}%; background-color:${barColor}; box-shadow:0 0 10px ${barColor}66;"></div>
                     </div>
                     <div class="card-stats">
-                        <span>已花 ${symbol}${Math.round(spent).toLocaleString()}</span>
-                        <span>${progress.toFixed(0)}%</span>
+                        <span>已花 ${formattedSpent}</span>
+                        <span style="color:${progress>=100?'var(--neon-red)':'inherit'}">${progress.toFixed(0)}%</span>
                     </div>
                 </div>
             `;
         }
 
-        /* ===============================
-            UI 互動功能
-        =============================== */
-        function updateTotalDisplay(budget, spent, symbol) {
-            const remain = budget - spent;
-            const remainEl = document.getElementById('totalRemaining');
-            const bar = document.getElementById('totalBar');
-            const p = budget > 0 ? Math.min(100, (spent/budget)*100) : 0;
+        function updateTotalDisplay(budget,spent,symbol){
+            const remain=budget-spent;
+            const remainEl=document.getElementById('totalRemaining');
+            const bar=document.getElementById('totalBar');
+            const p=budget>0?Math.min(100,(spent/budget)*100):0;
 
-            remainEl.textContent = `${symbol}${Math.round(remain).toLocaleString()}`;
-            remainEl.style.color = remain >= 0 ? 'var(--neon-green)' : 'var(--neon-red)';
-            
-            document.getElementById('totalSpentText').textContent = `已花 ${symbol}${Math.round(spent).toLocaleString()}`;
-            document.getElementById('totalBudgetText').textContent = `總預算 ${symbol}${Math.round(budget).toLocaleString()}`;
-            
-            bar.style.width = `${p}%`;
-            bar.style.backgroundColor = p >= 100 ? 'var(--neon-red)' : (p > 80 ? 'var(--neon-yellow)' : 'var(--neon-green)');
+            remainEl.textContent=`${symbol}${Math.round(remain).toLocaleString()}`;
+            remainEl.style.color=remain>=0?'var(--neon-green)':'var(--neon-red)';
+            remainEl.style.textShadow=remain>=0?'0 0 15px rgba(168,240,198,0.5)':'0 0 15px rgba(255,127,127,0.5)';
+
+            document.getElementById('totalSpentText').textContent=`已花 ${symbol}${Math.round(spent).toLocaleString()}`;
+            document.getElementById('totalBudgetText').textContent=`總預算 ${symbol}${Math.round(budget).toLocaleString()}`;
+
+            bar.style.width=`${p}%`;
+            bar.style.backgroundColor=p>=100?'var(--neon-red)':(p>80?'var(--neon-yellow)':'var(--neon-green)');
         }
 
-        function toggleSub(id) {
-            document.getElementById(`sub-container-${id}`)?.classList.toggle('active');
-            document.getElementById(`main-card-${id}`)?.classList.toggle('expanded');
+        function toggleSub(id){
+            const container=document.getElementById(`sub-container-${id}`);
+            const card=document.getElementById(`main-card-${id}`);
+            if(container) container.classList.toggle('active');
+            if(card) card.classList.toggle('expanded');
         }
 
-        function editBudget(el) {
-            el.style.display = 'none';
-            const input = el.nextElementSibling;
-            input.style.display = 'block';
+        function editBudget(el){
+            el.style.display='none';
+            const input=el.nextElementSibling;
+            input.style.display='block';
             input.focus();
             input.select();
         }
 
-        function saveBudget(input, key) {
-            const { rate } = getCurrencyInfo();
-            const settings = getJSON(STORAGE_KEYS.BUDGET, {});
-            const val = parseFloat(input.value); // 使用者輸入的當前貨幣金額
-            
-            if (isNaN(val) || val <= 0) {
-                delete settings[key];
-            } else {
-                // ⭐️ 關鍵修正：存進 localStorage 之前，先除以匯率轉回台幣
-                settings[key] = val / rate;
-            }
-
-            localStorage.setItem(STORAGE_KEYS.BUDGET, JSON.stringify(settings));
+        function saveBudget(input,key){
+            const val=parseFloat(input.value);
+            const settings=JSON.parse(localStorage.getItem('budget_settings'))||{};
+            const {rate}=getCurrencyInfo();
+            if(isNaN(val)||val<=0) delete settings[key];
+            else settings[key]=val/rate;
+            localStorage.setItem('budget_settings',JSON.stringify(settings));
             renderBudget();
-            
-            const t = document.getElementById('toast');
-            t.style.opacity = 1;
-            setTimeout(() => t.style.opacity = 0, 1500);
+            const t=document.getElementById('toast');
+            t.style.opacity=1;
+            setTimeout(()=>t.style.opacity=0,1500);
         }
 
-        function getDefaultCategories() {
-            return {
-                expense: [
-                    { id: 1, name: "餐飲", icon: "fas fa-utensils", color: "var(--cat-1)", sub: [
-                        { id: 101, name: "外食", icon: "fas fa-burger", color: "var(--cat-1)" },
-                        { id: 102, name: "飲品", icon: "fas fa-coffee", color: "var(--cat-1)" },
-                        { id: 103, name: "零食", icon: "fas fa-cookie-bite", color: "var(--cat-1)" },
-                    ]},
-                    { id: 2, name: "交通", icon: "fas fa-bus", color: "var(--cat-2)", sub: [
-                        { id: 201, name: "油資/充電", icon: "fas fa-gas-pump", color: "var(--cat-2)" },
-                        { id: 202, name: "公車/捷運", icon: "fas fa-subway", color: "var(--cat-2)" },
-                        { id: 203, name: "計程車", icon: "fas fa-taxi", color: "var(--cat-2)" },
-                    ]},
-                    { id: 3, name: "購物", icon: "fas fa-shopping-bag", color: "var(--cat-3)", sub: [
-                        { id: 301, name: "服飾", icon: "fas fa-shirt", color: "var(--cat-3)" },
-                        { id: 302, name: "日用品", icon: "fas fa-toilet-paper", color: "var(--cat-3)" },
-                        { id: 303, name: "3C 產品", icon: "fas fa-mobile-screen-button", color: "var(--cat-3)" },
-                    ]},
-                    { id: 4, name: "娛樂", icon: "fas fa-gamepad", color: "var(--cat-4)", sub: [
-                        { id: 401, name: "電影/展覽", icon: "fas fa-ticket", color: "var(--cat-4)" },
-                        { id: 402, name: "遊戲", icon: "fas fa-dice", color: "var(--cat-4)" },
-                        { id: 403, name: "旅遊", icon: "fas fa-plane", color: "var(--cat-4)" },
-                    ]},
-                    { id: 5, name: "居住", icon: "fas fa-home", color: "var(--cat-5)", sub: [
-                        { id: 501, name: "房租/房貸", icon: "fas fa-building-columns", color: "var(--cat-5)" },
-                        { id: 502, name: "水電瓦斯", icon: "fas fa-lightbulb", color: "var(--cat-5)" },
-                        { id: 503, name: "網路/電信", icon: "fas fa-signal", color: "var(--cat-5)" },
-                    ]}
-                ],
-            };
-        }
+        function getDefaultCategories(){ return {expense:[
+            {id:1,name:"餐飲",icon:"fas fa-utensils",color:"var(--cat-1)",sub:[
+                {id:101,name:"外食",icon:"fas fa-burger",color:"var(--cat-1)"},
+                {id:102,name:"飲品",icon:"fas fa-coffee",color:"var(--cat-1)"},
+                {id:103,name:"零食",icon:"fas fa-cookie-bite",color:"var(--cat-1)"}
+            ]},
+            {id:2,name:"交通",icon:"fas fa-bus",color:"var(--cat-2)",sub:[
+                {id:201,name:"油資/充電",icon:"fas fa-gas-pump",color:"var(--cat-2)"},
+                {id:202,name:"公車/捷運",icon:"fas fa-subway",color:"var(--cat-2)"},
+                {id:203,name:"計程車",icon:"fas fa-taxi",color:"var(--cat-2)"}
+            ]},
+            {id:3,name:"購物",icon:"fas fa-shopping-bag",color:"var(--cat-3)",sub:[
+                {id:301,name:"服飾",icon:"fas fa-shirt",color:"var(--cat-3)"},
+                {id:302,name:"日用品",icon:"fas fa-toilet-paper",color:"var(--cat-3)"},
+                {id:303,name:"3C 產品",icon:"fas fa-mobile-screen-button",color:"var(--cat-3)"}
+            ]},
+            {id:4,name:"娛樂",icon:"fas fa-gamepad",color:"var(--cat-4)",sub:[
+                {id:401,name:"電影/展覽",icon:"fas fa-ticket",color:"var(--cat-4)"},
+                {id:402,name:"遊戲",icon:"fas fa-dice",color:"var(--cat-4)"},
+                {id:403,name:"旅遊",icon:"fas fa-plane",color:"var(--cat-4)"}
+            ]},
+            {id:5,name:"居住",icon:"fas fa-home",color:"var(--cat-5)",sub:[
+                {id:501,name:"房租/房貸",icon:"fas fa-building-columns",color:"var(--cat-5)"},
+                {id:502,name:"水電瓦斯",icon:"fas fa-lightbulb",color:"var(--cat-5)"},
+                {id:503,name:"網路/電信",icon:"fas fa-signal",color:"var(--cat-5)"}
+            ]}
+        ]};}
 
-        // 監聽跨頁面變動 (幣種切換、交易增加)
-        window.addEventListener('storage', (e) => {
-            if (Object.values(STORAGE_KEYS).includes(e.key)) renderBudget();
+        window.addEventListener('storage',(e)=>{
+            if(['transactions','budget_settings','categoryData','app_currency'].includes(e.key)) renderBudget();
         });
 
-        document.addEventListener('DOMContentLoaded', renderBudget);
+        document.addEventListener('DOMContentLoaded',renderBudget);
     </script>
 </body>
 </html>

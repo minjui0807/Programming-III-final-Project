@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <style>
-        
         /* --------------------------- 全域變數 --------------------------- */
         :root{
             --bg-dark: #0f1115;
@@ -22,115 +21,31 @@
             --gray-default: #d8d8d8;
             --sidebar-width: 200px;
             --sidebar-collapsed-width: 72px;
-
-            --border-color: #2a2a2a;                 /* 邊框顏色 */
-
-            /* 分類顏色變數 (可根據您的需求調整) */
-            --cat-1: #ff7f7f;
-            --cat-2: #ffcc66;
-            --cat-3: #a8f0c6;
-            --cat-4: #a7d7ff;
-            --cat-5: #ffb3cf;
-            --cat-6: #cf9cff;
-            --cat-7: #66ffcc;
-            --cat-8: #ff9c66;
-            --cat-9: #99ccff;
-            --cat-10: #d4d4d4;
-            --cat-11: #ffd1dc;
-            --cat-12: #ffe066;
-            --cat-13: #8affc1;
-            --cat-14: #8ed1ff;
-            --cat-15: #c9a7ff;
-            --cat-16: #ffb380;
-            --cat-17: #b3ffb3;
-            --cat-18: #b3d9ff;
-            --cat-19: #ffe6b3;
-            --cat-20: #ffadad;
+            --border-color: #2a2a2a;
         }
 
-        /* 統一的霓虹樣式 */
-        .neon-text {
-            text-shadow: 0 0 5px var(--neon-blue), 0 0 10px var(--neon-blue);
-            transition: text-shadow 0.3s;
+        /* 隱藏所有捲軸但保留捲動功能 */
+        * {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
-        .neon-pink-text {
-            text-shadow: 0 0 5px var(--neon-pink), 0 0 10px var(--neon-pink);
-            transition: text-shadow 0.3s;
-        }
-        .neon-shadow {
-            box-shadow: 0 0 10px rgba(167, 215, 255, 0.3), 0 0 20px rgba(167, 215, 255, 0.1);
-            transition: box-shadow 0.3s;
-        }
-        /* Active 狀態按鈕的霓虹光暈 */
-        .active-neon-glow {
-            box-shadow: 0 0 8px var(--neon-blue), 0 0 15px var(--neon-blue)50;
-            border-color: var(--neon-blue) !important;
+        *::-webkit-scrollbar {
+            display: none;
+            width: 0 !important;
+            height: 0 !important;
         }
 
-        /* 統一 Font-Awesome 圖標樣式 */
-        .fa, .fas, .far, .fab {
-            margin-right: 5px;
-        }
-
-        /* --------------------------- 基礎版面 --------------------------- */
         body{
             margin:0;
             padding:0;
             background: var(--bg-dark);
             color: var(--text-light);
-            font-family: 'Noto Sans TC', 'Poppins', '微軟正黑體', sans-serif;
-            display:flex; /* 啟用 Flexbox */
+            font-family: 'Noto Sans TC', 'Poppins', sans-serif;
+            display:flex;
             min-height: 100vh;
-            overflow: hidden; /* 防止主頁面出現滾動條 */
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox (雖然您主要使用的是 Webkit/MS，但統一加上) */
+            overflow: hidden;
         }
 
-                /* --------------------------- 隱藏滾動條：Webkit 核心瀏覽器 (Chrome, Safari) --------------------------- */
-        /* 針對整個 body 元素 */
-        body::-webkit-scrollbar {
-            width: 0px;  /* 隱藏垂直滾動條 */
-            height: 0px; /* 隱藏水平滾動條 */
-        }
-
-        body::-webkit-scrollbar,
-        .content-container::-webkit-scrollbar,
-        .category-list-container::-webkit-scrollbar {
-            display: none;
-            width: 0 !important;
-            height: 0 !important;
-        }
-
-        /* 1. 針對所有元素（包含 body 和所有 div）隱藏滾動條，但保留滾動功能 */
-        * {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;     /* Firefox */
-        }
-
-        *::-webkit-scrollbar {
-            display: none;             /* Chrome, Safari, Opera */
-            width: 0 !important;
-            height: 0 !important;
-        }
-
-        /* 2. 確保 html 和 body 也完全隱藏 */
-        html, body {
-            overflow: -moz-scrollbars-none;
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-        body::-webkit-scrollbar {
-            display: none;
-        }
-
-        /* 針對需要滾動的特定容器 (如主要的內容區塊) */
-        .content-container::-webkit-scrollbar,
-        .category-list-container::-webkit-scrollbar {
-            width: 0px;
-            height: 0px;
-        }
-        
         /* --------------------------- 側邊欄 --------------------------- */
         .app-sidebar{
             width: var(--sidebar-width);
@@ -146,15 +61,14 @@
             height: 100vh;
             position: sticky;
             top:0;
+            z-index: 100;
         }
 
-        /* 收合狀態 */
         .app-sidebar.collapsed{
             width: var(--sidebar-collapsed-width);
             min-width: var(--sidebar-collapsed-width);
         }
 
-        /* 收合按鈕 */
         .sidebar-toggle{
             background: transparent;
             border: none;
@@ -162,9 +76,10 @@
             padding: 8px;
             cursor: pointer;
             align-self: flex-end;
+            transition: color 0.3s;
         }
+        .sidebar-toggle:hover { color: var(--neon-blue); }
 
-        /* LOGO */
         .sidebar-brand{
             display:flex;
             align-items:center;
@@ -177,8 +92,9 @@
             display:flex;
             align-items:center;
             justify-content:center;
-            background: linear-gradient(90deg,var(--neon-blue), #7ee0ff20);
+            background: linear-gradient(90deg, var(--neon-blue), #7ee0ff20);
             border-radius:8px;
+            font-weight: bold;
         }
 
         .brand-text{
@@ -188,7 +104,6 @@
             text-shadow: 0 0 20px #8fd3ff;
         }
 
-        /* 選單 */
         .sidebar-menu{
             list-style:none;
             padding:8px 4px;
@@ -206,13 +121,13 @@
             cursor:pointer;
             border:none;
             background:transparent;
-            color:var(--text-light);
-
-            padding: 10px 12px; /* 統一間距 */
             color: var(--text-dark);
-            font-size: 1.05em; /* 統一字體大小 */
+            padding: 10px 12px;
+            font-size: 1.05em;
             font-weight: 500;
             transition: all 0.3s ease;
+            width: 100%;
+            text-align: left;
         }
 
         .nav-item:hover{
@@ -228,36 +143,26 @@
             text-shadow: 0 0 5px var(--neon-blue);
         }
 
-        /* 統一圖標大小 */
-        .nav-item i {
-            font-size: 1.3em;
-            width: 25px; /* 確保圖標區域一致 */
-        }
-
         .nav-icon{
             width:25px;
             text-align:center;
+            font-size: 1.3em;
         }
 
-        /* 收合時隱藏文字 */
         .app-sidebar.collapsed .nav-label,
         .app-sidebar.collapsed .brand-text{
             display:none;
         }
-        
-        /* --------------------------- 內容區塊 (使用 iframe) --------------------------- */
-        /* ⭐️ NEW: 替換原本的 .main-content，使用 iframe 載入內容 */
+
+        /* --------------------------- 主內容區 (Iframe) --------------------------- */
         #content-frame {
-            flex-grow: 1; /* 佔據剩餘空間 */
+            flex-grow: 1;
             border: none;
             width: 100%;
-            height: 100vh; /* 確保 iframe 佔滿高度 */
-            background-color: var(--bg-dark); 
-            transition: all .3s ease-in-out; /* 保持與 sidebar 寬度切換同步 */
+            height: 100vh;
+            background-color: var(--bg-dark);
         }
-
     </style>
-
 </head>
 
 <body>
@@ -273,140 +178,142 @@
         </div>
 
         <ul id="sidebarMenu" class="sidebar-menu">
-
             <li>
-                <button class="nav-item" data-page="list" onclick="switchPage( this, 'transaction.html' )">
+                <button class="nav-item active" data-page="list" onclick="switchPage(this, 'transaction.html')">
                     <span class="nav-icon"><i class="fas fa-list"></i></span>
                     <span class="nav-label">交易記錄</span>
                 </button>
             </li>
-
             <li>
-                <button class="nav-item" data-page="record" onclick="switchPage( this, 'recordpage.html' )">
+                <button class="nav-item" data-page="record" onclick="switchPage(this, 'recordpage.html')">
                     <span class="nav-icon"><i class="fas fa-edit"></i></span>
                     <span class="nav-label">記帳頁面</span>
                 </button>
             </li>
-
             <li>
-                <button class="nav-item" onclick="switchPage( this, 'report.html' )">
+                <button class="nav-item" data-page="report" onclick="switchPage(this, 'report.html')">
                     <span class="nav-icon"><i class="fas fa-chart-pie"></i></span>
                     <span class="nav-label">報告分析</span>
                 </button>
             </li>
-
             <li>
-                <button class="nav-item" onclick="switchPage( this, 'budget.html' )">
+                <button class="nav-item" data-page="budget" onclick="switchPage(this, 'budget.html')">
                     <span class="nav-icon"><i class="fas fa-wallet"></i></span>
                     <span class="nav-label">管理預算</span>
                 </button>
             </li>
-
             <li>
-                <button class="nav-item" onclick="switchPage( this, 'settings.html' )">
+                <button class="nav-item" data-page="settings" onclick="switchPage(this, 'settings.html')">
                     <span class="nav-icon"><i class="fas fa-cog"></i></span>
                     <span class="nav-label">系統設定</span>
                 </button>
             </li>
-
         </ul>
-
     </nav>
 
     <iframe id="content-frame" name="content-frame" src="transaction.html"></iframe>
 
-</body>
+    <script>
+        /* ==============================
+           側邊欄控制
+        ================================ */
+        document.getElementById("sidebarToggle").addEventListener("click", () => {
+            document.querySelector(".app-sidebar").classList.toggle("collapsed");
+        });
 
-<script>
-/* ==============================
-   側邊欄 & 頁面切換（原本的 그대로）
-================================ */
-document.getElementById("sidebarToggle").addEventListener("click", () => {
-    document.querySelector(".app-sidebar").classList.toggle("collapsed");
-});
-
-function switchPage(element, url) {
-    document.getElementById('content-frame').src = url;
-    document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
-
-    if (element) {
-        element.classList.add("active");
-    } else {
-        let targetPageName;
-        if (url.includes('recordpage')) targetPageName = 'record';
-        else if (url.includes('transaction')) targetPageName = 'list';
-        else if (url.includes('report')) targetPageName = 'report';
-        else if (url.includes('budget')) targetPageName = 'budget';
-        else if (url.includes('settings')) targetPageName = 'settings';
-
-        const navItem = document.querySelector(`.nav-item[data-page="${targetPageName}"]`);
-        if (navItem) navItem.classList.add('active');
-    }
-}
-
-window.switchPage = switchPage;
-
-/* ==============================
-   🌍 匯率系統（乖乖整理版）
-================================ */
-
-const ONE_DAY = 24 * 60 * 60 * 1000;
-
-function getCurrencySetting() {
-    return JSON.parse(localStorage.getItem('app_currency')) || {
-        base: 'TWD',
-        symbol: 'NT$',
-        rates: {
-            TWD: 1,
-            USD: 0.032,
-            JPY: 4.6
+        function switchPage(element, url) {
+            document.getElementById('content-frame').src = url;
+            document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+            if (element) element.classList.add("active");
         }
-    };
-}
+        window.switchPage = switchPage;
 
-async function fetchLiveExchangeRates(base = 'TWD') {
-    try {
-        const res = await fetch(
-            `https://api.exchangerate.host/latest?base=${base}`
-        );
-        const data = await res.json();
-        if (!data?.rates) throw new Error('No rates');
-
-        const setting = {
-            base,
-            symbol: base === 'TWD' ? 'NT$' : base,
-            rates: data.rates,
-            updatedAt: new Date().toISOString()
+        /* ==============================
+           🌍 匯率核心系統 (LumiTrack Brain)
+        ================================ */
+        const CURRENCY_KEY = 'app_currency';
+        
+        // 乖乖要求的幣別對照表
+        const SYMBOL_MAP = { 
+            TWD: 'NT$', USD: '$', JPY: '¥', EUR: '€', HKD: 'HK$', 
+            CNY: '¥', GBP: '£', AUD: 'A$', KRW: '₩', SGD: 'S$' 
         };
 
-        localStorage.setItem('app_currency', JSON.stringify(setting));
+        // 1. 取得貨幣設定
+        function getCurrencySetting() {
+            const defaultData = {
+                base: 'TWD',
+                rates: { TWD: 1, USD: 0.031, JPY: 4.6, HKD: 0.24, CNY: 0.22, EUR: 0.028, GBP: 0.024, AUD: 0.046, KRW: 41.5, SGD: 0.041 },
+                updatedAt: null
+            };
+            try {
+                const stored = localStorage.getItem(CURRENCY_KEY);
+                return stored ? JSON.parse(stored) : defaultData;
+            } catch (e) { return defaultData; }
+        }
 
-        window.dispatchEvent(
-            new StorageEvent('storage', { key: 'app_currency' })
-        );
+        // 2. 抓取即時匯率
+        async function fetchLiveRates() {
+            try {
+                console.log("🌐 正在獲取最新匯率...");
+                // 以 TWD 為基準抓取
+                const res = await fetch('https://open.er-api.com/v6/latest/TWD');
+                const data = await res.json();
+                
+                if (data.result === "success") {
+                    const currentSetting = getCurrencySetting();
+                    const filteredRates = {};
+                    
+                    // 只保留 SYMBOL_MAP 中定義的幣別
+                    Object.keys(SYMBOL_MAP).forEach(code => {
+                        if (data.rates[code]) filteredRates[code] = data.rates[code];
+                    });
 
-        return setting;
-    } catch {
-        return getCurrencySetting();
-    }
-}
+                    const newSetting = {
+                        ...currentSetting,
+                        rates: filteredRates,
+                        updatedAt: new Date().toISOString()
+                    };
 
-/* ==============================
-   初始化（只留一個 DOMContentLoaded）
-================================ */
-document.addEventListener('DOMContentLoaded', () => {
+                    localStorage.setItem(CURRENCY_KEY, JSON.stringify(newSetting));
+                    
+                    // 觸發 storage 事件讓其他頁面同步
+                    window.dispatchEvent(new StorageEvent('storage', { key: CURRENCY_KEY }));
+                    console.log("✅ 匯率更新成功:", filteredRates);
+                    return newSetting;
+                }
+            } catch (err) {
+                console.error("❌ 匯率更新失敗 (使用緩存):", err);
+            }
+            return getCurrencySetting();
+        }
 
-    // 側邊欄初始亮燈
-    const initialItem = document.querySelector('.nav-item[data-page="list"]');
-    if (initialItem) initialItem.classList.add('active');
+        // 3. 全域匯率轉換工具 (供子頁面 window.parent.convertAmount 調用)
+        // 邏輯：所有交易數據在底層預設存為 TWD，顯示時才轉為當前幣別
+        window.convertAmount = function(amountInTWD, toTarget = true) {
+            const { base, rates } = getCurrencySetting();
+            const rate = rates[base] || 1;
+            // toTarget=true: TWD -> 外幣, false: 外幣 -> TWD
+            return toTarget ? amountInTWD * rate : amountInTWD / rate;
+        };
 
-    // 匯率初始化
-    const setting = getCurrencySetting();
-    if (!setting.updatedAt || Date.now() - new Date(setting.updatedAt) > ONE_DAY) {
-        fetchLiveExchangeRates(setting.base || 'TWD');
-    }
-});
-</script>
+        // 4. 取得當前幣別符號 (供子頁面調用)
+        window.getCurrencySymbol = function() {
+            const { base } = getCurrencySetting();
+            return SYMBOL_MAP[base] || '$';
+        };
 
-
+        /* ==============================
+           初始化
+        ================================ */
+        document.addEventListener('DOMContentLoaded', () => {
+            const setting = getCurrencySetting();
+            // 如果超過 6 小時沒有更新，則重新抓取
+            const lastUpdate = setting.updatedAt ? new Date(setting.updatedAt) : new Date(0);
+            if (Date.now() - lastUpdate.getTime() > 6 * 60 * 60 * 1000) {
+                fetchLiveRates();
+            }
+        });
+    </script>
+</body>
 </html>

@@ -1978,15 +1978,17 @@
                 if (!amountInputValue || amountInputValue <= 0) return alert('請輸入有效金額！');
                 if(!selectedPrimary) return alert('請選擇主分類！');
 
-                // 1️⃣ 使用設定頁的幣別，而不是表單初始
-                const currencySetting = getCurrencySetting();
-                const currency = currencySetting.base || 'TWD'; // 依設定頁幣別
-                const rates = currencySetting.rates;
+                // ---------- ✅ 使用者選擇的幣別 ----------
+                const currency = document.getElementById('currencySelect')?.value || 'TWD';
 
-                // 2️⃣ 將使用者輸入金額 (amountInput.value) 轉換成基準幣別
+                // 取得匯率
+                const currencySetting = getCurrencySetting();
+                const rates = currencySetting.rates || {};
+
+                // 計算 baseAmount (TWD)
                 let baseAmount = amountInputValue;
-                if (currency !== 'TWD' && rates[currency]) {
-                    baseAmount = amountInputValue / rates[currency]; // 轉成 TWD
+                if(currency !== 'TWD' && rates[currency]){
+                    baseAmount = amountInputValue / rates[currency];
                 }
 
                 const categoryIconToUse = selectedSub ? (selectedSub.icon || selectedPrimary.icon) : selectedPrimary.icon;
@@ -2003,7 +2005,7 @@
                     id: newId,
                     type: selectedType,
                     amount: amountInputValue,     // 使用者輸入金額
-                    currency,                     // 設定頁幣別
+                    currency,                     // 使用者選擇的幣別
                     baseAmount,                   // 換算成 TWD
                     date: dateInput?.value || today,
                     categoryText,
@@ -2017,13 +2019,14 @@
                 saveTransactions(transactions);
                 localStorage.setItem('lastTransactionUpdate', Date.now());
 
-                // 提示
+                // 顯示提示
                 if(resultDisplay){
                     resultDisplay.innerHTML=`<h3>🎉 新增成功</h3> 分類: ${escapeHtml(categoryText)} 金額: ${amountInputValue} ${currency}`;
                     resultDisplay.style.display='block';
                     setTimeout(()=>{resultDisplay.style.display='none'},1200);
                 }
 
+                // 重置表單
                 recordForm.reset();
                 if(dateInput) dateInput.value=today;
                 resetImageInputUI();

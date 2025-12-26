@@ -105,192 +105,285 @@
 
     <div class="toast" id="toast">✅ 預算已更新</div>
 
+</body>
+
     <script>
-        // -------------------------- 固定匯率 --------------------------
-        const FIXED_RATES={TWD:1,USD:0.032,JPY:4.6,EUR:0.029,HKD:0.24,CNY:0.22,GBP:0.024,AUD:0.046,KRW:41.5,SGD:0.041};
-        const SYMBOL_MAP={TWD:'NT$',USD:'$',JPY:'JP¥',EUR:'€',HKD:'HK$',CNY:'CN¥',GBP:'£',AUD:'A$',KRW:'₩',SGD:'S$'};
+        /* ================= 幣別系統（唯一版本） ================= */
+        const FIXED_RATES = {
+            TWD:1, USD:0.032, JPY:4.6, EUR:0.029, HKD:0.24,
+            CNY:0.22, GBP:0.024, AUD:0.046, KRW:41.5, SGD:0.041
+        };
+        const SYMBOL_MAP = {
+            TWD:'NT$', USD:'$', JPY:'¥', EUR:'€', HKD:'HK$',
+            CNY:'¥', GBP:'£', AUD:'A$', KRW:'₩', SGD:'S$'
+        };
 
-        function getCurrencyInfo(){
-            const cur=JSON.parse(localStorage.getItem('app_currency'))||{base:'TWD'};
-            const base=cur.base||'TWD';
-            const symbol=SYMBOL_MAP[base]||'$';
-            const rate=FIXED_RATES[base]||1;
-            return {base,symbol,rate};
+        function getCurrencySetting(){
+            return JSON.parse(localStorage.getItem('app_currency')) || { base:'TWD' };
         }
 
-        function convertAmount(amountTWD){
-            const {rate}=getCurrencyInfo();
-            return amountTWD*rate;
+        function fromTWD(amountTWD){
+            const { base } = getCurrencySetting();
+            return amountTWD * (FIXED_RATES[base] || 1);
         }
 
-        // -------------------------- 渲染預算 --------------------------
+        function money(n){
+            const { base } = getCurrencySetting();
+            return `${SYMBOL_MAP[base] || '$'}${Math.round(n).toLocaleString()}`;
+        }
+
+        /* ================= 主渲染 ================= */
         function renderBudget(){
-            const budgetSettings=JSON.parse(localStorage.getItem('budget_settings'))||{};
-            const transactions=JSON.parse(localStorage.getItem('transactions'))||[];
-            const categoryData=JSON.parse(localStorage.getItem('categoryData'))||getDefaultCategories();
-            const {symbol}=getCurrencyInfo();
+            const transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+            const categoryData = JSON.parse(localStorage.getItem('categoryData')) || { expense:[] };
+            const budgetSettings = JSON.parse(localStorage.getItem('budget_settings')) || {};
 
-            const now=new Date();
-            const currentMonth=now.getMonth();
-            const currentYear=now.getFullYear();
-            document.getElementById('monthTitle').textContent=`${currentMonth+1} 月剩餘預算`;
+            const now = new Date();
+            const m = now.getMonth(), y = now.getFullYear();
+            document.getElementById('monthTitle').textContent = `${m+1} 月剩餘預算`;
 
-            let totalBudget=0,totalSpent=0;
-            const container=document.getElementById('budgetList');
-            container.innerHTML='';
+            let totalBudget = 0;
+            let totalSpent = 0;
+            const list = document.getElementById('budgetList');
+            list.innerHTML = '';
 
             categoryData.expense.forEach((mainCat,idx)=>{
-                const budgetBase=budgetSettings[mainCat.name]||0;
-                const budgetConverted=convertAmount(budgetBase);
+                // ===== 判斷是否有子分類預算 =====
+                const subBudgets = (mainCat.sub || []).map(sub=>{
+                const k = `${mainCat.name} / ${sub.name}`;
+                return budgetSettings[k] || 0;
+                });
 
-                const spent=transactions
-                    .filter(t=>{
-                        const d=new Date(t.date); 
-                        return d.getMonth()===currentMonth && d.getFullYear()===currentYear && t.type==='expense' && t.category===mainCat.name;
-                    })
-                    .reduce((a,t)=>a+convertAmount(t.baseAmount||t.amount||0),0);
+                const hasSubBudget = subBudgets.some(v => v > 0);
 
-                totalBudget+=budgetConverted;
-                totalSpent+=spent;
+                // ===== 主分類預算（TWD） =====
+                let budgetTWD = 0;
 
-                let subHtml='';
-                if(mainCat.sub?.length>0){
+                if(hasSubBudget){
+                // 👉 有子分類 → 強制加總
+                budgetTWD = subBudgets.reduce((a,b)=>a+b,0);
+                }else{
+                // 👉 沒子分類 → 允許主分類設定
+                budgetTWD = budgetSettings[mainCat.name] || 0;
+                }
+
+                const budget = fromTWD(budgetTWD);
+
+
+                /* ===== 已花（只用 baseAmount） ===== */
+                const spentTWD = transactions
+                .filter(t=>{
+                    if(t.type!=='expense') return false;
+                    const d = new Date(t.date);
+                    if(d.getMonth()!==m || d.getFullYear()!==y) return false;
+                    const main = (t.categoryText || '').split(' / ')[0];
+                    return main === mainCat.name;
+                })
+                .reduce((sum,t)=>sum + (Number(t.baseAmount)||0),0);
+
+                const spent = fromTWD(spentTWD);
+
+                totalBudget += budget;
+                totalSpent += spent;
+
+                /* ===== 子分類 ===== */
+                let subHtml = '';
+                if(mainCat.sub?.length){
                     mainCat.sub.forEach(sub=>{
-                        const subKey=`${mainCat.name} / ${sub.name}`;
-                        const subBudget=convertAmount(budgetSettings[subKey]||0);
-                        const subSpent=transactions
-                            .filter(t=>t.category===subKey)
-                            .reduce((a,t)=>a+convertAmount(t.baseAmount||t.amount||0),0);
-                        subHtml+=createCardHtml(subKey,sub.name,subBudget,subSpent,sub.color,sub.icon,true,false,0,symbol);
+                        const key = `${mainCat.name} / ${sub.name}`;
+                        const subBudget = fromTWD(budgetSettings[key]||0);
+
+                        const subSpentTWD = transactions
+                        .filter(t=>t.categoryText===key)
+                        .reduce((s,t)=>s+(Number(t.baseAmount)||0),0);
+
+                        const subKey = `${mainCat.name} / ${sub.name}`;
+
+                        subHtml += createCard(
+                            sub.name,
+                            subBudget,
+                            fromTWD(subSpentTWD),
+                            sub.color,
+                            sub.icon,
+                            true,
+                            null,
+                            false,
+                            subKey
+                        );
                     });
                 }
 
-                container.insertAdjacentHTML('beforeend',`
-                    <div class="category-group">
-                        ${createCardHtml(mainCat.name,mainCat.name,budgetConverted,spent,mainCat.color,mainCat.icon,false,mainCat.sub?.length>0,idx,symbol)}
-                        <div id="sub-container-${idx}" class="sub-category-container">${subHtml}</div>
-                    </div>
+                list.insertAdjacentHTML('beforeend',`
+                <div class="category-group">
+                    ${createCard(
+                            mainCat.name,
+                            budget,
+                            spent,
+                            mainCat.color,
+                            mainCat.icon,
+                            false,
+                            idx,
+                            !!subHtml,
+                            mainCat.name,
+                            hasSubBudget   // 👈 新增
+                        )
+
+                    }
+                    <div id="sub-${idx}" class="sub-category-container">${subHtml}</div>
+                </div>
                 `);
             });
 
-            updateTotalDisplay(totalBudget,totalSpent,symbol);
-            document.getElementById('noBudgetMsg').style.display=categoryData.expense.length?'none':'block';
+            updateTotal(totalBudget,totalSpent);
         }
 
-        function createCardHtml(key,name,budget,spent,color,icon,isSub,hasSubs,idx,symbol){
-            const progress=budget>0?Math.min(100,(spent/budget)*100):(spent>0?100:0);
-            const barColor=progress>=100?'var(--neon-red)':(progress>80?'var(--neon-yellow)':(isSub?color:'var(--neon-green)'));
-            const formattedBudget=budget>0?`${symbol}${Math.round(budget).toLocaleString()}`:'點擊設定';
-            const formattedSpent=`${symbol}${Math.round(spent).toLocaleString()}`;
+        /* ================= 卡片（沿用原版型） ================= */
+        function createCard( name, budget, spent, color, icon,  isSub, idx, hasSub, key, lockMain){
+            const p = budget>0 ? Math.min(100,(spent/budget)*100) : 0;
+            const bar = p>=100?'var(--neon-red)':p>80?'var(--neon-yellow)':'var(--neon-green)';
 
             return `
-                <div id="${!isSub?'main-card-'+idx:''}" class="budget-card ${!isSub?'main-budget-card':''}" ${!isSub && hasSubs?`onclick="toggleSub(${idx})"`:''} style="margin-bottom:10px; border-left:4px solid ${color}">
-                    <div class="card-header">
-                        <div class="cat-info">
-                            <span class="cat-icon" style="color:${color};"><i class="${icon}"></i></span>
-                            <span class="cat-name" style="color:${color}; font-size:${isSub?'0.9em':'1.1em'};">
-                                ${name} ${!isSub && hasSubs?'<i class="fas fa-chevron-down expand-icon"></i>':''}
-                            </span>
-                        </div>
-                        <div class="budget-setter" onclick="event.stopPropagation();">
-                            <div class="budget-label">預算 (${symbol})</div>
-                            <div class="budget-display" onclick="editBudget(this)" style="color:${budget>0?'var(--text-light)':'var(--text-dark)'}">
-                                ${formattedBudget}
-                            </div>
-                            <input type="number" class="budget-input" value="${budget>0?Math.round(budget):''}" 
-                                onblur="saveBudget(this,'${key}')"
-                                onkeydown="if(event.key==='Enter') this.blur()">
-                        </div>
+                <div class="budget-card ${!isSub?'main-budget-card':''}"
+                ${!isSub&&hasSub?`onclick="toggleSub(${idx})"`:''}
+                style="border-left:4px solid ${color}">
+                <div class="card-header">
+                    <div class="cat-info">
+                    <i class="${icon}" style="color:${color}"></i>
+                    <span class="cat-name">${name}</span>
                     </div>
-                    <div class="progress-container">
-                        <div class="progress-fill" style="width:${progress}%; background-color:${barColor}; box-shadow:0 0 10px ${barColor}66;"></div>
+
+                    <div class="budget-setter" onclick="event.stopPropagation()">
+                    <div class="budget-label">預算</div>
+                    <div class="budget-display"
+                        ${lockMain ? 'style="opacity:.5;cursor:not-allowed"' : 'onclick="editBudget(this)"'}>
+                        ${budget?money(budget):(lockMain?'—':'點擊設定')}
                     </div>
-                    <div class="card-stats">
-                        <span>已花 ${formattedSpent}</span>
-                        <span style="color:${progress>=100?'var(--neon-red)':'inherit'}">${progress.toFixed(0)}%</span>
+                    <input class="budget-input"
+                            type="number"
+                            min="0"
+                            onblur="saveBudget(this,'${key}')"
+                            onkeydown="if(event.key==='Enter') this.blur()">
                     </div>
+                </div>
+
+                <div class="progress-container">
+                    <div class="progress-fill" style="width:${p}%;background:${bar}"></div>
+                </div>
+
+                <div class="card-stats">
+                    <span>已花 ${money(spent)}</span>
+                    <span>${p.toFixed(0)}%</span>
+                </div>
                 </div>
             `;
         }
 
-        function updateTotalDisplay(budget,spent,symbol){
-            const remain=budget-spent;
-            const remainEl=document.getElementById('totalRemaining');
-            const bar=document.getElementById('totalBar');
-            const p=budget>0?Math.min(100,(spent/budget)*100):0;
+        /* ================= 總計 ================= */
+        function updateTotal(budget, spent){
+            const remain = budget - spent;
+            const p = budget > 0 ? Math.min(100, (spent / budget) * 100) : 0;
 
-            remainEl.textContent=`${symbol}${Math.round(remain).toLocaleString()}`;
-            remainEl.style.color=remain>=0?'var(--neon-green)':'var(--neon-red)';
-            remainEl.style.textShadow=remain>=0?'0 0 15px rgba(168,240,198,0.5)':'0 0 15px rgba(255,127,127,0.5)';
+            const bar = document.getElementById('totalBar');
 
-            document.getElementById('totalSpentText').textContent=`已花 ${symbol}${Math.round(spent).toLocaleString()}`;
-            document.getElementById('totalBudgetText').textContent=`總預算 ${symbol}${Math.round(budget).toLocaleString()}`;
+            document.getElementById('totalRemaining').textContent = money(remain);
+            document.getElementById('totalRemaining').style.color =
+                remain >= 0 ? 'var(--neon-green)' : 'var(--neon-red)';
 
-            bar.style.width=`${p}%`;
-            bar.style.backgroundColor=p>=100?'var(--neon-red)':(p>80?'var(--neon-yellow)':'var(--neon-green)');
+            document.getElementById('totalSpentText').textContent = `已花 ${money(spent)}`;
+            document.getElementById('totalBudgetText').textContent = `總預算 ${money(budget)}`;
+
+            /* ⭐ 進度條顏色 */
+            bar.style.width = `${p}%`;
+            bar.style.background =
+                p >= 100 ? 'var(--neon-red)' :
+                p > 80  ? 'var(--neon-yellow)' :
+                        'var(--neon-green)';
         }
 
-        function toggleSub(id){
-            const container=document.getElementById(`sub-container-${id}`);
-            const card=document.getElementById(`main-card-${id}`);
-            if(container) container.classList.toggle('active');
-            if(card) card.classList.toggle('expanded');
+
+        /* ================= 展開 ================= */
+        function toggleSub(i){
+            document.getElementById(`sub-${i}`)?.classList.toggle('active');
         }
 
-        function editBudget(el){
-            el.style.display='none';
-            const input=el.nextElementSibling;
-            input.style.display='block';
+        /* ================= 同步 ================= */
+        window.addEventListener('storage',e=>{
+            if(['transactions','budget_settings','categoryData','app_currency'].includes(e.key)){
+                renderBudget();
+            }
+        });
+        document.addEventListener('DOMContentLoaded',renderBudget);
+
+        function editBudget(el,key){
+            const wrap = el.closest('.budget-setter');
+            const input = wrap.querySelector('.budget-input');
+
+            const raw = el.textContent.replace(/[^\d]/g,'');
+            input.value = raw ? Number(raw) : '';
+            el.style.display = 'none';
+            input.style.display = 'inline-block';
             input.focus();
-            input.select();
         }
 
         function saveBudget(input,key){
-            const val=parseFloat(input.value);
-            const settings=JSON.parse(localStorage.getItem('budget_settings'))||{};
-            const {rate}=getCurrencyInfo();
-            if(isNaN(val)||val<=0) delete settings[key];
-            else settings[key]=val/rate;
+            const wrap = input.closest('.budget-setter');
+            const display = wrap.querySelector('.budget-display');
+            const val = Number(input.value);
+
+            input.style.display = 'none';
+            display.style.display = 'block';
+
+            if(isNaN(val) || val<=0){
+                display.textContent = '點擊設定';
+                return;
+            }
+
+            // ⚠️ 顯示幣別 → 轉回 TWD 存
+            const { base } = getCurrencySetting();
+            const rate = FIXED_RATES[base] || 1;
+            const twdAmount = Math.round(val / rate);
+
+            const settings = JSON.parse(localStorage.getItem('budget_settings')) || {};
+            settings[key] = twdAmount;
             localStorage.setItem('budget_settings',JSON.stringify(settings));
+
+            showToast();
             renderBudget();
-            const t=document.getElementById('toast');
-            t.style.opacity=1;
+        }
+
+        function saveBudget(input, key){
+            const raw = input.value.trim();
+            const settings = JSON.parse(localStorage.getItem('budget_settings')) || {};
+
+            if(raw === '' || isNaN(raw) || Number(raw) <= 0){
+                // ⭐ 清空 = 刪除
+                delete settings[key];
+            }else{
+                // ⭐ 一律存 TWD
+                const { base } = getCurrencySetting();
+                const rate = FIXED_RATES[base] || 1;
+                settings[key] = Number(raw) / rate;
+            }
+
+            localStorage.setItem('budget_settings', JSON.stringify(settings));
+
+            input.style.display = 'none';
+            input.previousElementSibling.style.display = 'block';
+
+            renderBudget();
+
+            const toast = document.getElementById('toast');
+            toast.style.opacity = 1;
+            setTimeout(()=>toast.style.opacity=0,1200);
+        }
+
+
+        function showToast(){
+            const t = document.getElementById('toast');
+            t.style.opacity = 1;
             setTimeout(()=>t.style.opacity=0,1500);
         }
 
-        function getDefaultCategories(){ return {expense:[
-            {id:1,name:"餐飲",icon:"fas fa-utensils",color:"var(--cat-1)",sub:[
-                {id:101,name:"外食",icon:"fas fa-burger",color:"var(--cat-1)"},
-                {id:102,name:"飲品",icon:"fas fa-coffee",color:"var(--cat-1)"},
-                {id:103,name:"零食",icon:"fas fa-cookie-bite",color:"var(--cat-1)"}
-            ]},
-            {id:2,name:"交通",icon:"fas fa-bus",color:"var(--cat-2)",sub:[
-                {id:201,name:"油資/充電",icon:"fas fa-gas-pump",color:"var(--cat-2)"},
-                {id:202,name:"公車/捷運",icon:"fas fa-subway",color:"var(--cat-2)"},
-                {id:203,name:"計程車",icon:"fas fa-taxi",color:"var(--cat-2)"}
-            ]},
-            {id:3,name:"購物",icon:"fas fa-shopping-bag",color:"var(--cat-3)",sub:[
-                {id:301,name:"服飾",icon:"fas fa-shirt",color:"var(--cat-3)"},
-                {id:302,name:"日用品",icon:"fas fa-toilet-paper",color:"var(--cat-3)"},
-                {id:303,name:"3C 產品",icon:"fas fa-mobile-screen-button",color:"var(--cat-3)"}
-            ]},
-            {id:4,name:"娛樂",icon:"fas fa-gamepad",color:"var(--cat-4)",sub:[
-                {id:401,name:"電影/展覽",icon:"fas fa-ticket",color:"var(--cat-4)"},
-                {id:402,name:"遊戲",icon:"fas fa-dice",color:"var(--cat-4)"},
-                {id:403,name:"旅遊",icon:"fas fa-plane",color:"var(--cat-4)"}
-            ]},
-            {id:5,name:"居住",icon:"fas fa-home",color:"var(--cat-5)",sub:[
-                {id:501,name:"房租/房貸",icon:"fas fa-building-columns",color:"var(--cat-5)"},
-                {id:502,name:"水電瓦斯",icon:"fas fa-lightbulb",color:"var(--cat-5)"},
-                {id:503,name:"網路/電信",icon:"fas fa-signal",color:"var(--cat-5)"}
-            ]}
-        ]};}
-
-        window.addEventListener('storage',(e)=>{
-            if(['transactions','budget_settings','categoryData','app_currency'].includes(e.key)) renderBudget();
-        });
-
-        document.addEventListener('DOMContentLoaded',renderBudget);
     </script>
-</body>
+
 </html>

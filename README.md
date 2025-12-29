@@ -93,60 +93,62 @@ Programming-III-final-Project-main/
 * Python 3.10 以上
 * pip 套件管理工具
 
-### 安裝套件
+---
+
+### 建立虛擬環境（建議）
+
+```bash
+python -m venv venv
+```
+
+#### 啟用虛擬環境
+
+* Windows
+
+```bash
+venv\Scripts\activate
+```
+
+* macOS / Linux
+
+```bash
+source venv/bin/activate
+```
+
+---
+
+### 安裝專案套件
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 啟動後端伺服器
+---
+
+### 執行方式
+
+本專案為 GitHub 下載之程式碼，完成套件安裝後，**直接執行 `main.py` 檔案即可啟動系統**。
 
 ```bash
-uvicorn app.main:app --reload
+python app/main.py
 ```
 
-啟動後可使用以下連結：
-
-* Swagger API 文件：[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-* ReDoc API 文件：[http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+執行成功後，終端機將顯示系統啟動訊息，代表程式已正常運作。
 
 ---
 
 ## 執行測試方法
 
-### 方法一：Swagger UI 測試（建議）
+### 方法一：直接執行程式測試（主要方式）
 
-1. 啟動後端伺服器
-2. 開啟瀏覽器進入：
+1. 依照上述步驟建立虛擬環境並安裝套件
+2. 使用以下指令執行系統：
 
+   ```bash
+   python app/main.py
    ```
-   http://127.0.0.1:8000/docs
-   ```
-3. 選擇欲測試的 API
-4. 點擊 **Try it out**
-5. 輸入測試資料並執行
-6. 確認回傳結果是否正確
-
----
-
-### 方法二：前端操作測試
-
-1. 啟動後端 API
-2. 直接開啟 `frontend/index.html`
-3. 透過網頁進行操作：
-
-   * 新增支出紀錄
-   * 查詢支出資料
-   * 查看消費分析報表
-4. 確認畫面顯示資料是否正確
-
----
-
-### 方法三：cURL 指令測試（進階）
-
-```bash
-curl -X GET http://127.0.0.1:8000/expenses
-```
+3. 觀察終端機輸出訊息，確認程式是否正常執行
+4. 若程式可正常執行且無錯誤訊息，即代表測試成功
 
 ---
 
